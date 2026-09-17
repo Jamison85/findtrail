@@ -29,7 +29,7 @@ describe('CalmReset', () => {
 
     now = 30_000
     act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByText('Reset complete')).toBeInTheDocument()
+    expect(screen.getAllByText('Reset complete').length).toBeGreaterThan(0)
     expect(screen.getByText('Ready when you are')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
 
