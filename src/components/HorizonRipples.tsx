@@ -20,8 +20,7 @@ function ease(value: number) {
 function breathAmount(elapsed: number) {
   const cycle = elapsed % 10
   if (cycle < 4) return ease(cycle / 4)
-  if (cycle < 6) return 1
-  return 1 - ease((cycle - 6) / 4)
+  return 1 - ease((cycle - 4) / 6)
 }
 
 export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProps) {
@@ -115,12 +114,11 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
           continue
         }
         context.beginPath()
-        context.arc(ripple.x, ripple.y, 18 + (age * 110), 0, Math.PI * 2)
-        context.strokeStyle = `rgba(253, 242, 226, ${(1 - age) * .34})`
+        context.ellipse(ripple.x, ripple.y, 18 + (age * 110), 7 + (age * 32), 0, 0, Math.PI * 2)
+        context.strokeStyle = `rgba(253, 242, 226, ${(1 - age) * .41})`
         context.lineWidth = 2.2 - age
         context.stroke()
       }
-
     }
 
     function addRipple(event: PointerEvent) {
