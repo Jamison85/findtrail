@@ -1,4 +1,4 @@
-const VERSION = 'findtrail-v2.4.1-ambient-reset-notice-fix-2026-09-15'
+const VERSION = 'findtrail-v2.4.1-work-feather-reset-2026-09-17'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
