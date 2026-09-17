@@ -49,8 +49,6 @@ describe('FindTrail app', () => {
   })
 
   it('saves a custom home spot, pins the item, and promotes that home next time', async () => {
-    // This test is about persistence and ranking, not transition timing. Reduced
-    // motion keeps it deterministic when CI runners are busy.
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
       activeSearch: null,
@@ -96,11 +94,11 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('At home'))
     fireEvent.click(await screen.findByText('Came in or left'))
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
-    expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Attention gets noisy when the search gets frantic. Let the light widen your awareness.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let the search get quiet for thirty seconds.' })).toBeInTheDocument()
+    expect(screen.getByText('Follow the feather. Breathe in as it rises, then breathe out as it settles toward the water.')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
-    expect(screen.getByRole('button', { name: 'Off' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Return to my trail' })).toBeInTheDocument()
+    expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
@@ -125,7 +123,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Return to my trail' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
   })
 
   it('carries the last checked spot into the found-place step', async () => {
