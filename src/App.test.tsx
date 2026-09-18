@@ -103,7 +103,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
 
-  it('keeps an update notice out of the focused reset', async () => {
+  it('keeps the update notice available during the focused reset', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
       activeSearch: null,
@@ -122,7 +122,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('Came in or left'))
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
-    expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
+    expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
   })
 
