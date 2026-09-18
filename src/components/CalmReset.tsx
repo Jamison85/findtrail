@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Settings } from '../types'
-import { HorizonRipples } from './HorizonRipples'
 import { Icon } from './Icon'
 
 const TOTAL_SECONDS = 30
@@ -46,6 +45,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   useEffect(() => {
     const startedAt = performance.now()
     setElapsed(0)
+
     timerRef.current = window.setInterval(() => {
       const next = Math.min(TOTAL_SECONDS, (performance.now() - startedAt) / 1000)
       setElapsed(next)
@@ -67,7 +67,12 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} restartKey={run} />
+      <img
+        className="calm-background"
+        src={`${import.meta.env.BASE_URL}findtrail-reset-dawn.jpg`}
+        alt=""
+        aria-hidden="true"
+      />
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
@@ -78,7 +83,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <button className="calm-skip" onClick={onResume}>Skip <Icon name="close" size={14} /></button>
       </header>
 
-      <div className="calm-view__content">
+      <main className="calm-view__content">
         <div className="calm-copy">
           <h1 id="view-heading" tabIndex={-1}>The search can wait <em>one breath.</em></h1>
           <p>Attention gets noisy when the search gets frantic. Let the light widen your awareness.</p>
@@ -87,14 +92,14 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <div key={`flight-${run}`} className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
           <img
             className="calm-feather"
-            src={`${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`}
+            src={`${import.meta.env.BASE_URL}findtrail-reset-feather.webp`}
             alt=""
           />
           <span className="feather-ripple feather-ripple--one" />
           <span className="feather-ripple feather-ripple--two" />
           <span className="feather-ripple feather-ripple--three" />
         </div>
-      </div>
+      </main>
 
       <footer className="calm-instrument">
         <div className="calm-instrument__status">
@@ -117,7 +122,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
           <span style={{ width: `${Math.min(100, (elapsed / TOTAL_SECONDS) * 100)}%` }} />
         </div>
 
-        <div className="calm-instrument__guidance">
+        <div className="calm-instrument__guidance" aria-label="Breathing rhythm: four seconds in, six seconds out">
           <span><b>4</b> in</span>
           <i aria-hidden="true" />
           <span><b>6</b> out</span>
@@ -125,7 +130,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         </div>
 
         <div className="calm-instrument__actions">
-          <button className="calm-restart" onClick={restart}><Icon name="refresh" size={15} /> Restart</button>
+          <button className="calm-restart" onClick={restart}><Icon name="refresh" size={16} /> Restart</button>
           <button className="calm-resume" onClick={onResume}>
             <span>
               <small>{hasSearch ? 'Return to the search' : 'Return home'}</small>
