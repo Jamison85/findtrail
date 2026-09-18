@@ -92,18 +92,19 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
           <h1 id="view-heading" tabIndex={-1}>The search can wait <em>one breath.</em></h1>
           <p>Attention gets noisy when the search gets frantic. Let the light widen your awareness.</p>
         </div>
-
-        <div key={`flight-${run}`} className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
-          <img
-            className="calm-feather"
-            src={RESET_FEATHER}
-            alt=""
-          />
-          <span className="feather-ripple feather-ripple--one" />
-          <span className="feather-ripple feather-ripple--two" />
-          <span className="feather-ripple feather-ripple--three" />
-        </div>
       </main>
+
+      <div key={`flight-${run}`} className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
+        <img
+          className="calm-feather"
+          src={RESET_FEATHER}
+          alt=""
+          draggable="false"
+        />
+        <span className="feather-ripple feather-ripple--one" />
+        <span className="feather-ripple feather-ripple--two" />
+        <span className="feather-ripple feather-ripple--three" />
+      </div>
 
       <footer className="calm-instrument">
         <div className="calm-instrument__status">
