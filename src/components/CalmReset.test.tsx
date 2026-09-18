@@ -14,6 +14,9 @@ describe('CalmReset', () => {
     vi.spyOn(performance, 'now').mockImplementation(() => now)
 
     render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
+    expect(document.querySelector('.calm-background')?.getAttribute('src')).toMatch(/^data:image\/jpeg;base64,/)
+    expect(document.querySelector('.calm-feather')?.getAttribute('src')).toMatch(/^data:image\/webp;base64,/)
+    expect(document.querySelector('.horizon-ripples')).not.toBeInTheDocument()
     expect(screen.getByText('Breathe in')).toBeInTheDocument()
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
     expect(screen.getByText('4')).toBeInTheDocument()
