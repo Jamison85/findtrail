@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Settings } from '../types'
-import { HorizonRipples } from './HorizonRipples'
 import { Icon } from './Icon'
 
+const RESET_BACKGROUND = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
 
 const TOTAL_SECONDS = 30
@@ -70,7 +70,13 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} restartKey={run} />
+      <img
+        className="calm-background"
+        src={RESET_BACKGROUND}
+        alt=""
+        aria-hidden="true"
+        draggable="false"
+      />
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
