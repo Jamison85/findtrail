@@ -19,15 +19,14 @@ describe('CalmReset', () => {
     expect(document.querySelector('.calm-feather-anchor')).toBeInTheDocument()
     expect(document.querySelector('.feather-ripple')).not.toBeInTheDocument()
     expect(screen.getByText('Let the feather rise')).toBeInTheDocument()
-    expect(screen.getByText('Breathe in')).toBeInTheDocument()
+    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
-    expect(screen.getByText('Inhale · 4 seconds')).toBeInTheDocument()
+    expect(screen.getByText('4 in · 6 out rhythm')).toBeInTheDocument()
     expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
 
     now = 4_100
     act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByText('Breathe out')).toBeInTheDocument()
-    expect(screen.getByText('Exhale · 6 seconds')).toBeInTheDocument()
+    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe out')
     expect(screen.getByText('Let it drift back slowly')).toBeInTheDocument()
 
     now = 20_100
@@ -41,7 +40,7 @@ describe('CalmReset', () => {
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Restart the 30-second reset' }))
-    expect(screen.getByText('Breathe in')).toBeInTheDocument()
+    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
   })
 })
