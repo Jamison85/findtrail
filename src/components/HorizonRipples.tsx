@@ -5,30 +5,9 @@ interface HorizonRipplesProps {
   restartKey: number
 }
 
+const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const RESET_SECONDS = 30
-
-function smoothstep(value: number) {
-  return value * value * (3 - (2 * value))
-}
-
-function breathAmount(elapsed: number) {
-  const cycle = elapsed % 10
-  if (cycle < 4) return smoothstep(cycle / 4)
-  return 1 - smoothstep((cycle - 4) / 6)
-}
-
-function traceMountains(
-  context: CanvasRenderingContext2D,
-  width: number,
-  baseY: number,
-  points: Array<[number, number]>,
-) {
-  context.beginPath()
-  context.moveTo(0, baseY)
-  for (const [x, lift] of points) context.lineTo(width * x, baseY - lift)
-  context.lineTo(width, baseY)
-  context.closePath()
-}
+const RIPPLE_SECONDS = 5.4
 
 export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -39,151 +18,167 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
     if (!canvasElement) return
     const drawingContext = canvasElement.getContext('2d')
     if (!drawingContext) return
-
     const canvas = canvasElement
     const context = drawingContext
+
+    const still = document.createElement('canvas')
+    const offscreenContext = still.getContext('2d')
+    if (!offscreenContext) return
+    const stillContext = offscreenContext
+
+    const source = new Image()
     let animationFrame = 0
+    let resizeObserver: ResizeObserver | null = null
+    let cancelled = false
+    let waterReady = false
     let lastFrame = 0
-    let width = 0
-    let height = 0
+    let lastImpactCycle = -1
+    let impactAt = Number.NEGATIVE_INFINITY
     const startedAt = performance.now()
 
-    const farRange: Array<[number, number]> = [
-      [0, 14], [.08, 32], [.15, 22], [.23, 49], [.31, 21], [.39, 36], [.47, 18],
-      [.55, 27], [.62, 15], [.71, 34], [.79, 21], [.88, 43], [.95, 20], [1, 28],
-    ]
-    const nearRange: Array<[number, number]> = [
-      [0, 20], [.09, 53], [.18, 26], [.28, 18], [.37, 42], [.46, 15], [.57, 31],
-      [.66, 17], [.76, 37], [.85, 19], [.94, 47], [1, 25],
-    ]
-
-    function resize() {
+    function paintStill() {
+      if (!source.naturalWidth || !source.naturalHeight) return
       const rect = canvas.getBoundingClientRect()
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.5)
-      width = Math.max(1, rect.width)
-      height = Math.max(1, rect.height)
-      canvas.width = Math.round(width * ratio)
-      canvas.height = Math.round(height * ratio)
-      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+      const width = Math.max(1, Math.round(rect.width))
+      const height = Math.max(1, Math.round(rect.height))
+
+      canvas.width = width
+      canvas.height = height
+      still.width = width
+      still.height = height
+
+      const imageRatio = source.naturalWidth / source.naturalHeight
+      const canvasRatio = width / height
+      let sourceX = 0
+      let sourceY = 0
+      let sourceWidth = source.naturalWidth
+      let sourceHeight = source.naturalHeight
+
+      if (imageRatio > canvasRatio) {
+        sourceWidth = source.naturalHeight * canvasRatio
+        sourceX = (source.naturalWidth - sourceWidth) / 2
+      } else {
+        sourceHeight = source.naturalWidth / canvasRatio
+        sourceY = (source.naturalHeight - sourceHeight) / 2
+      }
+
+      stillContext.clearRect(0, 0, width, height)
+      stillContext.drawImage(source, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height)
+      context.clearRect(0, 0, width, height)
+      context.drawImage(still, 0, 0)
+      waterReady = true
     }
 
-    function draw(now: number) {
-      const elapsed = reducedMotion ? 4 : Math.min((now - startedAt) / 1000, RESET_SECONDS)
-      const breath = reducedMotion ? .65 : breathAmount(elapsed)
-      const horizon = height * .475
-      const amber = .78 + (breath * .12)
+    function drawWater(now: number) {
+      if (!waterReady || (now - lastFrame < 33 && !reducedMotion)) return
+      lastFrame = now
 
-      const sky = context.createLinearGradient(0, 0, 0, horizon + 18)
-      sky.addColorStop(0, '#06151c')
-      sky.addColorStop(.45, '#0b2427')
-      sky.addColorStop(.76, '#173531')
-      sky.addColorStop(1, `rgba(120, 74, 43, ${amber})`)
-      context.fillStyle = sky
-      context.fillRect(0, 0, width, horizon + 18)
+      const width = canvas.width
+      const height = canvas.height
+      const horizon = height * .486
+      const contactY = height * .565
+      const seconds = (now - startedAt) / 1000
+      const age = (now - impactAt) / 1000
+      const rippleTime = Math.min(1, Math.max(0, age / RIPPLE_SECONDS))
+      const rippleActive = age >= 0 && age <= RIPPLE_SECONDS && !reducedMotion
+      const rippleAttack = Math.min(1, Math.max(0, age / .16))
+      const rippleTail = 1 - Math.min(1, Math.max(0, (rippleTime - .58) / .42))
+      const rippleFade = rippleActive ? rippleAttack * rippleTail : 0
+      const rippleRadius = (1 - Math.pow(1 - rippleTime, 1.36)) * width * .37
+      const ovalScale = .23 + (rippleTime * .025)
+      const contactFade = Math.max(0, 1 - (age / .55))
+      const centerX = width * .5
 
-      const dawn = context.createRadialGradient(width * .51, horizon - 2, 0, width * .51, horizon - 2, width * .48)
-      dawn.addColorStop(0, `rgba(244, 169, 80, ${.28 + (breath * .055)})`)
-      dawn.addColorStop(.26, 'rgba(190, 110, 58, .17)')
-      dawn.addColorStop(.62, 'rgba(38, 74, 65, .06)')
-      dawn.addColorStop(1, 'rgba(7, 22, 27, 0)')
-      context.fillStyle = dawn
-      context.fillRect(0, horizon - (width * .45), width, width * .9)
+      context.clearRect(0, 0, width, height)
+      context.drawImage(still, 0, 0)
+      if (reducedMotion) return
 
-      const water = context.createLinearGradient(0, horizon, 0, height)
-      water.addColorStop(0, '#163c37')
-      water.addColorStop(.24, '#0c3532')
-      water.addColorStop(.62, '#082723')
-      water.addColorStop(1, '#041b1a')
-      context.fillStyle = water
-      context.fillRect(0, horizon, width, height - horizon)
+      const tileWidth = Math.max(24, Math.round(width / 15))
+      const tileHeight = 5
 
-      context.fillStyle = '#183330'
-      traceMountains(context, width, horizon + 4, farRange)
-      context.fill()
+      for (let y = Math.floor(horizon); y < height; y += tileHeight) {
+        const depth = Math.max(0, (y - horizon) / (height - horizon))
+        const horizonGuard = Math.min(1, Math.max(0, (y - horizon) / 22))
+        const strength = Math.pow(depth, .72) * horizonGuard
 
-      context.fillStyle = '#0a2223'
-      traceMountains(context, width, horizon + 11, nearRange)
-      context.fill()
+        for (let x = 0; x < width; x += tileWidth) {
+          const sampleX = x + (tileWidth * .5)
+          const sampleY = y + (tileHeight * .5)
+          let shiftX = strength * (
+            (Math.sin((sampleY * .071) + (seconds * 1.05)) * 2.1)
+            + (Math.sin((sampleX * .031) - (sampleY * .018) - (seconds * .72)) * 1.35)
+          )
+          let shiftY = strength * (
+            (Math.sin((sampleX * .047) + (sampleY * .014) + (seconds * .66)) * 1.45)
+            + (Math.sin((sampleY * .113) - (seconds * .48)) * .75)
+          )
 
-      context.save()
-      context.translate(0, (horizon + 12) * 2)
-      context.scale(1, -1)
-      context.globalAlpha = .2
-      context.fillStyle = '#183330'
-      traceMountains(context, width, horizon + 4, farRange)
-      context.fill()
-      context.globalAlpha = .28
-      context.fillStyle = '#0a2223'
-      traceMountains(context, width, horizon + 11, nearRange)
-      context.fill()
-      context.restore()
+          if (rippleActive) {
+            const dx = sampleX - centerX
+            const screenDy = sampleY - contactY
+            const ovalDy = screenDy / ovalScale
+            const distance = Math.sqrt((dx * dx) + (ovalDy * ovalDy))
+            const fromRing = distance - rippleRadius
+            const packet = Math.exp(-(fromRing * fromRing) / (2 * 19 * 19))
+            const rings = Math.sin(fromRing * .43) * packet
+            const perspectiveWeight = screenDy >= 0 ? 1 : .72
+            const pulse = rings * rippleFade * perspectiveWeight * 8
+            const length = Math.max(1, distance)
 
-      const reflection = context.createLinearGradient(0, horizon, 0, height * .78)
-      reflection.addColorStop(0, `rgba(236, 158, 77, ${.12 + (breath * .03)})`)
-      reflection.addColorStop(.28, 'rgba(184, 118, 62, .08)')
-      reflection.addColorStop(1, 'rgba(22, 61, 53, 0)')
-      context.save()
-      context.globalCompositeOperation = 'screen'
-      context.fillStyle = reflection
-      context.beginPath()
-      context.moveTo(width * .45, horizon)
-      context.lineTo(width * .57, horizon)
-      context.lineTo(width * .63, height * .78)
-      context.lineTo(width * .38, height * .78)
-      context.closePath()
-      context.fill()
-      context.restore()
+            shiftX += (dx / length) * pulse
+            shiftY += (ovalDy / length) * pulse * .18
 
-      context.strokeStyle = `rgba(241, 182, 101, ${.22 + (breath * .035)})`
-      context.lineWidth = .75
-      context.beginPath()
-      context.moveTo(width * .12, horizon + 10)
-      context.lineTo(width * .88, horizon + 10)
-      context.stroke()
+            const dimple = Math.exp(-(distance * distance) / (2 * 12 * 12))
+            shiftY += dimple * contactFade * 3.2
+          }
 
-      const travel = elapsed * .18
-      for (let band = 0; band < 13; band += 1) {
-        const y = horizon + 26 + (band * ((height - horizon) / 15))
-        const alpha = Math.max(.018, .07 - (band * .0035))
-        context.beginPath()
-        for (let x = -10; x <= width + 10; x += 12) {
-          const wave = Math.sin((x / Math.max(width, 1)) * Math.PI * (2.2 + band * .11) + travel + band * .47) * (1.2 + band * .06)
-          if (x === -10) context.moveTo(x, y + wave)
-          else context.lineTo(x, y + wave)
+          const sourceX = Math.max(0, Math.min(width - tileWidth, x + shiftX))
+          const sourceY = Math.max(horizon, Math.min(height - tileHeight, y + shiftY))
+          const drawWidth = Math.min(tileWidth + 1, width - x, width - sourceX)
+          const drawHeight = Math.min(tileHeight + 1, height - y, height - sourceY)
+
+          context.drawImage(still, sourceX, sourceY, drawWidth, drawHeight, x, y, drawWidth, drawHeight)
         }
-        context.strokeStyle = `rgba(198, 220, 208, ${alpha})`
-        context.lineWidth = .7
-        context.stroke()
+      }
+    }
+
+    function tick(now: number) {
+      if (cancelled) return
+      const elapsed = (now - startedAt) / 1000
+      const cycleIndex = Math.floor(elapsed / 10)
+      const cyclePhase = elapsed % 10
+
+      if (elapsed < RESET_SECONDS && cyclePhase >= 9.78 && lastImpactCycle !== cycleIndex) {
+        lastImpactCycle = cycleIndex
+        impactAt = now
       }
 
-      const lowerShade = context.createLinearGradient(0, height * .7, 0, height)
-      lowerShade.addColorStop(0, 'rgba(3, 21, 19, 0)')
-      lowerShade.addColorStop(1, 'rgba(2, 16, 15, .52)')
-      context.fillStyle = lowerShade
-      context.fillRect(0, height * .7, width, height * .3)
+      drawWater(now)
+      if (elapsed < RESET_SECONDS + RIPPLE_SECONDS) animationFrame = window.requestAnimationFrame(tick)
     }
 
-    function animate(now: number) {
-      if (now - lastFrame >= 32) {
-        lastFrame = now
-        draw(now)
-      }
-      if ((now - startedAt) / 1000 < RESET_SECONDS) animationFrame = window.requestAnimationFrame(animate)
+    function begin() {
+      if (cancelled) return
+      paintStill()
+      resizeObserver = new ResizeObserver(() => {
+        paintStill()
+        drawWater(reducedMotion ? startedAt : performance.now())
+      })
+      resizeObserver.observe(canvas)
+      drawWater(startedAt)
+      if (!reducedMotion) animationFrame = window.requestAnimationFrame(tick)
     }
 
-    function handleResize() {
-      resize()
-      draw(reducedMotion ? startedAt : performance.now())
-    }
-
-    resize()
-    draw(startedAt)
-    if (!reducedMotion) animationFrame = window.requestAnimationFrame(animate)
-    window.addEventListener('resize', handleResize)
+    source.decoding = 'async'
+    source.src = WATER_IMAGE
+    if (source.complete && source.naturalWidth) begin()
+    else source.addEventListener('load', begin, { once: true })
 
     return () => {
+      cancelled = true
       window.cancelAnimationFrame(animationFrame)
-      window.removeEventListener('resize', handleResize)
+      resizeObserver?.disconnect()
+      source.removeEventListener('load', begin)
     }
   }, [reducedMotion, restartKey])
 
