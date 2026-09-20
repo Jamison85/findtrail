@@ -14,8 +14,8 @@ describe('CalmReset', () => {
     vi.spyOn(performance, 'now').mockImplementation(() => now)
 
     render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
-    expect(document.querySelector('.horizon-ripples')).not.toBeInTheDocument()
-    expect(document.querySelector('.calm-background')?.getAttribute('src')).toContain('data:image/jpeg;base64')
+    expect(document.querySelector('.horizon-ripples')).toBeInTheDocument()
+    expect(document.querySelector('.calm-background')).not.toBeInTheDocument()
     expect(document.querySelector('.calm-feather')?.getAttribute('src')).toContain('findtrail-natural-feather-v2.webp')
     expect(screen.getByText('Breathe in')).toBeInTheDocument()
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
