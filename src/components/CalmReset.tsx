@@ -46,8 +46,8 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   const guidance = complete
     ? 'Notice what feels quieter now.'
     : phase === 'Breathe in'
-      ? 'Let the feather rise'
-      : 'Let it drift back slowly'
+      ? 'Rise with the feather'
+      : 'Drift down with it'
 
   useEffect(() => {
     const startedAt = performance.now()
@@ -96,7 +96,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
             <strong className="calm-guidance__phase">{complete ? 'Reset complete' : phase}</strong>
             <span className="calm-guidance__count">
               <b>{complete ? '✓' : phaseSeconds}</b>
-              {!complete && <small>sec</small>}
+              {!complete && <small>seconds</small>}
             </span>
             <span className="calm-guidance__hint">{guidance}</span>
           </div>
