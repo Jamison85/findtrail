@@ -15,7 +15,7 @@ describe('CalmReset', () => {
 
     render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
     expect(document.querySelector('.horizon-ripples')).not.toBeInTheDocument()
-    expect(document.querySelector('.calm-background')?.getAttribute('src')).toContain('findtrail-reset-lake.webp')
+    expect((document.querySelector('.calm-view') as HTMLElement | null)?.style.backgroundImage).toContain('data:image/jpeg;base64')
     expect(document.querySelector('.calm-feather')?.getAttribute('src')).toContain('findtrail-natural-feather-v2.webp')
     expect(screen.getByText('Breathe in')).toBeInTheDocument()
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
