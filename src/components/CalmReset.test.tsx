@@ -18,7 +18,7 @@ describe('CalmReset', () => {
     expect(document.querySelector('.calm-feather')?.getAttribute('src')).toContain('findtrail-natural-feather-v2.webp')
     expect(document.querySelector('.calm-feather-anchor')).toBeInTheDocument()
     expect(document.querySelector('.feather-ripple')).not.toBeInTheDocument()
-    expect(screen.getByText('Let the feather rise')).toBeInTheDocument()
+    expect(screen.getByText('Rise with the feather')).toBeInTheDocument()
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
     expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
     expect(screen.getByText('4 in · 6 out rhythm')).toBeInTheDocument()
@@ -27,7 +27,7 @@ describe('CalmReset', () => {
     now = 4_100
     act(() => vi.advanceTimersByTime(100))
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe out')
-    expect(screen.getByText('Let it drift back slowly')).toBeInTheDocument()
+    expect(screen.getByText('Drift down with it')).toBeInTheDocument()
 
     now = 20_100
     act(() => vi.advanceTimersByTime(100))
