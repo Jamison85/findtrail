@@ -148,7 +148,7 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
       const cycleIndex = Math.floor(elapsed / 10)
       const cyclePhase = elapsed % 10
 
-      if (elapsed < RESET_SECONDS && cyclePhase >= 9.78 && lastImpactCycle !== cycleIndex) {
+      if (elapsed < RESET_SECONDS && cyclePhase >= 9.28 && lastImpactCycle !== cycleIndex) {
         lastImpactCycle = cycleIndex
         impactAt = now
       }
