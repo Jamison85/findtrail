@@ -291,24 +291,22 @@
     flex: 0 0 auto;
     width: calc(100% + (var(--page-pad) * 2));
     margin-left: calc(var(--page-pad) * -1);
-    padding: 14px var(--page-pad) max(14px, env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(222, 231, 214, .18);
-    border-radius: 28px 28px 0 0;
-    background:
-      radial-gradient(circle at 50% -20%, rgba(239, 180, 101, .085), transparent 42%),
-      linear-gradient(180deg, rgba(7, 32, 27, .93), rgba(4, 20, 16, .985));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055), 0 -16px 42px rgba(0, 0, 0, .22);
-    backdrop-filter: blur(18px) saturate(1.1);
+    padding: 16px var(--page-pad) max(14px, env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 0;
+    background: linear-gradient(180deg, rgba(6, 31, 25, .7), rgba(4, 20, 16, .95) 32%, rgba(3, 16, 13, .99));
+    box-shadow: 0 -18px 38px rgba(1, 10, 8, .13);
+    backdrop-filter: blur(13px) saturate(1.04);
   }
 
   .calm-instrument::before {
     position: absolute;
-    top: -1px;
+    top: 0;
     left: 50%;
-    width: 34px;
+    width: 100%;
     height: 1px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, transparent, rgba(239, 180, 101, .72), transparent);
+    border-radius: 0;
+    background: linear-gradient(90deg, transparent 12%, rgba(221, 229, 214, .13), transparent 88%);
     content: "";
     transform: translateX(-50%);
   }
@@ -318,37 +316,37 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    gap: 8px;
-    padding: 3px 0 11px;
+    gap: 9px;
+    padding: 2px 1px 12px;
   }
 
   .calm-rhythm-label {
     grid-column: 1;
     align-self: end;
-    color: #efb465;
-    font-size: .68rem;
-    font-weight: 850;
-    letter-spacing: .15em;
-    text-transform: uppercase;
+    color: rgba(248, 215, 169, .88);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: .82rem;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: .005em;
+    text-transform: none;
   }
 
   .calm-progress {
     grid-column: 1;
-    height: 7px;
+    height: 3px;
     overflow: hidden;
     border-radius: 999px;
-    background:
-      repeating-linear-gradient(90deg, rgba(171, 198, 183, .19) 0 22px, transparent 22px 25px),
-      rgba(3, 15, 12, .48);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, .22);
+    background: rgba(196, 211, 199, .14);
+    box-shadow: none;
   }
 
   .calm-progress span {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #6e9d83, #efb465);
-    box-shadow: 0 0 13px rgba(242, 189, 112, .28);
+    background: linear-gradient(90deg, rgba(126, 169, 145, .9), rgba(239, 190, 121, .88));
+    box-shadow: 0 1px 7px rgba(239, 190, 121, .16);
     transition: width .1s linear;
   }
 
@@ -358,9 +356,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    color: rgba(190, 204, 183, .78);
-    font-size: .66rem;
-    font-weight: 720;
+    color: rgba(206, 217, 203, .7);
+    font-size: .64rem;
+    font-weight: 560;
     white-space: nowrap;
   }
 
@@ -371,53 +369,52 @@
   }
 
   .calm-cycle-markers span {
-    width: 13px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     border-radius: 999px;
     background: rgba(184, 195, 173, .22);
     transition: width .25s ease, background .25s ease;
   }
 
-  .calm-cycle-markers span.is-complete { background: rgba(110, 157, 131, .68); }
-  .calm-cycle-markers span.is-current { width: 22px; background: #efb465; }
+  .calm-cycle-markers span.is-complete { background: rgba(126, 169, 145, .66); }
+  .calm-cycle-markers span.is-current { width: 14px; background: rgba(239, 190, 121, .86); }
 
   .calm-resume {
     display: flex;
     width: 100%;
-    min-height: 54px;
+    min-height: 52px;
     align-items: center;
     justify-content: space-between;
-    margin-top: 7px;
-    padding: 0 12px 0 18px;
-    border: 1px solid rgba(226, 232, 216, .17);
-    border-radius: 17px;
-    color: rgba(252, 246, 233, .95);
-    background:
-      linear-gradient(180deg, rgba(247, 241, 226, .105), rgba(247, 241, 226, .055)),
-      rgba(11, 42, 34, .58);
-    font-size: .91rem;
-    font-weight: 850;
-    box-shadow: 0 5px 14px rgba(0, 0, 0, .15), inset 0 1px 0 rgba(255, 255, 255, .045);
-    transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+    margin-top: 5px;
+    padding: 0 11px 0 17px;
+    border: 1px solid rgba(226, 232, 216, .11);
+    border-radius: 18px;
+    color: rgba(252, 246, 233, .9);
+    background: rgba(234, 232, 213, .065);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: .96rem;
+    font-weight: 500;
+    letter-spacing: -.006em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+    transition: transform .2s ease, background .2s ease, color .2s ease;
   }
 
   .calm-resume > i {
     display: grid;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     place-items: center;
-    border: 1px solid rgba(239, 180, 101, .25);
-    border-radius: 10px;
-    color: #efbd79;
-    background: rgba(239, 180, 101, .13);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
+    border: 0;
+    border-radius: 50%;
+    color: rgba(241, 196, 133, .82);
+    background: rgba(239, 180, 101, .075);
+    box-shadow: none;
   }
 
   .calm-resume:active {
-    background:
-      linear-gradient(180deg, rgba(247, 241, 226, .075), rgba(247, 241, 226, .04)),
-      rgba(9, 35, 29, .68);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .14), inset 0 1px 0 rgba(255, 255, 255, .035);
+    color: rgba(252, 246, 233, .78);
+    background: rgba(234, 232, 213, .045);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
     transform: translateY(1px);
   }
 
@@ -428,9 +425,9 @@
     justify-content: space-between;
     gap: 12px;
     padding: 5px 2px 0;
-    color: rgba(184, 195, 173, .68);
-    font-size: .61rem;
-    font-weight: 620;
+    color: rgba(203, 214, 200, .6);
+    font-size: .62rem;
+    font-weight: 520;
   }
 
   .calm-restart {
@@ -440,11 +437,11 @@
     align-items: center;
     gap: 5px;
     padding: 0 2px 0 7px;
-    border-left: 1px solid rgba(222, 231, 214, .13);
-    color: rgba(211, 222, 214, .72);
+    border-left: 0;
+    color: rgba(216, 224, 215, .66);
     background: transparent;
     font-size: .61rem;
-    font-weight: 760;
+    font-weight: 600;
   }
 
   .calm-restart:active { opacity: .68; }
