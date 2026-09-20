@@ -5,6 +5,7 @@ import { ErrorBoundary } from './ErrorBoundary'
 import './styles.css'
 import './home-trail-polish.css'
 import './calm-reset-polish.css'
+import './trail-view-polish.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
