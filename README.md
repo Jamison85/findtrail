@@ -2,7 +2,7 @@
 
 FindTrail is a calm, local-first progressive web app for finding misplaced items. It turns a frantic whole-house search into one useful place at a time, remembers where items were found, and gently promotes likely locations during future searches.
 
-Version 2.4 completes the search journey with an immersive 30-second awareness reset. A lightweight responsive horizon widens with each breath, reacts gently to touch, respects reduced-motion preferences, and offers optional device-generated wind or chime without autoplay. The focused clues, exact-spot trail, learned locations, item-specific recovery actions, local backup and restore, and update-ready notices remain intact.
+Version 2.5 brings the active search trail up to the same production standard as Home and Reset. Each stop now presents one unmistakable destination, tactile exact-spot progress, integrated read-aloud and hands-free help, a restrained transition to the next place, and a calmer action dock. The 30-second feather-and-water reset, learned locations, item-specific recovery actions, local backup and restore, and update-ready notices remain intact.
 
 ## Product principles
 

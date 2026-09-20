@@ -1,13 +1,13 @@
-# FindTrail 2.4.1 QA report
+# FindTrail 2.5 QA report
 
-Run date: 2026-09-15
+Run date: 2026-09-20
 
 ## Automated release checks
 
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 35 passed across 6 files |
+| Vitest unit and component tests | 38 passed across 7 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
@@ -15,13 +15,16 @@ Run date: 2026-09-15
 | Home motion regression | Pass: plays once per session and settles |
 | Item handoff regression | Pass: selected tile settles before the first clue appears |
 | Clue journey regression | Pass: answers settle before advancing and reduced motion skips the delay |
+| Active Trail hierarchy | Pass: destination, instruction, exact spots, progress, assistance, and actions are explicit |
+| Exact-spot progress | Pass: checked state, area completion, and next-place copy update without changing trail order |
+| Stop handoff | Pass: full-motion mode settles the current card before advancing; reduced motion advances immediately |
 | Found-place carry-forward | Pass: the last checked exact spot is ready to save automatically |
 | Recovery ending | Pass: the final stop leads to an item-specific next-moves panel |
-| Ambient reset regression | Pass: three timed phases, progress semantics, skip, and trail return remain functional |
-| Reset rendering | Pass: lightweight Canvas waves with a CSS/static reduced-motion fallback |
-| Reset audio | Pass: opt-in only; Off is the default and no sound asset or network request is required |
-| Focused-screen notices | Pass: update notices wait until Home, History, or Settings instead of shrinking a reset or active search |
-| Hosted GitHub Actions | Pass: PR #11 and live-QA fix PR #12 |
+| Ambient reset regression | Pass: three timed breaths, progress semantics, skip, and trail return remain functional |
+| Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
+| Reset audio | Pass: sound controls and audio generation are absent |
+| Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
+| Hosted GitHub Actions | Pending release PR |
 
 ## Browser and resilience checks
 
@@ -32,13 +35,15 @@ Run date: 2026-09-15
 - 200% text enlargement reflows without horizontal overflow or lost controls.
 - Keyboard entry reaches the skip link first, then exposes visible focus on controls.
 - Reduced-motion preference replaces the moving horizon with a still composition and suppresses the Home guide.
-- The reset uses three honest 10-second cycles: 4 seconds in, 2 seconds open, and 4 seconds out.
-- Wind and chime are generated locally only after a user selects them; sound defaults to Off and stops when the reset ends or closes.
-- The live 2.4.1 reset completes without application console errors, switches all three sound modes, reacts to touch, and returns to the exact active trail stop.
+- The reset uses three honest 10-second cycles: 4 seconds in and 6 seconds out.
+- The reset has no sound control or audio path.
+- The restored reset returns to the exact active trail stop and respects reduced motion.
 - The Home search guide uses brief, non-looping motion and does not replay after returning Home in the same session.
 - Item tiles use a tightened shadow and sage icon well while handing the selection into the first clue.
 - Clue choices use a compact two-column route at standard text size and return to a single column for large-text mode.
 - Active-stop headings receive focus as each new search area appears.
+- Active stops keep the next destination, exact-spot checklist, read-aloud help, hands-free mode, reset, success, and next-place actions within one coherent hierarchy.
+- Full-motion stop changes use one short directional handoff; reduced-motion mode removes it.
 - A checked exact spot carries into the found-place field instead of asking the user to remember it again.
 - Active search survives reload.
 - Saving a found place adds history and promotes that location on the next matching search.
@@ -51,6 +56,6 @@ Run date: 2026-09-15
 
 ## Still required before final production approval
 
-- Confirm the 2.4 reset screen on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
+- Confirm the 2.5 Trail screen on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
 - Install on Jamo's Galaxy S25 Ultra and complete one real search.
 - Confirm microphone permission and speech behavior on the actual device/browser.

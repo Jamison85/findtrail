@@ -19,19 +19,28 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
   const checked = search.checkedSpots[stop.id] ?? []
   const totalChecked = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
   const isLastStop = search.currentIndex === search.stops.length - 1
+  const areaChecked = checked.length === stop.spots.length
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState('')
   const [voiceError, setVoiceError] = useState('')
+  const [departing, setDeparting] = useState(false)
   const recognitionRef = useRef<ReturnType<typeof createRecognition>>(null)
+  const advanceTimerRef = useRef<number | null>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const voiceSupported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition)
   const spokenText = useMemo(() => `${stop.title}. ${stop.instruction}. Check ${stop.spots.join(', ')}.`, [stop])
+  const progress = ((search.currentIndex + 1) / search.stops.length) * 100
+  const reduceMotion = settings.motion === 'reduced'
+    || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 
   function readCurrent() {
     speak(spokenText)
   }
 
   useEffect(() => {
+    setDeparting(false)
+    setHeard('')
+    setVoiceError('')
     if (settings.speakSteps) readCurrent()
     headingRef.current?.focus({ preventScroll: true })
     return stopSpeaking
@@ -39,7 +48,25 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stop.id, settings.speakSteps])
 
-  useEffect(() => () => recognitionRef.current?.stop(), [])
+  useEffect(() => () => {
+    recognitionRef.current?.stop()
+    if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
+  }, [])
+
+  function advanceTrail() {
+    if (departing || advanceTimerRef.current !== null) return
+    recognitionRef.current?.stop()
+    setListening(false)
+    if (reduceMotion) {
+      onNext()
+      return
+    }
+    setDeparting(true)
+    advanceTimerRef.current = window.setTimeout(() => {
+      advanceTimerRef.current = null
+      onNext()
+    }, 190)
+  }
 
   function toggleListening() {
     if (listening) {
@@ -49,7 +76,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
     }
     setVoiceError('')
     const recognition = createRecognition((command) => {
-      if (command === 'next') onNext()
+      if (command === 'next') advanceTrail()
       if (command === 'found') onFound()
       if (command === 'repeat') readCurrent()
     }, (next) => {
@@ -71,62 +98,72 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
   }
 
   return (
-    <section className="view trail-view" aria-labelledby="view-heading">
-      <header className="topbar">
+    <section className={`view trail-view trail-view--${stop.kind ?? 'standard'}`} aria-labelledby="view-heading">
+      <header className="topbar trail-topbar">
         <button className="icon-button" onClick={onBack} aria-label="Return home"><Icon name="back" /></button>
-        <div className="topbar__trail">
-          <span>{search.itemLabel}</span>
+        <div className="trail-identity">
+          <span className="trail-identity__item"><Icon name={search.itemId} size={15} />{search.itemLabel}</span>
           <strong>Stop {search.currentIndex + 1} of {search.stops.length}</strong>
         </div>
         <button className="text-button" onClick={onEditClues}>Clues</button>
       </header>
 
       <div className="trail-route">
-        <div className="trail-progress" role="progressbar" aria-label="Search trail progress" aria-valuemin={1} aria-valuemax={search.stops.length} aria-valuenow={search.currentIndex + 1}>
-          <span style={{ width: `${((search.currentIndex + 1) / search.stops.length) * 100}%` }} />
+        <div className="trail-route__meta">
+          <span>One place at a time</span>
+          <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} ruled out` : 'Trail ready'}</strong>
         </div>
-        <span>{totalChecked ? `${totalChecked} exact ${totalChecked === 1 ? 'spot' : 'spots'} checked` : 'One focused area at a time'}</span>
+        <div className="trail-progress" role="progressbar" aria-label="Search trail progress" aria-valuemin={1} aria-valuemax={search.stops.length} aria-valuenow={search.currentIndex + 1} aria-valuetext={`Stop ${search.currentIndex + 1} of ${search.stops.length}`}>
+          <span style={{ width: `${progress}%` }} />
+        </div>
       </div>
 
-      <article key={stop.id} className={`stop-card stop-card--${stop.kind ?? 'standard'}`}>
+      <article key={stop.id} className={`stop-card stop-card--${stop.kind ?? 'standard'}${departing ? ' is-departing' : ''}`}>
         <div className="stop-card__heading">
-          <span className="stop-number"><small>Stop</small><strong>{search.currentIndex + 1}</strong></span>
-          <div><p className="kicker">Search this area only</p><h1 ref={headingRef} id="view-heading" tabIndex={-1}>{stop.title}</h1></div>
+          <div className="stop-card__copy">
+            <h1 ref={headingRef} id="view-heading" tabIndex={-1}>{stop.title}</h1>
+            <p className="stop-card__instruction">{stop.instruction}</p>
+          </div>
+          <span className="stop-marker" aria-hidden="true"><Icon name="trail" size={17} /><strong>{search.currentIndex + 1}</strong></span>
         </div>
-        {stop.reason && <p className="reason"><Icon name={stop.kind === 'home' ? 'pin' : ['history', 'learned'].includes(stop.kind ?? '') ? 'history' : stop.kind === 'safety' ? 'spark' : 'trail'} size={17} />{stop.reason}</p>}
-        <p className="stop-card__instruction">{stop.instruction}</p>
+        {stop.reason && <div className="reason"><span className="reason__icon"><Icon name={stop.kind === 'home' ? 'pin' : ['history', 'learned'].includes(stop.kind ?? '') ? 'history' : stop.kind === 'safety' ? 'spark' : 'trail'} size={17} /></span><span><strong>Why here</strong>{stop.reason}</span></div>}
 
-        <div className="spot-list__heading"><strong>Check these exact spots</strong><span aria-live="polite">{checked.length} of {stop.spots.length}</span></div>
+        <div className="spot-list__heading"><strong>Check one spot at a time</strong><span>{checked.length} of {stop.spots.length}</span></div>
         <div className="spot-list" role="group" aria-label={`Places to check at ${stop.title}`}>
-          {stop.spots.map((spot) => {
+          {stop.spots.map((spot, index) => {
             const isChecked = checked.includes(spot)
             return (
               <button key={spot} className={isChecked ? 'spot-row is-checked' : 'spot-row'} onClick={() => onToggleSpot(spot)} aria-pressed={isChecked}>
                 <span className="spot-row__check"><Icon name="check" size={17} /></span>
-                <span>{spot}</span>
+                <span className="spot-row__label">{spot}</span>
+                <small aria-hidden="true">{isChecked ? 'Checked' : `${index + 1}`}</small>
               </button>
             )
           })}
         </div>
+        <p className="sr-only" aria-live="polite">{checked.length} of {stop.spots.length} spots checked in this area.</p>
+        {areaChecked && <p className="area-complete"><Icon name="check" size={16} />This area is fully checked. Move on when you’re ready.</p>}
 
         <aside className="side-quest-note">
-          <strong>Side-quest shield</strong>
-          <span>Do not organize, clean, or “quickly check” another room yet. Sneaky bastard.</span>
+          <span className="side-quest-note__icon"><Icon name="calm" size={18} /></span>
+          <span><strong>Side-quest shield</strong>Stay in this area. No organizing or “quick checks” elsewhere yet. Sneaky bastard.</span>
         </aside>
       </article>
 
-      <div className="voice-tools">
-        <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={19} /> Read this step</button>
-        <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined}>
-          <Icon name="voice" size={19} /> {listening ? 'Listening…' : 'Hands-free'}
+      <div className="trail-utilities" aria-label="Search assistance">
+        <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>
+        <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined} aria-label={voiceSupported ? (listening ? 'Stop hands-free listening' : 'Start hands-free listening') : 'Hands-free voice commands are unavailable in this browser'}>
+          <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Hands-free'}
         </button>
       </div>
       {(heard || voiceError) && <p className={voiceError ? 'voice-status is-error' : 'voice-status'} aria-live="polite">{voiceError || `Heard: “${heard}”`}</p>}
 
-      <div className="sticky-actions">
-        <button className="button button--found" onClick={onFound}><Icon name="spark" size={20} /> Found it</button>
-        <button className="button button--primary" onClick={onNext}>{isLastStop ? 'Still missing · next steps' : 'Nothing here · next stop'}</button>
-        <button className="button button--quiet" onClick={onCalm}>I need a reset</button>
+      <div className="sticky-actions trail-action-dock">
+        <div className="trail-action-dock__main">
+          <button className="button button--found" onClick={onFound} disabled={departing}><Icon name="spark" size={20} /> Found it</button>
+          <button className="button button--primary" onClick={advanceTrail} disabled={departing}>{isLastStop ? 'Still missing · next steps' : areaChecked ? 'Area checked · next place' : 'Nothing here · next place'}</button>
+        </div>
+        <button className="trail-reset-button" onClick={onCalm} disabled={departing}><Icon name="calm" size={16} />I need a reset</button>
       </div>
     </section>
   )

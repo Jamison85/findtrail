@@ -36,7 +36,8 @@ describe('FindTrail app', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'What happened around that time?' })).toHaveFocus(), transitionWait)
     fireEvent.click(screen.getByRole('button', { name: /Came in or left/i }))
     expect(await screen.findByRole('heading', { name: 'The landing zone' }, transitionWait)).toBeInTheDocument()
-    expect(screen.getByText('Search this area only')).toBeInTheDocument()
+    expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuetext', 'Stop 1 of 9')
   })
 
   it('accepts a custom item name', () => {
@@ -146,6 +147,32 @@ describe('FindTrail app', () => {
     expect(screen.getByText('Ready to save')).toBeInTheDocument()
   })
 
+  it('turns the current area into visible, calm progress', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3,
+      activeSearch: null,
+      settings: { ...DEFAULT_SETTINGS, motion: 'reduced' },
+      history: [],
+      savedItems: [],
+    }))
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /keys/i }))
+    fireEvent.click(screen.getByText('Car keys'))
+    fireEvent.click(screen.getByText('At home'))
+    fireEvent.click(screen.getByText('Came in or left'))
+
+    for (const spot of ['Entry table or hook', 'Beside the door', 'Near shoes', 'First counter inside']) {
+      const button = screen.getByRole('button', { name: new RegExp(spot, 'i') })
+      fireEvent.click(button)
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+    }
+
+    expect(screen.getByText('This area is fully checked. Move on when you’re ready.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Area checked · next place' }))
+    expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuenow', '2')
+  })
+
   it('skips clue handoff delays when reduced motion is enabled', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
@@ -163,7 +190,7 @@ describe('FindTrail app', () => {
   it('turns the final stop into a clear recovery plan', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
-      settings: DEFAULT_SETTINGS,
+      settings: { ...DEFAULT_SETTINGS, motion: 'reduced' },
       history: [],
       savedItems: [],
       activeSearch: {
