@@ -91,8 +91,15 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
           <p>Attention gets noisy when the search gets frantic. Let the horizon widen your awareness.</p>
         </div>
 
-        <div className="calm-breath-stage" aria-live="polite">
-          <p className="calm-guidance">{guidance}</p>
+        <div className="calm-breath-stage">
+          <div className={complete ? 'calm-guidance is-complete' : 'calm-guidance'} aria-hidden="true">
+            <strong className="calm-guidance__phase">{complete ? 'Reset complete' : phase}</strong>
+            <span className="calm-guidance__count">
+              <b>{complete ? '✓' : phaseSeconds}</b>
+              {!complete && <small>sec</small>}
+            </span>
+            <span className="calm-guidance__hint">{guidance}</span>
+          </div>
         </div>
       </div>
 
@@ -108,13 +115,8 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <div className="calm-breath-card">
           <span className="sr-only" aria-live="polite">{phase}</span>
           <strong className="calm-rhythm-label">
-            {complete ? 'Ready when you are' : `${phase === 'Breathe in' ? 'Inhale' : 'Exhale'} · ${phase === 'Breathe in' ? '4' : '6'} seconds`}
+            {complete ? 'Ready when you are' : '4 in · 6 out rhythm'}
           </strong>
-
-          <div className="calm-phase-count" aria-label={complete ? 'Reset complete' : `${phaseSeconds} seconds in this phase`}>
-            <b>{complete ? '✓' : phaseSeconds}</b>
-            {!complete && <small>sec</small>}
-          </div>
 
           <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
             <span style={{ width: `${Math.min(100, (elapsed / TOTAL_SECONDS) * 100)}%` }} />
