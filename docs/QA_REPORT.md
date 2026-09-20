@@ -24,7 +24,7 @@ Run date: 2026-09-20
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
 | Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
-| Hosted GitHub Actions | Pending release PR |
+| Hosted GitHub Actions | Pass: PR #19 production checks, run #144 |
 
 ## Browser and resilience checks
 
