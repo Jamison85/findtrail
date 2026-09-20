@@ -9,7 +9,10 @@
     overflow: hidden;
     padding: max(16px, env(safe-area-inset-top)) var(--page-pad) 0;
     color: #f8f2e8;
-    background: #061820;
+    background-color: #061820;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    background-size: cover;
     isolation: isolate;
   }
 
