@@ -1,4 +1,4 @@
-const VERSION = 'findtrail-v2.4.12-separated-breath-cue-2026-09-20'
+const VERSION = 'findtrail-v2.4.13-auto-refresh-2026-09-20'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
@@ -22,7 +22,7 @@ async function precacheAppShell() {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(precacheAppShell())
+  event.waitUntil(precacheAppShell().then(() => self.skipWaiting()))
 })
 
 self.addEventListener('message', (event) => {
@@ -31,9 +31,11 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map((key) => caches.delete(key)))),
+    Promise.all([
+      caches.keys().then((keys) => Promise.all(keys.filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map((key) => caches.delete(key)))),
+      self.clients.claim(),
+    ]),
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', (event) => {
