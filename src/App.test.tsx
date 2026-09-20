@@ -95,7 +95,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('Came in or left'))
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Attention gets noisy when the search gets frantic. Let the light widen your awareness.')).toBeInTheDocument()
+    expect(screen.getByText('Attention gets noisy when the search gets frantic. Let the horizon widen your awareness.')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
     expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
