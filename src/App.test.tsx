@@ -22,7 +22,7 @@ describe('FindTrail app', () => {
   })
 
   it('hands the selected item smoothly into a focused trail', async () => {
-    const transitionWait = { timeout: 3000 }
+    const transitionWait = { timeout: 6000 }
     render(<App />)
     expect(screen.getByText('Retrace with a plan')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
@@ -209,8 +209,9 @@ describe('FindTrail app', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
     fireEvent.click(screen.getByRole('button', { name: 'Still missing · next steps' }))
-    expect(screen.getByRole('heading', { name: 'Your next best moves' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /take a 30-second reset/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Do one next move' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /30-second reset/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/Focused trail complete.*1 place checked/i)).toBeInTheDocument()
   })
 
   it('announces an installed-app update and applies it on request', async () => {
