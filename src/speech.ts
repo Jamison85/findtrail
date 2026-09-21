@@ -29,18 +29,100 @@ declare global {
   }
 }
 
-export function speak(text: string): boolean {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 0.92
-  utterance.pitch = 1
-  window.speechSynthesis.speak(utterance)
+let speechContext: AudioContext | null = null
+let activeSpeechSource: AudioBufferSourceNode | null = null
+let activeSpeechRequest: AbortController | null = null
+let speechGeneration = 0
+
+function getSpeechContext(): AudioContext | null {
+  if (speechContext) return speechContext
+  if (typeof window === 'undefined' || !('AudioContext' in window)) return null
+  speechContext = new AudioContext()
+  return speechContext
+}
+
+function unlockSpeechAudio(): void {
+  const context = getSpeechContext()
+  if (context?.state === 'suspended') void context.resume().catch(() => undefined)
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', unlockSpeechAudio, { capture: true, passive: true })
+  window.addEventListener('keydown', unlockSpeechAudio, { capture: true })
+}
+
+export function speak(text: string, onError?: () => void): boolean {
+  const spokenText = text.trim()
+  if (
+    !spokenText
+    || typeof window === 'undefined'
+    || typeof window.fetch !== 'function'
+    || typeof navigator === 'undefined'
+    || !navigator.onLine
+  ) return false
+
+  const context = getSpeechContext()
+  if (!context) return false
+
+  stopSpeaking()
+  const generation = speechGeneration
+  const controller = new AbortController()
+  activeSpeechRequest = controller
+
+  void (async () => {
+    try {
+      if (context.state === 'suspended') await context.resume()
+
+      const response = await window.fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: spokenText }),
+        signal: controller.signal,
+      })
+      if (!response.ok) throw new Error('Voice request failed')
+
+      const encodedAudio = await response.arrayBuffer()
+      if (controller.signal.aborted || generation !== speechGeneration) return
+
+      const audioBuffer = await context.decodeAudioData(encodedAudio.slice(0))
+      if (controller.signal.aborted || generation !== speechGeneration) return
+
+      const source = context.createBufferSource()
+      source.buffer = audioBuffer
+      source.connect(context.destination)
+      source.onended = () => {
+        if (activeSpeechSource !== source) return
+        source.disconnect()
+        activeSpeechSource = null
+      }
+      activeSpeechSource = source
+      activeSpeechRequest = null
+      source.start()
+    } catch (error) {
+      if (activeSpeechRequest === controller) activeSpeechRequest = null
+      if (controller.signal.aborted || generation !== speechGeneration) return
+      onError?.()
+    }
+  })()
+
   return true
 }
 
 export function stopSpeaking(): void {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+  speechGeneration += 1
+  activeSpeechRequest?.abort()
+  activeSpeechRequest = null
+
+  if (activeSpeechSource) {
+    activeSpeechSource.onended = null
+    try {
+      activeSpeechSource.stop()
+    } catch {
+      // The source may already have ended.
+    }
+    activeSpeechSource.disconnect()
+    activeSpeechSource = null
+  }
 }
 
 export function parseCommand(transcript: string): Command {
