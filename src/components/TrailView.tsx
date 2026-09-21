@@ -23,6 +23,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState('')
   const [voiceError, setVoiceError] = useState('')
+  const [voiceStatus, setVoiceStatus] = useState('')
   const [departing, setDeparting] = useState(false)
   const recognitionRef = useRef<ReturnType<typeof createRecognition>>(null)
   const advanceTimerRef = useRef<number | null>(null)
@@ -34,13 +35,32 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
     || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 
   function readCurrent() {
-    speak(spokenText)
+    setVoiceError('')
+    setVoiceStatus('')
+    const started = speak(spokenText, (status) => {
+      if (status.state === 'preparing') {
+        setVoiceStatus(status.progress ? `Preparing local voice · ${status.progress}%` : 'Preparing local voice…')
+        return
+      }
+      if (status.state === 'speaking') {
+        setVoiceStatus('Reading aloud…')
+        return
+      }
+      if (status.state === 'idle') {
+        setVoiceStatus('')
+        return
+      }
+      setVoiceStatus('')
+      setVoiceError(status.message)
+    })
+    if (!started) setVoiceError('Local Read aloud is not supported in this browser.')
   }
 
   useEffect(() => {
     setDeparting(false)
     setHeard('')
     setVoiceError('')
+    setVoiceStatus('')
     if (settings.speakSteps) readCurrent()
     headingRef.current?.focus({ preventScroll: true })
     return stopSpeaking
@@ -156,7 +176,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
           <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Hands-free'}
         </button>
       </div>
-      {(heard || voiceError) && <p className={voiceError ? 'voice-status is-error' : 'voice-status'} aria-live="polite">{voiceError || `Heard: “${heard}”`}</p>}
+      {(heard || voiceError || voiceStatus) && <p className={voiceError ? 'voice-status is-error' : 'voice-status'} aria-live="polite">{voiceError || voiceStatus || `Heard: “${heard}”`}</p>}
 
       <div className="sticky-actions trail-action-dock">
         <div className="trail-action-dock__main">
