@@ -122,6 +122,6 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
 }
 
 export function getFoundSuggestions(itemId: ItemId, stop: SearchStop | undefined): string[] {
-  const fromStop = stop ? [stop.title, ...stop.spots] : []
+  const fromStop = stop?.spots ?? []
   return [...new Set([...fromStop, ...ITEM_BY_ID[itemId].foundSuggestions])].slice(0, 10)
 }

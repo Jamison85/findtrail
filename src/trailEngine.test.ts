@@ -52,6 +52,8 @@ describe('buildTrail', () => {
     const trail = buildTrail('keys', 'Keys', {}, [])
     const suggestions = getFoundSuggestions('keys', trail[0])
     expect(new Set(suggestions).size).toBe(suggestions.length)
+    expect(suggestions).not.toContain(trail[0].title)
+    expect(suggestions[0]).toBe(trail[0].spots[0])
     expect(suggestions.length).toBeLessThanOrEqual(10)
   })
 })

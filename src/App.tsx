@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { CalmReset } from './components/CalmReset'
+import { CompleteView, FoundView } from './components/FoundView'
+import type { FoundSummary } from './components/FoundView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
-import { Scenery } from './components/Scenery'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { ITEMS, ITEM_BY_ID } from './data'
-import { buildTrail, getFoundSuggestions, mostLikelyLocation } from './trailEngine'
+import { buildTrail, mostLikelyLocation } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
 import type { ActiveSearch, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
@@ -15,8 +16,6 @@ interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
-
-interface FoundSummary { itemLabel: string; location: string; seconds: number }
 
 function stamp(search: ActiveSearch): ActiveSearch {
   return { ...search, lastUpdatedAt: new Date().toISOString() }
@@ -212,7 +211,14 @@ export default function App() {
       foundStopId: active.stops[active.currentIndex]?.id,
       foundSpot: foundLocation.trim(),
     }
-    setFoundSummary({ itemLabel: active.itemLabel, location: entry.foundLocation, seconds: durationSeconds })
+    setFoundSummary({
+      itemId: active.itemId,
+      itemLabel: active.itemLabel,
+      location: entry.foundLocation,
+      seconds: durationSeconds,
+      stopsChecked: entry.stopsChecked,
+      savedAsHome: saveAsHome,
+    })
     setData((current) => {
       let savedItems = current.savedItems
       if (saveAsHome) {
@@ -319,7 +325,7 @@ export default function App() {
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
-        {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
+        {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onClear={clearHistory} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
         {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
@@ -515,50 +521,6 @@ function ClueView({ search, settings, question, index, total, onAnswer, onBack }
   )
 }
 
-function FoundView({ search, value, saveAsHome, pinCustomItem, onChange, onSaveAsHome, onPinCustomItem, onSave, onBack }: { search: ActiveSearch; value: string; saveAsHome: boolean; pinCustomItem: boolean; onChange: (value: string) => void; onSaveAsHome: (value: boolean) => void; onPinCustomItem: (value: boolean) => void; onSave: () => void; onBack: () => void }) {
-  const stop = search.stops[search.currentIndex]
-  const options = getFoundSuggestions(search.itemId, stop).slice(0, 6)
-  return (
-    <section className="view found-view" aria-labelledby="view-heading">
-      <header className="topbar found-topbar">
-        <button className="icon-button" onClick={onBack} aria-label="Back to search"><Icon name="back" /></button>
-        <div className="topbar__trail"><span>{search.itemLabel}</span><strong>Found it</strong></div>
-        <span />
-      </header>
-      <div className="found-hero">
-        <div className="success-mark"><Icon name="spark" size={31} /></div>
-        <div><span className="eyebrow">Trail successful</span><h1 id="view-heading" tabIndex={-1}>There it is.</h1><p>Tell FindTrail where it turned up so the next search starts smarter.</p></div>
-      </div>
-      <section className="found-panel" aria-labelledby="found-location-heading">
-        <div className="found-panel__heading"><div><span>One last useful detail</span><h2 id="found-location-heading">Where was it?</h2></div>{value && <span className="found-ready"><Icon name="check" size={15} />Ready to save</span>}</div>
-        <div className="location-chips" role="group" aria-label="Where the item was found">
-          {options.map((option) => <button key={option} className={value === option ? 'chip is-selected' : 'chip'} onClick={() => onChange(option)}>{option}</button>)}
-        </div>
-        <label className="field"><span>Or type the exact place</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Example: black hoodie pocket" maxLength={80} /></label>
-        <div className="remember-options">
-          <SettingToggle label={`Save this as the home spot for ${search.itemLabel}`} detail="FindTrail will check here first next time." checked={saveAsHome} onChange={onSaveAsHome} />
-          {search.itemId === 'other' && saveAsHome && <SettingToggle label={`Pin ${search.itemLabel} on Home`} detail="Start this search again with one tap." checked={pinCustomItem} onChange={onPinCustomItem} />}
-        </div>
-        <button className="button button--primary button--wide" onClick={onSave} disabled={!value.trim()}><Icon name="check" size={19} />Save this found place</button>
-      </section>
-    </section>
-  )
-}
-
-function CompleteView({ summary, onHome, onAnother }: { summary: FoundSummary; onHome: () => void; onAnother: () => void }) {
-  return (
-    <section className="view complete-view" aria-labelledby="view-heading">
-      <Scenery compact />
-      <span className="eyebrow">Trail complete</span>
-      <h1 id="view-heading" tabIndex={-1}>Found and remembered.</h1>
-      <p><strong>{summary.itemLabel}</strong> was hiding at <strong>{summary.location}</strong>.</p>
-      <div className="complete-stat"><span>Search time</span><strong>{formatDuration(summary.seconds)}</strong><small>Useful data, not a speed contest</small></div>
-      <button className="button button--primary button--wide" onClick={onHome}>Back home</button>
-      <button className="button button--quiet button--wide" onClick={onAnother}>Find something else</button>
-    </section>
-  )
-}
-
 function HistoryView({ history, initialEntryId, onStart, onClear }: { history: FoundEntry[]; initialEntryId: string | null; onStart: (itemId: ItemId, label?: string) => void; onClear: () => void }) {
   const [expandedId, setExpandedId] = useState<string | null>(initialEntryId)
   const pattern = useMemo(() => {
@@ -630,7 +592,7 @@ function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedI
         {backupStatus && <p className="backup-status" role="status">{backupStatus}</p>}
         <button className="button button--danger-outline" onClick={onClear} disabled={!data.history.length}>Clear found history</button>
       </div>
-      <footer className="version-note">FindTrail 2.6 · A clear path to finding what’s missing.</footer>
+      <footer className="version-note">FindTrail 2.7 · A clear path to finding what’s missing.</footer>
     </section>
   )
 }

@@ -66,8 +66,8 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('At home'))
     fireEvent.click(await screen.findByText('Came in or left'))
     fireEvent.click(await screen.findByRole('button', { name: 'Found it' }))
-    fireEvent.change(screen.getByLabelText('Or type the exact place'), { target: { value: 'Entry tray' } })
-    fireEvent.click(screen.getByRole('checkbox', { name: /save this as the home spot for work badge/i }))
+    fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Entry tray' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for work badge/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
     fireEvent.click(screen.getByRole('button', { name: 'Back home' }))
 
@@ -143,8 +143,8 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('Came in or left'))
     fireEvent.click(await screen.findByRole('button', { name: 'Entry table or hook' }))
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
-    expect(screen.getByLabelText('Or type the exact place')).toHaveValue('Entry table or hook')
-    expect(screen.getByText('Ready to save')).toBeInTheDocument()
+    expect(screen.getByLabelText('Exact place')).toHaveValue('Entry table or hook')
+    expect(screen.getByText('Ready')).toBeInTheDocument()
   })
 
   it('turns the current area into visible, calm progress', async () => {
