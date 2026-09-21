@@ -47,7 +47,7 @@ declare global {
   }
 }
 
-const PIPER_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm'
+const PIPER_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm'
 const PIPER_VOICE = 'en_US-hfc_female-medium'
 
 let piperModule: Promise<PiperModule> | null = null
@@ -125,11 +125,12 @@ export function speak(text: string, onStatus?: (status: SpeechStatus) => void): 
       activeSpeechSource = source
       onStatus?.({ state: 'speaking' })
       source.start()
-    } catch {
+    } catch (error) {
       if (generation !== speechGeneration) return
+      console.warn('FindTrail local voice failed', error)
       onStatus?.({
         state: 'error',
-        message: 'The local voice could not load. Check your connection and try Read aloud again.',
+        message: 'The local voice engine could not start on this browser. Try Read aloud again after the app updates.',
       })
     }
   })()
