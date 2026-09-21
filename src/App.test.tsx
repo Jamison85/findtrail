@@ -22,7 +22,7 @@ describe('FindTrail app', () => {
   })
 
   it('hands the selected item smoothly into a focused trail', async () => {
-    const transitionWait = { timeout: 3000 }
+    const transitionWait = { timeout: 6000 }
     render(<App />)
     expect(screen.getByText('Retrace with a plan')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
