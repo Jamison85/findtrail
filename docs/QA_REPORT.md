@@ -1,4 +1,4 @@
-# FindTrail 2.6 QA report
+# FindTrail 2.7 QA report
 
 Run date: 2026-09-21
 
@@ -7,7 +7,7 @@ Run date: 2026-09-21
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 41 passed across 8 files |
+| Vitest unit and component tests | 44 passed across 9 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
@@ -19,6 +19,9 @@ Run date: 2026-09-21
 | Exact-spot progress | Pass: checked state, area completion, and next-place copy update without changing trail order |
 | Stop handoff | Pass: full-motion mode settles the current card before advancing; reduced motion advances immediately |
 | Found-place carry-forward | Pass: the last checked exact spot is ready to save automatically |
+| Found capture | Pass: one exact place is the only required input; suggestions and manual entry share one controlled value |
+| Found learning | Pass: successful search area, found history, saved home priority, and custom-item pinning retain their existing behavior |
+| Success confirmation | Pass: the saved location, places checked, elapsed time, and home/history result are stated explicitly |
 | Recovery ending | Pass: the final stop becomes a calm, ordered, item-specific next-moves plan |
 | Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
 | Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |
@@ -26,7 +29,7 @@ Run date: 2026-09-21
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
 | Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
-| Hosted GitHub Actions | Pass: PR #21 production checks, run #150 |
+| Hosted GitHub Actions | Pass: PR #22 production checks, run #153 |
 
 ## Browser and resilience checks
 
@@ -49,6 +52,9 @@ Run date: 2026-09-21
 - The Still Missing screen reports completed search work, presents one priority step before the remaining plan, and keeps urgent guidance visually distinct.
 - Recovery controls retain comfortable touch targets and reflow into a single column for large-text mode.
 - A checked exact spot carries into the found-place field instead of asking the user to remember it again.
+- The Found screen offers exact spots rather than storing a broad search-area heading as the final location.
+- The success path explains the difference between automatic trail learning and an optional saved home spot.
+- Found and confirmation controls reflow for larger text without hiding the exact-location input or save action.
 - Active search survives reload.
 - Saving a found place adds history and promotes that location on the next matching search.
 - Saved home spots outrank learned guesses while urgent safety guidance remains first.
@@ -60,6 +66,6 @@ Run date: 2026-09-21
 
 ## Still required before final production approval
 
-- Confirm the 2.6 Still Missing screen on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
+- Confirm the 2.7 Found and confirmation screens on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
 - Install on Jamo's Galaxy S25 Ultra and complete one real search.
 - Confirm microphone permission and speech behavior on the actual device/browser.

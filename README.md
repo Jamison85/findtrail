@@ -2,7 +2,7 @@
 
 FindTrail is a calm, local-first progressive web app for finding misplaced items. It turns a frantic whole-house search into one useful place at a time, remembers where items were found, and gently promotes likely locations during future searches.
 
-Version 2.6 completes the unsuccessful-search path with a focused Still Missing recovery plan. A finished trail now becomes one calm, ordered set of item-specific next moves, keeps urgent medicine and financial protection visibly first, records the search as safely saved, and separates resetting, repeating, leaving, and recording a late find into clear choices. The production Home, Trail, 30-second feather-and-water reset, learned locations, local backup and restore, and update-ready notices remain intact.
+Version 2.7 completes the successful-search path. The Found screen now carries forward the last exact spot, gives the search a clear visual payoff, records only one required detail, explains what FindTrail learns automatically, and makes saving a home spot an understandable choice. The confirmation screen shows the location, search work, and the exact memory created for next time. The production Home, Trail, Still Missing recovery, 30-second feather-and-water reset, local backup and restore, and update-ready notices remain intact.
 
 ## Product principles
 
