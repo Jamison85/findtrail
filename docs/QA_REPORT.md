@@ -1,4 +1,4 @@
-# FindTrail 2.7 QA report
+# FindTrail 2.8 QA report
 
 Run date: 2026-09-21
 
@@ -7,7 +7,7 @@ Run date: 2026-09-21
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 44 passed across 9 files |
+| Vitest unit and component tests | 49 passed across 10 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
@@ -22,6 +22,12 @@ Run date: 2026-09-21
 | Found capture | Pass: one exact place is the only required input; suggestions and manual entry share one controlled value |
 | Found learning | Pass: successful search area, found history, saved home priority, and custom-item pinning retain their existing behavior |
 | Success confirmation | Pass: the saved location, places checked, elapsed time, and home/history result are stated explicitly |
+| History learning | Pass: found records become per-item likely-place summaries with accurate repeat counts |
+| History repeat search | Pass: learned-place and expanded-record actions restart the matching item trail |
+| History disclosure | Pass: recent entries expose exact place, places checked, search time, and date without crowding the list |
+| Settings organization | Pass: search, appearance, saved homes, private data, backup, and destructive controls remain distinct |
+| Saved-home editing | Pass: exact-place edits, custom-item pinning, and confirmed removal retain their existing behavior |
+| Settings safety | Pass: clearing history remains confirmed and disabled when empty; failed restores use explicit error semantics |
 | Recovery ending | Pass: the final stop becomes a calm, ordered, item-specific next-moves plan |
 | Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
 | Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |
@@ -29,13 +35,17 @@ Run date: 2026-09-21
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
 | Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
-| Hosted GitHub Actions | Pass: PR #22 production checks, run #153 |
+| Hosted GitHub Actions | Pass: PR #26, Production checks run 163 |
 
 ## Browser and resilience checks
 
 - The Home layout uses a fixed no-scroll composition at standard text sizes and deliberately restores scrolling for large-text accessibility mode.
 - Custom-item entry opens in a focused modal sheet instead of increasing the Home page height.
 - The latest-found card opens the exact expandable history entry; first use has a purposeful empty state.
+- History separates learned places from chronological search records and limits the shortcut area to three useful item patterns.
+- History rows have unambiguous accessible names even when an item was found in the same place more than once.
+- Settings begins with a local-only privacy summary and keeps destructive history clearing inside the data section.
+- Settings controls and saved-home editing retain comfortable touch targets and reflow at narrow widths and large text.
 - Clue, trail, found, settings, ambient reset, pinned-item home, saved-home trail, and item-specific ending retain responsive max-width and overflow safeguards.
 - 200% text enlargement reflows without horizontal overflow or lost controls.
 - Keyboard entry reaches the skip link first, then exposes visible focus on controls.
@@ -66,6 +76,6 @@ Run date: 2026-09-21
 
 ## Still required before final production approval
 
-- Confirm the 2.7 Found and confirmation screens on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
+- Confirm the 2.8 History and Settings screens on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
 - Install on Jamo's Galaxy S25 Ultra and complete one real search.
 - Confirm microphone permission and speech behavior on the actual device/browser.

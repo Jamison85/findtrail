@@ -24,9 +24,11 @@
 - [x] Backup round-trips and malformed backups are rejected
 - [x] Installed-app update notice preserves user control
 - [x] History can be cleared only after confirmation
+- [x] History summarizes learned locations and restarts the matching search
+- [x] Settings separates guidance, appearance, saved homes, backup, and destructive controls
 - [x] Calm reset resumes the correct screen
 - [x] Ambient horizon reset completes three truthful 10-second cycles
-- [x] Reset sound is opt-in, defaults Off, and stops on exit
+- [x] Reset has no sound control or audio path
 - [x] Touch ripples are decorative and reduced motion receives a still horizon
 - [x] Update notices wait until a root screen and never shrink the reset
 - [x] Clue selections settle before advancing and skip delay with reduced motion

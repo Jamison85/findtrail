@@ -249,8 +249,8 @@ describe('FindTrail app', () => {
     }))
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /open keys, found at blue bowl, in history/i }))
-    expect(screen.getByRole('heading', { name: 'Found history' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /keys.*blue bowl/i })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('heading', { name: 'What FindTrail remembers' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open keys, found at blue bowl/i })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('requires confirmation before clearing found history', () => {
@@ -271,9 +271,10 @@ describe('FindTrail app', () => {
       }],
     }))
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'History' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Clear found history' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear history' }))
     expect(window.confirm).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'History' }))
     expect(screen.getByText('No found places yet')).toBeInTheDocument()
   })
 })
