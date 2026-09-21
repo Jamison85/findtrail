@@ -383,7 +383,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
         <HomeArtwork />
         <header className="brand-header">
           <div className="brand-lockup"><span className="brand-mark"><Icon name="trail" /></span><strong>FindTrail</strong></div>
-          <span className="local-pill"><Icon name="lock" size={13} />Private on this device</span>
+          <span className="local-pill"><Icon name="lock" size={13} />Saved data stays here</span>
         </header>
 
         {data.activeSearch ? (
@@ -567,7 +567,7 @@ function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedI
       {canInstall && <button className="install-card" onClick={onInstall}><span><Icon name="download" /></span><div><strong>Install FindTrail</strong><small>Add it to your home screen for quicker access.</small></div><b>Install</b></button>}
       <div className="settings-group">
         <h2>During a search</h2>
-        <SettingToggle label="Read new stops aloud" detail="Uses your device’s built-in voice." checked={data.settings.speakSteps} onChange={(value) => onUpdate({ speakSteps: value })} />
+        <SettingToggle label="Read new stops aloud" detail="Uses FindTrail’s cloud voice. Requires internet." checked={data.settings.speakSteps} onChange={(value) => onUpdate({ speakSteps: value })} />
         <SettingToggle label="Offer a reset every 3 stops" detail="A pause, not a forced timeout." checked={data.settings.calmPause} onChange={(value) => onUpdate({ calmPause: value })} />
       </div>
       <div className="settings-group">
@@ -582,7 +582,7 @@ function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedI
       </div>
       <div className="settings-group settings-group--privacy">
         <h2>Your data</h2>
-        <p>Everything stays in this browser on this device. No account, analytics, ads, or mystery cloud bucket.</p>
+        <p>Your found history and saved places stay in this browser on this device. If Read aloud is used, only the words being spoken are sent to Cloudflare to generate the voice. FindTrail has no account, analytics, or ads.</p>
         <div className="data-count"><span>Saved finds</span><strong>{data.history.length}</strong></div>
         <div className="backup-actions">
           <button className="button button--secondary" onClick={onExport}><Icon name="download" size={18} />Export backup</button>
