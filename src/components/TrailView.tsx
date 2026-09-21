@@ -34,7 +34,13 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
     || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 
   function readCurrent() {
-    speak(spokenText)
+    setVoiceError('')
+    const started = speak(spokenText, () => {
+      setVoiceError('FindTrail voice is temporarily unavailable. You can keep searching without it.')
+    })
+    if (!started) {
+      setVoiceError(navigator.onLine ? 'Read aloud is not available in this browser.' : 'Read aloud needs an internet connection.')
+    }
   }
 
   useEffect(() => {
