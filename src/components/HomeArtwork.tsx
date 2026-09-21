@@ -4,12 +4,13 @@ const artworkUrl = `${import.meta.env.BASE_URL}home-memory-trail.webp`
 
 const HOME_TRAIL_PLAYED_KEY = 'findtrail:home-trail-played'
 
-// One continuous route that stays inside the illustrated trail corridor and ends at the keys.
+// One continuous route that follows the photographed runner and ends at the keys.
 const trailPath = [
-  'M548 888',
-  'C575 820 650 790 720 720C805 635 890 520 965 416',
-  'C1080 430 1248 452 1384 476',
-  'C1298 430 1218 370 1152 344C1124 294 1094 260 1068 242',
+  'M934 1000',
+  'C950 900 978 820 990 742',
+  'C1012 658 1122 620 1195 548',
+  'C1254 490 1233 417 1160 380',
+  'C1109 350 1088 294 1082 250',
 ].join('')
 
 function hasPlayedThisSession(): boolean {
@@ -33,7 +34,7 @@ export function HomeArtwork() {
   }, [playTrail])
 
   return (
-    <div className="home-artwork" role="img" aria-label="A red search light follows the illustrated trail and blinks green at the missing keys">
+    <div className="home-artwork" role="img" aria-label="A search light follows a winding trail through the home and blinks green at the missing keys">
       <img
         src={artworkUrl}
         alt=""

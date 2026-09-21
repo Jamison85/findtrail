@@ -24,7 +24,7 @@ describe('FindTrail app', () => {
   it('hands the selected item smoothly into a focused trail', async () => {
     const transitionWait = { timeout: 6000 }
     render(<App />)
-    expect(screen.getByText('Retrace with a plan')).toBeInTheDocument()
+    expect(screen.getByText('Private on this device')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
     const keysButton = screen.getByRole('button', { name: /keys/i })
     fireEvent.click(keysButton)
