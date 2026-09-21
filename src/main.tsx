@@ -6,6 +6,7 @@ import './styles.css'
 import './home-trail-polish.css'
 import './calm-reset-polish.css'
 import './trail-view-polish.css'
+import './still-missing-polish.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

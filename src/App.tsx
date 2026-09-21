@@ -4,9 +4,9 @@ import { CalmReset } from './components/CalmReset'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
 import { Scenery } from './components/Scenery'
+import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { ITEMS, ITEM_BY_ID } from './data'
-import { getRecoveryActions } from './recovery'
 import { buildTrail, getFoundSuggestions, mostLikelyLocation } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
 import type { ActiveSearch, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
@@ -323,7 +323,7 @@ export default function App() {
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onClear={clearHistory} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
         {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
-        {screen === 'end' && active && <EndView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {} })); setScreen('trail') }} onHome={() => setScreen('home')} />}
+        {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {} })); setScreen('trail') }} onHome={() => setScreen('home')} />}
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
     </div>
@@ -630,7 +630,7 @@ function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedI
         {backupStatus && <p className="backup-status" role="status">{backupStatus}</p>}
         <button className="button button--danger-outline" onClick={onClear} disabled={!data.history.length}>Clear found history</button>
       </div>
-      <footer className="version-note">FindTrail 2.5 · A clear path to finding what’s missing.</footer>
+      <footer className="version-note">FindTrail 2.6 · A clear path to finding what’s missing.</footer>
     </section>
   )
 }
@@ -658,25 +658,4 @@ function SavedHomeRow({ item, onUpdate, onRemove }: { item: SavedItem; onUpdate:
     {item.itemId === 'other' && <button className={item.pinned ? 'mini-action is-active' : 'mini-action'} onClick={() => onUpdate(item.id, { pinned: !item.pinned })} aria-pressed={item.pinned}><Icon name="pin" size={15} />{item.pinned ? 'Pinned' : 'Pin'}</button>}
     <button className="mini-action mini-action--danger" onClick={() => onRemove(item.id)}>Forget</button>
   </div>
-}
-
-function EndView({ search, onFound, onReset, onRestart, onHome }: { search: ActiveSearch; onFound: () => void; onReset: () => void; onRestart: () => void; onHome: () => void }) {
-  const actions = getRecoveryActions(search)
-  return (
-    <section className="view end-view" aria-labelledby="view-heading">
-      <div className="end-hero"><div className="end-view__mark"><Icon name="trail" size={34} /></div><div><span className="eyebrow">First trail complete</span><h1 id="view-heading" tabIndex={-1}>Don’t search harder yet.</h1><p>You checked {search.stops.length} sensible stops. A short reset or another set of eyes usually beats turning the house upside down.</p></div></div>
-      <section className="recovery-panel" aria-labelledby="recovery-heading">
-        <div className="recovery-panel__heading"><span>Still missing</span><h2 id="recovery-heading">Your next best moves</h2></div>
-        <div className="recovery-actions" aria-label={`Next actions for ${search.itemLabel}`}>
-          {actions.map((action, index) => <article key={action.title}><span>{index + 1}</span><div><strong>{action.title}</strong><p>{action.detail}</p></div></article>)}
-        </div>
-        <div className="end-actions">
-          <button className="button button--primary button--wide" onClick={onReset}><Icon name="calm" size={19} />Take a 30-second reset</button>
-          <button className="button button--secondary button--wide" onClick={onRestart}><Icon name="refresh" size={18} />Repeat the trail slowly</button>
-          <button className="button button--found button--wide" onClick={onFound}><Icon name="spark" size={18} />Actually, I found it</button>
-          <button className="button button--quiet button--wide" onClick={onHome}>Keep this trail saved</button>
-        </div>
-      </section>
-    </section>
-  )
 }

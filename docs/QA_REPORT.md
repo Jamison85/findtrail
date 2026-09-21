@@ -1,13 +1,13 @@
-# FindTrail 2.5 QA report
+# FindTrail 2.6 QA report
 
-Run date: 2026-09-20
+Run date: 2026-09-21
 
 ## Automated release checks
 
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 38 passed across 7 files |
+| Vitest unit and component tests | 41 passed across 8 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
@@ -19,12 +19,14 @@ Run date: 2026-09-20
 | Exact-spot progress | Pass: checked state, area completion, and next-place copy update without changing trail order |
 | Stop handoff | Pass: full-motion mode settles the current card before advancing; reduced motion advances immediately |
 | Found-place carry-forward | Pass: the last checked exact spot is ready to save automatically |
-| Recovery ending | Pass: the final stop leads to an item-specific next-moves panel |
+| Recovery ending | Pass: the final stop becomes a calm, ordered, item-specific next-moves plan |
+| Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
+| Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |
 | Ambient reset regression | Pass: three timed breaths, progress semantics, skip, and trail return remain functional |
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
 | Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
-| Hosted GitHub Actions | Pass: PR #19 production checks, run #144 |
+| Hosted GitHub Actions | Pending for the 2.6 release branch |
 
 ## Browser and resilience checks
 
@@ -44,6 +46,8 @@ Run date: 2026-09-20
 - Active-stop headings receive focus as each new search area appears.
 - Active stops keep the next destination, exact-spot checklist, read-aloud help, hands-free mode, reset, success, and next-place actions within one coherent hierarchy.
 - Full-motion stop changes use one short directional handoff; reduced-motion mode removes it.
+- The Still Missing screen reports completed search work, presents one priority step before the remaining plan, and keeps urgent guidance visually distinct.
+- Recovery controls retain comfortable touch targets and reflow into a single column for large-text mode.
 - A checked exact spot carries into the found-place field instead of asking the user to remember it again.
 - Active search survives reload.
 - Saving a found place adds history and promotes that location on the next matching search.
@@ -56,6 +60,6 @@ Run date: 2026-09-20
 
 ## Still required before final production approval
 
-- Confirm the 2.5 Trail screen on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
+- Confirm the 2.6 Still Missing screen on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
 - Install on Jamo's Galaxy S25 Ultra and complete one real search.
 - Confirm microphone permission and speech behavior on the actual device/browser.
