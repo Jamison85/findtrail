@@ -1,6 +1,12 @@
 type Command = 'next' | 'found' | 'repeat' | 'unknown'
 type RecognitionStatus = { listening?: boolean; heard?: string; error?: string }
 
+export type SpeechStatus =
+  | { state: 'preparing'; progress?: number }
+  | { state: 'speaking' }
+  | { state: 'idle' }
+  | { state: 'error'; message: string }
+
 interface RecognitionEventLike extends Event {
   results: ArrayLike<{ 0: { transcript: string } }>
 }
@@ -22,6 +28,18 @@ interface RecognitionLike extends EventTarget {
 
 type RecognitionConstructor = new () => RecognitionLike
 
+interface PiperProgress {
+  loaded: number
+  total: number
+}
+
+interface PiperModule {
+  predict(
+    config: { text: string; voiceId: string },
+    callback?: (progress: PiperProgress) => void,
+  ): Promise<Blob>
+}
+
 declare global {
   interface Window {
     SpeechRecognition?: RecognitionConstructor
@@ -29,18 +47,109 @@ declare global {
   }
 }
 
-export function speak(text: string): boolean {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 0.92
-  utterance.pitch = 1
-  window.speechSynthesis.speak(utterance)
+const PIPER_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm'
+const PIPER_VOICE = 'en_US-hfc_female-medium'
+
+let piperModule: Promise<PiperModule> | null = null
+let speechContext: AudioContext | null = null
+let activeSpeechSource: AudioBufferSourceNode | null = null
+let speechGeneration = 0
+
+function getSpeechContext(): AudioContext | null {
+  if (speechContext) return speechContext
+  if (typeof window === 'undefined' || typeof window.AudioContext !== 'function') return null
+  speechContext = new AudioContext()
+  return speechContext
+}
+
+function unlockSpeechAudio(): void {
+  const context = getSpeechContext()
+  if (context?.state === 'suspended') void context.resume().catch(() => undefined)
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', unlockSpeechAudio, { capture: true, passive: true })
+  window.addEventListener('keydown', unlockSpeechAudio, { capture: true })
+}
+
+function loadPiper(): Promise<PiperModule> {
+  piperModule ??= import(/* @vite-ignore */ PIPER_MODULE_URL) as Promise<PiperModule>
+  return piperModule
+}
+
+export function speak(text: string, onStatus?: (status: SpeechStatus) => void): boolean {
+  const spokenText = text.trim()
+  if (
+    !spokenText
+    || typeof window === 'undefined'
+    || typeof window.fetch !== 'function'
+    || typeof WebAssembly === 'undefined'
+  ) return false
+
+  const context = getSpeechContext()
+  if (!context) return false
+
+  stopSpeaking()
+  const generation = speechGeneration
+  onStatus?.({ state: 'preparing' })
+
+  void (async () => {
+    try {
+      if (context.state === 'suspended') await context.resume()
+      const piper = await loadPiper()
+      if (generation !== speechGeneration) return
+
+      const wav = await piper.predict(
+        { text: spokenText, voiceId: PIPER_VOICE },
+        ({ loaded, total }) => {
+          if (generation !== speechGeneration) return
+          const progress = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : undefined
+          onStatus?.({ state: 'preparing', progress })
+        },
+      )
+      if (generation !== speechGeneration) return
+
+      const encodedAudio = await wav.arrayBuffer()
+      const audioBuffer = await context.decodeAudioData(encodedAudio.slice(0))
+      if (generation !== speechGeneration) return
+
+      const source = context.createBufferSource()
+      source.buffer = audioBuffer
+      source.connect(context.destination)
+      source.onended = () => {
+        if (activeSpeechSource !== source) return
+        source.disconnect()
+        activeSpeechSource = null
+        onStatus?.({ state: 'idle' })
+      }
+      activeSpeechSource = source
+      onStatus?.({ state: 'speaking' })
+      source.start()
+    } catch {
+      if (generation !== speechGeneration) return
+      onStatus?.({
+        state: 'error',
+        message: 'The local voice could not load. Check your connection and try Read aloud again.',
+      })
+    }
+  })()
+
   return true
 }
 
 export function stopSpeaking(): void {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+  speechGeneration += 1
+
+  if (activeSpeechSource) {
+    activeSpeechSource.onended = null
+    try {
+      activeSpeechSource.stop()
+    } catch {
+      // The source may already have ended.
+    }
+    activeSpeechSource.disconnect()
+    activeSpeechSource = null
+  }
 }
 
 export function parseCommand(transcript: string): Command {
