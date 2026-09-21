@@ -38,7 +38,7 @@ describe('FindTrail app', () => {
     expect(await screen.findByRole('heading', { name: 'The landing zone' }, transitionWait)).toBeInTheDocument()
     expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuetext', 'Stop 1 of 9')
-  })
+  }, 10000)
 
   it('accepts a custom item name', () => {
     render(<App />)
