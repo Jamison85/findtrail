@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { CalmReset } from './components/CalmReset'
 import { CompleteView, FoundView } from './components/FoundView'
 import type { FoundSummary } from './components/FoundView'
+import { HistoryView } from './components/HistoryView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
+import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { ITEMS, ITEM_BY_ID } from './data'
-import { buildTrail, mostLikelyLocation } from './trailEngine'
+import { buildTrail } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
 import type { ActiveSearch, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
@@ -30,12 +32,6 @@ function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds} sec`
   const minutes = Math.round(seconds / 60)
   return `${minutes} min`
-}
-
-function dateLabel(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Recently'
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
 }
 
 function shouldReduceMotion(settings: Settings): boolean {
@@ -326,7 +322,7 @@ export default function App() {
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
-        {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onClear={clearHistory} />}
+        {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
         {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
         {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {} })); setScreen('trail') }} onHome={() => setScreen('home')} />}
@@ -519,105 +515,4 @@ function ClueView({ search, settings, question, index, total, onAnswer, onBack }
       </article>
     </section>
   )
-}
-
-function HistoryView({ history, initialEntryId, onStart, onClear }: { history: FoundEntry[]; initialEntryId: string | null; onStart: (itemId: ItemId, label?: string) => void; onClear: () => void }) {
-  const [expandedId, setExpandedId] = useState<string | null>(initialEntryId)
-  const pattern = useMemo(() => {
-    if (!history.length) return null
-    const latest = history[0]
-    return { item: latest, likely: mostLikelyLocation(history, latest.itemId, latest.itemLabel) }
-  }, [history])
-  useEffect(() => setExpandedId(initialEntryId), [initialEntryId])
-  return (
-    <section className="view history-view" aria-labelledby="view-heading">
-      <header className="page-heading"><span className="eyebrow">Patterns, not judgment</span><h1 id="view-heading" tabIndex={-1}>Found history</h1><p>Your device remembers the useful part: where things actually turned up.</p></header>
-      {pattern?.likely && <article className="pattern-card"><Icon name="spark" /><div><span>Current usual suspect</span><strong>{pattern.item.itemLabel}: {pattern.likely.location}</strong><small>Found there {pattern.likely.count} {pattern.likely.count === 1 ? 'time' : 'times'}</small></div></article>}
-      {!history.length ? <div className="empty-state"><Icon name="history" size={34} /><h2>No found places yet</h2><p>Complete one search and the helpful patterns begin here.</p></div> : (
-        <div className="history-list">
-          {history.map((entry) => {
-            const expanded = expandedId === entry.id
-            const detailId = `history-detail-${entry.id}`
-            return <article key={entry.id} className={expanded ? 'history-entry is-expanded' : 'history-entry'}>
-              <button className="history-row" onClick={() => setExpandedId(expanded ? null : entry.id)} aria-expanded={expanded} aria-controls={detailId}>
-                <span className="history-row__icon"><Icon name={ITEM_BY_ID[entry.itemId].icon} size={20} /></span>
-                <span><strong>{entry.itemLabel}</strong><small>{entry.foundLocation}</small></span>
-                <span className="history-row__end"><time dateTime={entry.foundAt}>{dateLabel(entry.foundAt)}</time><Icon name="forward" size={16} /></span>
-              </button>
-              {expanded && <div id={detailId} className="history-entry__detail">
-                <div><span>Found at</span><strong>{entry.foundLocation}</strong></div>
-                <div><span>Stops checked</span><strong>{entry.stopsChecked}</strong></div>
-                <div><span>Search time</span><strong>{formatDuration(entry.durationSeconds)}</strong></div>
-                <button className="button button--secondary" onClick={() => onStart(entry.itemId, entry.itemLabel)}>Find {entry.itemLabel.toLocaleLowerCase()} again</button>
-              </div>}
-            </article>
-          })}
-        </div>
-      )}
-      {history.length > 0 && <button className="text-button danger-link" onClick={onClear}>Clear found history</button>}
-    </section>
-  )
-}
-
-function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedItem, onRemoveSavedItem, onInstall, onExport, onRestore, onClear }: { data: PersistedData; canInstall: boolean; backupStatus: string; onUpdate: (next: Partial<Settings>) => void; onUpdateSavedItem: (id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) => void; onRemoveSavedItem: (id: string) => void; onInstall: () => void; onExport: () => void; onRestore: (file: File) => void; onClear: () => void }) {
-  const fileInput = useRef<HTMLInputElement>(null)
-  return (
-    <section className="view settings-view" aria-labelledby="view-heading">
-      <header className="page-heading"><span className="eyebrow">Make it yours</span><h1 id="view-heading" tabIndex={-1}>Settings</h1><p>Useful controls. No cockpit full of switches.</p></header>
-      {canInstall && <button className="install-card" onClick={onInstall}><span><Icon name="download" /></span><div><strong>Install FindTrail</strong><small>Add it to your home screen for quicker access.</small></div><b>Install</b></button>}
-      <div className="settings-group">
-        <h2>During a search</h2>
-        <SettingToggle label="Read new stops aloud" detail="Uses FindTrail’s local voice. First use downloads the voice model." checked={data.settings.speakSteps} onChange={(value) => onUpdate({ speakSteps: value })} />
-        <SettingToggle label="Offer a reset every 3 stops" detail="A pause, not a forced timeout." checked={data.settings.calmPause} onChange={(value) => onUpdate({ calmPause: value })} />
-      </div>
-      <div className="settings-group">
-        <h2>Appearance</h2>
-        <label className="select-setting"><span><strong>Motion</strong><small>System follows your phone setting.</small></span><select value={data.settings.motion} onChange={(event) => onUpdate({ motion: event.target.value as Settings['motion'] })}><option value="system">Use system setting</option><option value="full">Full motion</option><option value="reduced">Reduced motion</option></select></label>
-        <SettingToggle label="Larger text" detail="Adds breathing room and a little more scrolling." checked={data.settings.textSize === 'large'} onChange={(value) => onUpdate({ textSize: value ? 'large' : 'standard' })} />
-      </div>
-      <div className="settings-group saved-homes">
-        <h2>Saved home spots</h2>
-        {!data.savedItems.length && <p className="settings-empty">When you find something, you can save that exact place as its home.</p>}
-        {data.savedItems.map((item) => <SavedHomeRow key={item.id} item={item} onUpdate={onUpdateSavedItem} onRemove={onRemoveSavedItem} />)}
-      </div>
-      <div className="settings-group settings-group--privacy">
-        <h2>Your data</h2>
-        <p>Your search history, clues, and saved places stay in this browser on this device. Read aloud generates speech on your device after downloading a free voice model. No account, analytics, ads, or mystery cloud bucket.</p>
-        <div className="data-count"><span>Saved finds</span><strong>{data.history.length}</strong></div>
-        <div className="backup-actions">
-          <button className="button button--secondary" onClick={onExport}><Icon name="download" size={18} />Export backup</button>
-          <button className="button button--secondary" onClick={() => fileInput.current?.click()}><Icon name="upload" size={18} />Restore backup</button>
-          <input ref={fileInput} className="sr-only" type="file" accept="application/json,.json" aria-label="Choose FindTrail backup file" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onRestore(file); event.target.value = '' }} />
-        </div>
-        {backupStatus && <p className="backup-status" role="status">{backupStatus}</p>}
-        <button className="button button--danger-outline" onClick={onClear} disabled={!data.history.length}>Clear found history</button>
-      </div>
-      <footer className="version-note">FindTrail 2.7 · A clear path to finding what’s missing.</footer>
-    </section>
-  )
-}
-
-function SettingToggle({ label, detail, checked, onChange }: { label: string; detail: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return <label className="toggle-setting"><span><strong>{label}</strong><small>{detail}</small></span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><i aria-hidden="true" /></label>
-}
-
-function SavedHomeRow({ item, onUpdate, onRemove }: { item: SavedItem; onUpdate: (id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) => void; onRemove: (id: string) => void }) {
-  const [draft, setDraft] = useState(item.homeSpot)
-  useEffect(() => setDraft(item.homeSpot), [item.homeSpot])
-
-  function commit() {
-    const next = draft.trim()
-    if (!next) {
-      setDraft(item.homeSpot)
-      return
-    }
-    if (next !== item.homeSpot) onUpdate(item.id, { homeSpot: next })
-  }
-
-  return <div className="saved-home-row">
-    <span><strong>{item.itemLabel}</strong><small>{item.itemId === 'other' ? 'Custom item' : 'Saved first stop'}</small></span>
-    <label><span className="sr-only">Home spot for {item.itemLabel}</span><input value={draft} maxLength={80} onChange={(event) => setDraft(event.target.value)} onBlur={commit} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
-    {item.itemId === 'other' && <button className={item.pinned ? 'mini-action is-active' : 'mini-action'} onClick={() => onUpdate(item.id, { pinned: !item.pinned })} aria-pressed={item.pinned}><Icon name="pin" size={15} />{item.pinned ? 'Pinned' : 'Pin'}</button>}
-    <button className="mini-action mini-action--danger" onClick={() => onRemove(item.id)}>Forget</button>
-  </div>
 }

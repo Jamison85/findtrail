@@ -8,6 +8,7 @@ import './calm-reset-polish.css'
 import './trail-view-polish.css'
 import './still-missing-polish.css'
 import './found-view-polish.css'
+import './history-settings-polish.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
