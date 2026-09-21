@@ -6,7 +6,7 @@ import { Icon } from './Icon'
 interface SettingsViewProps {
   data: PersistedData
   canInstall: boolean
-  backupStatus: string
+  backupStatus: { message: string; kind: 'success' | 'error' } | null
   onUpdate: (next: Partial<Settings>) => void
   onUpdateSavedItem: (id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) => void
   onRemoveSavedItem: (id: string) => void
@@ -95,7 +95,11 @@ export function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdat
           <button className="button button--secondary" onClick={() => fileInput.current?.click()}><Icon name="upload" size={18} />Restore backup</button>
           <input ref={fileInput} className="sr-only" type="file" accept="application/json,.json" aria-label="Choose FindTrail backup file" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onRestore(file); event.target.value = '' }} />
         </div>
-        {backupStatus && <p className="backup-status" role="status"><Icon name="check" size={16} />{backupStatus}</p>}
+        {backupStatus && (
+          <p className={`backup-status is-${backupStatus.kind}`} role={backupStatus.kind === 'error' ? 'alert' : 'status'}>
+            <Icon name={backupStatus.kind === 'error' ? 'close' : 'check'} size={16} />{backupStatus.message}
+          </p>
+        )}
         <div className="danger-zone">
           <span><strong>Clear found history</strong><small>Saved home spots will stay.</small></span>
           <button className="button button--danger-outline" onClick={onClear} disabled={!data.history.length}>Clear history</button>

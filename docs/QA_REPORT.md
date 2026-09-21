@@ -7,7 +7,7 @@ Run date: 2026-09-21
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 48 passed across 10 files |
+| Vitest unit and component tests | 49 passed across 10 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
@@ -27,7 +27,7 @@ Run date: 2026-09-21
 | History disclosure | Pass: recent entries expose exact place, places checked, search time, and date without crowding the list |
 | Settings organization | Pass: search, appearance, saved homes, private data, backup, and destructive controls remain distinct |
 | Saved-home editing | Pass: exact-place edits, custom-item pinning, and confirmed removal retain their existing behavior |
-| Settings safety | Pass: clearing history remains confirmed and is disabled when there is nothing to clear |
+| Settings safety | Pass: clearing history remains confirmed and disabled when empty; failed restores use explicit error semantics |
 | Recovery ending | Pass: the final stop becomes a calm, ordered, item-specific next-moves plan |
 | Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
 | Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |

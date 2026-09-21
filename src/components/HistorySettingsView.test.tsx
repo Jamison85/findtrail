@@ -64,7 +64,7 @@ describe('SettingsView', () => {
     render(<SettingsView
       data={data}
       canInstall={false}
-      backupStatus="Backup downloaded."
+      backupStatus={{ message: 'Backup downloaded.', kind: 'success' }}
       onUpdate={onUpdate}
       onUpdateSavedItem={onUpdateSavedItem}
       onRemoveSavedItem={onRemoveSavedItem}
@@ -97,11 +97,30 @@ describe('SettingsView', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Backup downloaded.')
   })
 
+  it('presents failed restores as errors instead of success', () => {
+    render(<SettingsView
+      data={data}
+      canInstall={false}
+      backupStatus={{ message: 'That backup is damaged.', kind: 'error' }}
+      onUpdate={vi.fn()}
+      onUpdateSavedItem={vi.fn()}
+      onRemoveSavedItem={vi.fn()}
+      onInstall={vi.fn()}
+      onExport={vi.fn()}
+      onRestore={vi.fn()}
+      onClear={vi.fn()}
+    />)
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('That backup is damaged.')
+    expect(alert).toHaveClass('is-error')
+  })
+
   it('keeps clearing disabled when there is no history', () => {
     render(<SettingsView
       data={{ ...data, history: [], savedItems: [] }}
       canInstall={false}
-      backupStatus=""
+      backupStatus={null}
       onUpdate={vi.fn()}
       onUpdateSavedItem={vi.fn()}
       onRemoveSavedItem={vi.fn()}

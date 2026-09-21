@@ -54,7 +54,7 @@ export default function App() {
   const [online, setOnline] = useState(() => navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null)
-  const [backupStatus, setBackupStatus] = useState('')
+  const [backupStatus, setBackupStatus] = useState<{ message: string; kind: 'success' | 'error' } | null>(null)
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null)
   const previousScreen = useRef(screen)
 
@@ -274,27 +274,27 @@ export default function App() {
     link.download = `findtrail-backup-${new Date().toISOString().slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
-    setBackupStatus('Backup downloaded.')
+    setBackupStatus({ message: 'Backup downloaded.', kind: 'success' })
   }
 
   async function restoreBackup(file: File) {
-    setBackupStatus('')
+    setBackupStatus(null)
     let contents: string
     try {
       contents = await file.text()
     } catch {
-      setBackupStatus('The backup file could not be read.')
+      setBackupStatus({ message: 'The backup file could not be read.', kind: 'error' })
       return
     }
     const parsed = parseBackup(contents)
     if (!parsed.ok) {
-      setBackupStatus(parsed.error)
+      setBackupStatus({ message: parsed.error, kind: 'error' })
       return
     }
     const summary = `${parsed.data.history.length} found ${parsed.data.history.length === 1 ? 'place' : 'places'} and ${parsed.data.savedItems.length} saved ${parsed.data.savedItems.length === 1 ? 'home' : 'homes'}`
     if (!window.confirm(`Restore ${summary}? This will replace the FindTrail data on this device.`)) return
     setData(parsed.data)
-    setBackupStatus('Backup restored.')
+    setBackupStatus({ message: 'Backup restored.', kind: 'success' })
   }
 
   function applyUpdate() {
