@@ -1,6 +1,97 @@
 import { CLUE_PROMOTIONS, ITEM_BY_ID, STOPS } from './data'
 import { itemIdentity } from './storage'
-import type { FoundEntry, ItemId, SavedItem, SearchStop } from './types'
+import type { ActiveSearch, FoundEntry, ItemId, SavedItem, SearchStop } from './types'
+
+export const FOCUSED_PASS_SIZE = 3
+export const WIDER_PASS_SIZE = 3
+
+export type TrailStageName = 'safety' | 'focused' | 'wider' | 'final'
+
+export interface TrailStage {
+  name: TrailStageName
+  label: string
+  current: number
+  total: number
+}
+
+function searchableStopIndices(stops: SearchStop[]): number[] {
+  return stops.flatMap((stop, index) => stop.kind === 'safety' || stop.kind === 'final' ? [] : [index])
+}
+
+export function compactTrail(stops: SearchStop[]): SearchStop[] {
+  const safetyStops = stops.filter((stop) => stop.kind === 'safety')
+  const searchStops = stops
+    .filter((stop) => stop.kind !== 'safety' && stop.kind !== 'final')
+    .slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+  const finalStop = stops.find((stop) => stop.kind === 'final')
+  return [...safetyStops, ...searchStops, ...(finalStop ? [finalStop] : [])]
+}
+
+export function compactActiveSearch(search: ActiveSearch): ActiveSearch {
+  const stops = compactTrail(search.stops)
+  if (stops.length === search.stops.length && stops.every((stop, index) => stop.id === search.stops[index]?.id)) return search
+  const currentId = search.stops[search.currentIndex]?.id
+  const matchingIndex = stops.findIndex((stop) => stop.id === currentId)
+  const finalIndex = stops.findIndex((stop) => stop.kind === 'final')
+  return {
+    ...search,
+    stops,
+    currentIndex: matchingIndex >= 0 ? matchingIndex : Math.max(0, finalIndex >= 0 ? finalIndex : stops.length - 1),
+  }
+}
+
+export function getFocusedStops(stops: SearchStop[]): SearchStop[] {
+  return searchableStopIndices(stops).slice(0, FOCUSED_PASS_SIZE).map((index) => stops[index])
+}
+
+export function getWiderStops(stops: SearchStop[]): SearchStop[] {
+  return searchableStopIndices(stops)
+    .slice(FOCUSED_PASS_SIZE, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+    .map((index) => stops[index])
+}
+
+export function getWiderStartIndex(stops: SearchStop[]): number | null {
+  return searchableStopIndices(stops)[FOCUSED_PASS_SIZE] ?? null
+}
+
+export function isFocusedPassComplete(stops: SearchStop[], currentIndex: number): boolean {
+  const indices = searchableStopIndices(stops)
+  return indices.length > FOCUSED_PASS_SIZE && currentIndex === indices[FOCUSED_PASS_SIZE - 1]
+}
+
+export function isWiderPassComplete(stops: SearchStop[], currentIndex: number): boolean {
+  const indices = searchableStopIndices(stops)
+  const wider = indices.slice(FOCUSED_PASS_SIZE, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+  return wider.length > 0 && currentIndex === wider.at(-1)
+}
+
+export function getTrailStage(stops: SearchStop[], currentIndex: number): TrailStage {
+  const stop = stops[currentIndex]
+  if (stop?.kind === 'safety') {
+    const safetyIndices = stops.flatMap((candidate, index) => candidate.kind === 'safety' ? [index] : [])
+    return { name: 'safety', label: 'Safety first', current: safetyIndices.indexOf(currentIndex) + 1, total: safetyIndices.length }
+  }
+  if (stop?.kind === 'final') return { name: 'final', label: 'Final sweep', current: 1, total: 1 }
+
+  const searchIndices = searchableStopIndices(stops)
+  const searchPosition = Math.max(0, searchIndices.indexOf(currentIndex))
+  if (searchPosition < FOCUSED_PASS_SIZE) {
+    return {
+      name: 'focused',
+      label: 'Focused pass',
+      current: searchPosition + 1,
+      total: Math.min(FOCUSED_PASS_SIZE, searchIndices.length),
+    }
+  }
+
+  const widerPosition = searchPosition - FOCUSED_PASS_SIZE
+  return {
+    name: 'wider',
+    label: 'Wider pass',
+    current: widerPosition + 1,
+    total: Math.min(WIDER_PASS_SIZE, Math.max(1, searchIndices.length - FOCUSED_PASS_SIZE)),
+  }
+}
 
 function normalized(value: string): string {
   return value.trim().toLocaleLowerCase()
@@ -111,14 +202,18 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
   const home = savedHomeStop(savedItems, itemId, itemLabel)
   const learnedLocation = historyStop(history, itemId, itemLabel)
   const sameAsHome = home && learnedLocation && normalized(home.spots[0]) === normalized(learnedLocation.spots[0])
-  return [
-    ...safetyStops,
+  const prioritizedStops = [
     ...(home ? [home] : []),
     ...(!sameAsHome && learnedLocation ? [learnedLocation] : []),
     ...(learnedArea ? [learnedArea] : []),
     ...remainingStops,
+  ].slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+
+  return compactTrail([
+    ...safetyStops,
+    ...prioritizedStops,
     ...(finalStop ? [finalStop] : []),
-  ]
+  ])
 }
 
 export function getFoundSuggestions(itemId: ItemId, stop: SearchStop | undefined): string[] {

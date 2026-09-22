@@ -1,4 +1,4 @@
-const VERSION = 'findtrail-v2.10.0-clue-flow-2026-09-22'
+const VERSION = 'findtrail-v2.11.0-focused-trail-2026-09-22'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')

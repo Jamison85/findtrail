@@ -1,6 +1,6 @@
 export type ItemId = 'keys' | 'wallet' | 'money' | 'phone' | 'medicine' | 'glasses' | 'remote' | 'other'
 
-export type Screen = 'home' | 'clues' | 'trail' | 'found' | 'complete' | 'history' | 'calm' | 'settings' | 'end'
+export type Screen = 'home' | 'clues' | 'trail' | 'widen' | 'found' | 'complete' | 'history' | 'calm' | 'settings' | 'end'
 
 export type IconName =
   | 'trail'

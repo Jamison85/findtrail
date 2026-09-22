@@ -26,9 +26,9 @@ const settings: Settings = {
   calmPause: false,
 }
 
-function renderTrail(onNext = vi.fn()) {
+function renderTrail(onNext = vi.fn(), activeSearch = search) {
   render(<TrailView
-    search={search}
+    search={activeSearch}
     settings={settings}
     onBack={() => undefined}
     onToggleSpot={() => undefined}
@@ -49,7 +49,7 @@ describe('TrailView', () => {
   it('makes the current destination and assistance controls explicit', () => {
     renderTrail()
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toHaveFocus()
-    expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuetext', 'Stop 1 of 2')
+    expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuetext', 'Place 1 of 2 in the focused pass')
     expect(screen.getByRole('group', { name: 'Places to check at The landing zone' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Read aloud' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hands-free voice commands are unavailable in this browser' })).toBeDisabled()
@@ -65,5 +65,27 @@ describe('TrailView', () => {
 
     act(() => vi.advanceTimersByTime(190))
     expect(onNext).toHaveBeenCalledOnce()
+  })
+
+  it('finishes the focused pass without exposing the full route at once', () => {
+    const stagedSearch: ActiveSearch = {
+      ...search,
+      stops: [
+        ...search.stops,
+        { id: 'counter', title: 'Flat surfaces', instruction: 'Check surfaces.', spots: ['Counter'] },
+        { id: 'car', title: 'The car', instruction: 'Check the car.', spots: ['Console'] },
+        { id: 'bag', title: 'Bags', instruction: 'Check bags.', spots: ['Work bag'] },
+        { id: 'seat', title: 'Seating', instruction: 'Check seating.', spots: ['Couch'] },
+        { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check slowly.', spots: ['Likeliest place'], kind: 'final' },
+      ],
+      currentIndex: 2,
+    }
+
+    renderTrail(vi.fn(), stagedSearch)
+
+    expect(screen.getByText('Place 3 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuenow', '3')
+    expect(screen.getByRole('button', { name: 'Focused pass complete' })).toBeInTheDocument()
+    expect(screen.queryByText('Place 3 of 6')).not.toBeInTheDocument()
   })
 })

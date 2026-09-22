@@ -106,7 +106,7 @@ export function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdat
         </div>
       </SettingsSection>
 
-      <footer className="version-note">FindTrail 2.8 · A clear path to finding what’s missing.</footer>
+      <footer className="version-note">FindTrail 2.11 · A clear path to finding what’s missing.</footer>
     </section>
   )
 }
