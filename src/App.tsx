@@ -12,7 +12,7 @@ import { TrailView } from './components/TrailView'
 import { ITEMS, ITEM_BY_ID } from './data'
 import { buildTrail } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
-import type { ActiveSearch, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
+import type { ActiveSearch, ClueOption, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -132,15 +132,33 @@ export default function App() {
     setScreen('clues')
   }
 
-  function answerClue(value: string) {
-    if (!active || !activeItem) return
+  function answersThroughCurrentClue(value: string): Record<string, string> | null {
+    if (!active || !activeItem) return null
     const question = activeItem.questions[clueIndex]
-    const answers = { ...active.answers, [question.id]: value }
-    if (clueIndex < activeItem.questions.length - 1) {
-      updateActive((current) => ({ ...current, answers }))
-      setClueIndex((current) => current + 1)
-      return
-    }
+    const answers = activeItem.questions.slice(0, clueIndex).reduce<Record<string, string>>((next, previousQuestion) => {
+      const previousAnswer = active.answers[previousQuestion.id]
+      return previousAnswer ? { ...next, [previousQuestion.id]: previousAnswer } : next
+    }, {})
+    return { ...answers, [question.id]: value }
+  }
+
+  function saveClueAnswer(value: string) {
+    const answers = answersThroughCurrentClue(value)
+    if (!answers) return
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {} }))
+  }
+
+  function answerClue(value: string) {
+    const answers = answersThroughCurrentClue(value)
+    if (!answers || !activeItem || clueIndex >= activeItem.questions.length - 1) return
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {} }))
+    setClueIndex((current) => current + 1)
+  }
+
+  function completeClues(value: string) {
+    if (!active) return
+    const answers = answersThroughCurrentClue(value)
+    if (!answers) return
     const stops = buildTrail(active.itemId, active.itemLabel, answers, data.history, data.savedItems)
     updateActive((current) => ({ ...current, answers, stops, currentIndex: 0, checkedSpots: {} }))
     setScreen('trail')
@@ -318,7 +336,7 @@ export default function App() {
       {storageError && <div className="storage-banner" role="alert">This browser blocked saving. Keep this tab open until your search is finished.<button onClick={() => setStorageError(false)} aria-label="Dismiss"><Icon name="close" size={17} /></button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
-        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
+        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
@@ -457,14 +475,51 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
   )
 }
 
-function ClueView({ search, settings, question, index, total, onAnswer, onBack }: { search: ActiveSearch; settings: Settings; question: ClueQuestion; index: number; total: number; onAnswer: (value: string) => void; onBack: () => void }) {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null)
+const ACTION_ORDER_BY_PLACE: Record<string, string[]> = {
+  home: ['arrived', 'changed', 'sat', 'cleaned', 'carried', 'unsure'],
+  car: ['arrived', 'carried', 'sat', 'changed', 'cleaned', 'unsure'],
+  work: ['arrived', 'carried', 'sat', 'cleaned', 'changed', 'unsure'],
+  out: ['carried', 'arrived', 'sat', 'changed', 'cleaned', 'unsure'],
+  unsure: ['arrived', 'changed', 'sat', 'carried', 'cleaned', 'unsure'],
+}
+
+const ACTION_TITLE_BY_PLACE: Record<string, string> = {
+  home: 'At home, what happened next?',
+  car: 'After the car, what happened next?',
+  work: 'At work, what happened next?',
+  out: 'While you were out, what happened next?',
+  unsure: 'What happened around that time?',
+}
+
+function ClueView({ search, settings, question, index, total, onAnswer, onSave, onComplete, onBack }: { search: ActiveSearch; settings: Settings; question: ClueQuestion; index: number; total: number; onAnswer: (value: string) => void; onSave: (value: string) => void; onComplete: (value: string) => void; onBack: () => void }) {
+  const [selectedValue, setSelectedValue] = useState<string | null>(() => search.answers[question.id] ?? null)
+  const [moreOpen, setMoreOpen] = useState(false)
   const selectionTimer = useRef<number | null>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const stepLabels = ['About it', 'Last place', 'Last moment']
+  const item = ITEM_BY_ID[search.itemId]
+  const isFinal = index === total - 1
+  const itemAnswer = item.questions[0]?.options.find((option) => option.value === search.answers.itemDetail)?.label
+  const lastPlaceAnswer = item.questions.find((entry) => entry.id === 'lastPlace')?.options.find((option) => option.value === search.answers.lastPlace)?.label
+  const contextItem = itemAnswer ?? search.itemLabel
+  const pronoun = search.itemId === 'keys' || search.itemId === 'glasses' ? 'them' : 'it'
+  const title = question.id === 'lastPlace'
+    ? `Where do you last remember having ${pronoun}?`
+    : question.id === 'lastAction'
+      ? ACTION_TITLE_BY_PLACE[search.answers.lastPlace] ?? question.title
+      : question.title
+  const optionOrder = question.id === 'lastAction' ? ACTION_ORDER_BY_PLACE[search.answers.lastPlace] ?? ACTION_ORDER_BY_PLACE.unsure : []
+  const orderedOptions = question.id === 'lastAction'
+    ? [...question.options].sort((a, b) => optionOrder.indexOf(a.value) - optionOrder.indexOf(b.value))
+    : question.options
+  const primaryOptions = question.id === 'lastAction' ? orderedOptions.slice(0, 4) : orderedOptions
+  const extraOptions = question.id === 'lastAction' ? orderedOptions.slice(4) : []
+  const selectedLabel = orderedOptions.find((option) => option.value === selectedValue)?.label
+  const stepLabels = [itemAnswer ?? 'Item', lastPlaceAnswer ?? 'Place', selectedValue && isFinal ? 'Trail ready' : 'What changed']
 
   useEffect(() => {
-    setSelectedValue(null)
+    const savedAnswer = search.answers[question.id] ?? null
+    setSelectedValue(savedAnswer)
+    setMoreOpen(Boolean(savedAnswer && extraOptions.some((option) => option.value === savedAnswer)))
     headingRef.current?.focus({ preventScroll: true })
     return () => {
       if (selectionTimer.current !== null) window.clearTimeout(selectionTimer.current)
@@ -475,6 +530,10 @@ function ClueView({ search, settings, question, index, total, onAnswer, onBack }
   function chooseAnswer(value: string) {
     if (selectionTimer.current !== null) return
     setSelectedValue(value)
+    if (isFinal) {
+      onSave(value)
+      return
+    }
     if (shouldReduceMotion(settings)) {
       onAnswer(value)
       return
@@ -482,7 +541,17 @@ function ClueView({ search, settings, question, index, total, onAnswer, onBack }
     selectionTimer.current = window.setTimeout(() => {
       selectionTimer.current = null
       onAnswer(value)
-    }, 160)
+    }, 220)
+  }
+
+  function renderOption(option: ClueOption) {
+    const selected = selectedValue !== null ? selectedValue === option.value : search.answers[question.id] === option.value
+    return (
+      <button key={option.value} type="button" className={selected ? 'choice-button is-selected' : 'choice-button'} aria-pressed={selected} onClick={() => chooseAnswer(option.value)}>
+        <span><strong>{option.label}</strong>{option.detail && <small>{option.detail}</small>}</span>
+        <span className="choice-button__marker" aria-hidden="true">{selected ? <Icon name="check" size={17} /> : <span />}</span>
+      </button>
+    )
   }
 
   return (
@@ -493,27 +562,29 @@ function ClueView({ search, settings, question, index, total, onAnswer, onBack }
         <span />
       </header>
       <ol className="clue-route" aria-label={`Clue ${index + 1} of ${total}`}>
-        {Array.from({ length: total }).map((_, value) => <li key={value} className={value < index ? 'is-complete' : value === index ? 'is-current' : ''}><span>{value < index ? <Icon name="check" size={13} /> : value + 1}</span><small>{stepLabels[value]}</small></li>)}
+        {Array.from({ length: total }).map((_, value) => <li key={value} className={value < index ? 'is-complete' : value === index ? 'is-current' : ''} aria-current={value === index ? 'step' : undefined}><span>{value < index ? <Icon name="check" size={13} /> : value + 1}</span><small>{stepLabels[value]}</small></li>)}
       </ol>
       <article className="clue-panel">
-        <div className="clue-item"><span><Icon name={ITEM_BY_ID[search.itemId].icon} size={21} /></span><div><small>Looking for</small><strong>{search.itemLabel}</strong></div></div>
+        <div className={lastPlaceAnswer ? 'clue-context clue-context--two' : 'clue-context'} aria-label="Clues collected so far">
+          <span className="clue-context__icon"><Icon name={item.icon} size={20} /></span>
+          <span className="clue-context__entry"><small>Looking for</small><strong>{contextItem}</strong></span>
+          {lastPlaceAnswer && <><span className="clue-context__connector"><Icon name="forward" size={14} /></span><span className="clue-context__entry"><small>Last place</small><strong>{lastPlaceAnswer}</strong></span></>}
+        </div>
         <div className="clue-copy">
-          <span className="eyebrow">One useful clue</span>
-          <h1 ref={headingRef} id="view-heading" tabIndex={-1}>{question.title}</h1>
+          <h1 ref={headingRef} id="view-heading" tabIndex={-1}>{title}</h1>
           <p>{question.helper}</p>
         </div>
-        <div className="choice-list">
-          {question.options.map((option) => {
-            const selected = selectedValue !== null ? selectedValue === option.value : search.answers[question.id] === option.value
-            return (
-              <button key={option.value} className={selected ? 'choice-button is-selected' : 'choice-button'} onClick={() => chooseAnswer(option.value)}>
-                <span><strong>{option.label}</strong>{option.detail && <small>{option.detail}</small>}</span>
-                <span className="choice-button__arrow">{selected ? <Icon name="check" size={18} /> : <Icon name="forward" size={18} />}</span>
-              </button>
-            )
-          })}
+        <div className="choice-group" role="group" aria-labelledby="view-heading">
+          <div className="choice-list">{primaryOptions.map(renderOption)}</div>
+          {extraOptions.length > 0 && <button type="button" className="choice-more" aria-expanded={moreOpen} aria-controls="more-clue-options" onClick={() => setMoreOpen((open) => !open)}>{moreOpen ? 'Show fewer choices' : 'More possibilities or not sure'}<Icon name={moreOpen ? 'close' : 'forward'} size={16} /></button>}
+          {moreOpen && extraOptions.length > 0 && <div id="more-clue-options" className="choice-list choice-list--extra">{extraOptions.map(renderOption)}</div>}
         </div>
-        <p className="reassurance"><Icon name="calm" size={17} /> No perfect remembering required. Pick the closest answer and keep moving.</p>
+        {isFinal ? (
+          <div className="clue-finish">
+            <p className="clue-finish__summary" aria-live="polite"><Icon name="trail" size={17} />{selectedLabel ? <span><small>Trail ready from</small><strong>{contextItem} · {lastPlaceAnswer} · {selectedLabel}</strong></span> : <span><small>Last step</small><strong>Choose the closest answer above.</strong></span>}</p>
+            <button type="button" className="button button--primary button--wide" aria-label="Build my search trail" disabled={!selectedValue} onClick={() => selectedValue && onComplete(selectedValue)}>Build my trail<Icon name="forward" size={18} /></button>
+          </div>
+        ) : <p className="reassurance"><Icon name="calm" size={17} /> No perfect remembering required. Pick the closest answer and keep moving.</p>}
       </article>
     </section>
   )

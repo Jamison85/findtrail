@@ -47,7 +47,7 @@
   button, select { cursor: pointer; }
   button:disabled { cursor: not-allowed; opacity: .48; }
   button, input, select { color: inherit; }
-  :focus-visible { outline: 3px solid var(--clay); outline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--clay-text); outline-offset: 3px; }
   [tabindex="-1"]:focus { outline: 0; }
   h1, h2 { letter-spacing: -.04em; text-wrap: balance; }
   h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 600; }
@@ -165,34 +165,47 @@
   .home-view--active .home-main { grid-template-rows: minmax(250px, 1fr) auto; }
 
   .clue-view { background: radial-gradient(circle at 92% 4%, rgba(114, 82, 102, .13), transparent 15rem), linear-gradient(165deg, #faf5ec 0 54%, #e4eee7 100%); }
+  .clue-view .topbar { grid-template-columns: 44px 1fr 44px; }
   .clue-route { display: grid; position: relative; max-width: 31rem; grid-template-columns: repeat(3, 1fr); margin: 2px auto 14px; padding: 0 9px; list-style: none; }
   .clue-route::before { position: absolute; top: 15px; right: 16.7%; left: 16.7%; height: 2px; background: rgba(23, 58, 52, .11); content: ""; }
   .clue-route li { display: grid; z-index: 1; place-items: center; gap: 4px; color: var(--ink-soft); }
   .clue-route li > span { display: grid; width: 31px; height: 31px; place-items: center; border: 2px solid var(--paper-deep); border-radius: 50%; background: var(--paper); font-size: .66rem; font-weight: 900; }
-  .clue-route li > small { font-size: .59rem; font-weight: 800; letter-spacing: .04em; }
+  .clue-route li > small { max-width: 100%; overflow: hidden; font-size: .75rem; font-weight: 800; letter-spacing: .015em; text-overflow: ellipsis; white-space: nowrap; }
   .clue-route li.is-current > span { border-color: var(--evergreen); color: white; background: var(--evergreen); box-shadow: 0 5px 13px rgba(23, 58, 52, .18); }
   .clue-route li.is-current > small { color: var(--evergreen); }
   .clue-route li.is-complete > span { border-color: var(--sage); color: var(--evergreen); background: var(--sage); }
   .clue-panel { max-width: 31rem; margin: 0 auto; padding: clamp(16px, 4.5vw, 22px); border: 1px solid rgba(255, 255, 255, .82); border-radius: 29px; background: rgba(255, 253, 249, .94); box-shadow: 0 22px 55px rgba(23, 58, 52, .12), inset 0 1px 0 white; backdrop-filter: blur(10px); }
-  .clue-item { display: inline-flex; align-items: center; gap: 9px; padding: 7px 11px 7px 7px; border-radius: 15px; background: var(--sage); }
-  .clue-item > span { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 11px; color: white; background: var(--evergreen); box-shadow: 0 5px 12px rgba(23, 58, 52, .17); }
-  .clue-item > div { display: grid; gap: 1px; }
-  .clue-item small { color: var(--ink-soft); font-size: .57rem; text-transform: uppercase; letter-spacing: .08em; }
-  .clue-item strong { font-size: .76rem; }
-  .clue-copy { margin: 15px 0 17px; }
-  .clue-copy .eyebrow { font-size: .61rem; }
-  .clue-copy h1 { margin: 7px 0 8px; font-size: clamp(2rem, 9.2vw, 3.15rem); line-height: .96; }
-  .clue-copy p { font-size: clamp(.76rem, 3.4vw, .9rem); line-height: 1.43; }
+  .clue-context { display: inline-grid; max-width: 100%; grid-template-columns: 35px minmax(0, auto); gap: 8px; align-items: center; padding: 7px 11px 7px 7px; border-radius: 15px; background: var(--sage); }
+  .clue-context--two { display: grid; grid-template-columns: 35px minmax(0, 1fr) 20px minmax(0, 1fr); }
+  .clue-context__icon { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 11px; color: white; background: var(--evergreen); box-shadow: 0 5px 12px rgba(23, 58, 52, .17); }
+  .clue-context__entry { display: grid; min-width: 0; gap: 1px; }
+  .clue-context__entry small { color: var(--ink-soft); font-size: .75rem; line-height: 1.1; }
+  .clue-context__entry strong { overflow: hidden; font-size: .84rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+  .clue-context__connector { color: var(--moss); }
+  .clue-copy { margin: 15px 0 16px; }
+  .clue-copy h1 { margin: 0 0 8px; font-size: clamp(1.9rem, 8.4vw, 2.85rem); line-height: .98; }
+  .clue-copy p { font-size: clamp(.82rem, 3.4vw, .92rem); line-height: 1.43; }
+  .choice-group { display: grid; gap: 9px; }
   .choice-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .choice-list--extra { padding-top: 2px; border-top: 1px solid rgba(23, 58, 52, .08); }
   .choice-button { display: flex; min-width: 0; min-height: 74px; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 10px 11px 13px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(145deg, #fffdf9, #f5eee4); text-align: left; box-shadow: 0 6px 15px rgba(23, 58, 52, .055), inset 0 1px 0 white; transition: transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease; -webkit-tap-highlight-color: transparent; }
   .choice-button:last-child:nth-child(odd) { grid-column: 1 / -1; min-height: 60px; }
   .choice-button:active, .choice-button.is-selected { border-color: rgba(41, 78, 69, .36); background: var(--sage); box-shadow: 0 3px 8px rgba(23, 58, 52, .08), inset 0 2px 5px rgba(23, 58, 52, .06); transform: translateY(1px) scale(.99); }
   .choice-button span:first-child { display: grid; min-width: 0; gap: 2px; }
-  .choice-button strong { overflow-wrap: anywhere; font-size: .78rem; line-height: 1.14; }
-  .choice-button small { color: var(--ink-soft); font-size: .61rem; line-height: 1.25; }
-  .choice-button__arrow { display: grid; width: 29px; height: 29px; flex: 0 0 auto; place-items: center; border-radius: 10px; color: var(--clay-deep); background: rgba(233, 138, 102, .11); }
-  .choice-button.is-selected .choice-button__arrow { color: white; background: var(--evergreen); }
-  .reassurance { display: flex; align-items: flex-start; gap: 8px; margin: 15px 3px 0; color: var(--ink-soft); font-size: .67rem; line-height: 1.4; }
+  .choice-button strong { overflow-wrap: anywhere; font-size: .84rem; line-height: 1.14; }
+  .choice-button small { color: var(--ink-soft); font-size: .75rem; line-height: 1.23; }
+  .choice-button__marker { display: grid; width: 29px; height: 29px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(23, 58, 52, .18); border-radius: 50%; color: white; background: rgba(255, 253, 249, .78); }
+  .choice-button__marker > span { width: 7px; height: 7px; border-radius: 50%; background: rgba(23, 58, 52, .18); }
+  .choice-button.is-selected .choice-button__marker { border-color: var(--evergreen); background: var(--evergreen); }
+  .choice-more { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; gap: 7px; border-radius: 13px; color: var(--plum); background: rgba(114, 82, 102, .07); font-size: .78rem; font-weight: 800; }
+  .clue-finish { display: grid; gap: 9px; margin-top: 3px; }
+  .clue-finish__summary { display: grid; min-height: 45px; grid-template-columns: 22px 1fr; gap: 7px; align-items: center; padding: 7px 10px; border-radius: 13px; color: var(--ink-soft); background: rgba(219, 231, 223, .54); font-size: .75rem; line-height: 1.25; }
+  .clue-finish__summary svg { color: var(--plum); }
+  .clue-finish__summary span { display: grid; min-width: 0; gap: 1px; }
+  .clue-finish__summary small { font-size: .7rem; }
+  .clue-finish__summary strong { overflow: hidden; color: var(--ink); font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
+  .clue-finish .button { min-height: 50px; }
+  .reassurance { display: flex; align-items: flex-start; gap: 8px; margin: 15px 3px 0; color: var(--ink-soft); font-size: .75rem; line-height: 1.4; }
   .reassurance svg { flex: 0 0 auto; color: var(--plum); }
 
   .trail-view { padding-bottom: 190px; background: radial-gradient(circle at 90% 2%, rgba(114, 82, 102, .12), transparent 14rem), linear-gradient(180deg, #eef3ee 0%, var(--paper) 38%); }
@@ -298,11 +311,13 @@
     .recent-card { min-height: 50px; }
     .recent-card__icon { width: 34px; height: 34px; }
     .clue-view { padding-top: max(12px, env(safe-area-inset-top)); }
-    .clue-route { margin-bottom: 9px; }
-    .clue-panel { padding-block: 14px; }
-    .clue-copy { margin-block: 11px 13px; }
-    .clue-copy h1 { font-size: 1.85rem; }
+    .clue-route { margin-bottom: 8px; }
+    .clue-panel { padding-block: 13px; }
+    .clue-copy { margin-block: 10px 12px; }
+    .clue-copy h1 { font-size: 1.78rem; }
     .choice-button { min-height: 66px; }
+    .clue-finish__summary { min-height: 42px; }
+    .clue-finish .button { min-height: 48px; }
     .reassurance { margin-top: 11px; }
     .calm-view { gap: 10px; padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
     .calm-view__content { gap: 18px; }
@@ -323,12 +338,29 @@
     .item-grid { gap: 6px; }
     .item-button strong { font-size: .66rem; }
     .clue-panel, .found-panel { padding-inline: 14px; }
+    .clue-context--two { grid-template-columns: 33px minmax(0, 1fr) 16px minmax(0, 1fr); gap: 6px; }
+    .clue-context__icon { width: 33px; height: 33px; }
+    .clue-context__entry strong { font-size: .8rem; }
     .choice-button { padding-inline: 10px 8px; }
-    .choice-button strong { font-size: .73rem; }
+    .choice-button strong { font-size: .8rem; }
+    .choice-button small { font-size: .75rem; }
+    .clue-finish__summary strong { font-size: .72rem; }
     .found-hero { gap: 11px; }
     .success-mark { width: 61px; height: 61px; }
     .sound-control { padding-left: 10px; }
     .sound-control button { min-width: 46px; padding-inline: 6px; }
+  }
+  @media (max-width: 380px) and (max-height: 760px) {
+    .clue-view .topbar { margin-bottom: 9px; }
+    .clue-view .topbar__trail span { display: none; }
+    .clue-route { margin-bottom: 7px; }
+    .clue-panel { padding-block: 12px; }
+    .clue-copy { margin-block: 9px 11px; }
+    .clue-copy h1 { font-size: 1.7rem; }
+    .choice-button { min-height: 60px; }
+    .choice-button small { display: none; }
+    .clue-finish__summary { min-height: 40px; }
+    .clue-finish .button { min-height: 46px; }
   }
   :root[data-text-size="large"] .home-view { height: auto; min-height: calc(100dvh - var(--nav-height)); grid-template-rows: auto auto; overflow: visible; }
   :root[data-text-size="large"] .home-main { grid-template-rows: auto auto auto; }

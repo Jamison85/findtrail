@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { DEFAULT_SETTINGS, STORAGE_KEY } from './storage'
 
+async function buildTrailFromDoorway() {
+  fireEvent.click(await screen.findByText('Went through a doorway'))
+  fireEvent.click(screen.getByRole('button', { name: 'Build my search trail' }))
+}
+
 describe('FindTrail app', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -31,10 +36,14 @@ describe('FindTrail app', () => {
     expect(keysButton).toHaveClass('is-departing')
     expect(screen.queryByText('Car keys')).not.toBeInTheDocument()
     fireEvent.click(await screen.findByText('Car keys', {}, transitionWait))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Where were you when you last definitely had it?' })).toHaveFocus(), transitionWait)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Where do you last remember having them?' })).toHaveFocus(), transitionWait)
     fireEvent.click(screen.getByRole('button', { name: /At home/i }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'What happened around that time?' })).toHaveFocus(), transitionWait)
-    fireEvent.click(screen.getByRole('button', { name: /Came in or left/i }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'At home, what happened next?' })).toHaveFocus(), transitionWait)
+    const doorway = screen.getByRole('button', { name: /Went through a doorway/i })
+    fireEvent.click(doorway)
+    expect(doorway).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('heading', { name: 'The landing zone' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Build my search trail' }))
     expect(await screen.findByRole('heading', { name: 'The landing zone' }, transitionWait)).toBeInTheDocument()
     expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuetext', 'Stop 1 of 9')
@@ -64,7 +73,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start a trail' }))
     fireEvent.click(screen.getByText('Carried in a hand'))
     fireEvent.click(await screen.findByText('At home'))
-    fireEvent.click(await screen.findByText('Came in or left'))
+    await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Entry tray' } })
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for work badge/i }))
@@ -75,7 +84,7 @@ describe('FindTrail app', () => {
     fireEvent.click(within(pinned).getByRole('button', { name: 'Work badge' }))
     fireEvent.click(screen.getByText('Carried in a hand'))
     fireEvent.click(await screen.findByText('At home'))
-    fireEvent.click(await screen.findByText('Came in or left'))
+    await buildTrailFromDoorway()
     expect(await screen.findByRole('heading', { name: 'Its saved home' })).toBeInTheDocument()
     expect(screen.getByText(/start at entry tray/i)).toBeInTheDocument()
   })
@@ -93,7 +102,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(await screen.findByText('Car keys'))
     fireEvent.click(await screen.findByText('At home'))
-    fireEvent.click(await screen.findByText('Came in or left'))
+    await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
     expect(screen.getByText('Attention gets noisy when the search gets frantic. Let the horizon widen your awareness.')).toBeInTheDocument()
@@ -120,7 +129,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(await screen.findByText('Car keys'))
     fireEvent.click(await screen.findByText('At home'))
-    fireEvent.click(await screen.findByText('Came in or left'))
+    await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
@@ -140,7 +149,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(await screen.findByText('Car keys'))
     fireEvent.click(await screen.findByText('At home'))
-    fireEvent.click(await screen.findByText('Came in or left'))
+    await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'Entry table or hook' }))
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
     expect(screen.getByLabelText('Exact place')).toHaveValue('Entry table or hook')
@@ -160,7 +169,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(screen.getByText('Car keys'))
     fireEvent.click(screen.getByText('At home'))
-    fireEvent.click(screen.getByText('Came in or left'))
+    await buildTrailFromDoorway()
 
     for (const spot of ['Entry table or hook', 'Beside the door', 'Near shoes', 'First counter inside']) {
       const button = screen.getByRole('button', { name: new RegExp(spot, 'i') })
@@ -185,6 +194,27 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(screen.getByText('Car keys'))
     expect(screen.getByText('At home')).toBeInTheDocument()
+  })
+
+  it('keeps the final clue focused and reveals less likely possibilities on request', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3,
+      activeSearch: null,
+      settings: { ...DEFAULT_SETTINGS, motion: 'reduced' },
+      history: [],
+      savedItems: [],
+    }))
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /keys/i }))
+    fireEvent.click(screen.getByText('Car keys'))
+    fireEvent.click(screen.getByText('At home'))
+
+    expect(screen.getByRole('heading', { name: 'At home, what happened next?' })).toBeInTheDocument()
+    expect(screen.queryByText('Used a bag')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'More possibilities or not sure' }))
+    expect(screen.getByText('Used a bag')).toBeInTheDocument()
+    expect(screen.getByText('Not sure')).toBeInTheDocument()
   })
 
   it('turns the final stop into a clear recovery plan', () => {

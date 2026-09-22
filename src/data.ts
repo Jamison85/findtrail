@@ -2,28 +2,28 @@ import type { ClueQuestion, ItemDefinition, ItemId, SearchStop } from './types'
 
 const LAST_PLACE: ClueQuestion = {
   id: 'lastPlace',
-  title: 'Where were you when you last definitely had it?',
-  helper: 'A rough answer is enough. This is a clue, not a memory test.',
+  title: 'Where do you last remember having it?',
+  helper: 'A rough answer is enough. We only need a useful starting point.',
   options: [
     { value: 'home', label: 'At home', detail: 'Any room counts' },
     { value: 'car', label: 'In the car', detail: 'Driving or parked' },
     { value: 'work', label: 'At work', detail: 'Or another familiar place' },
-    { value: 'out', label: 'Out somewhere', detail: 'Store, appointment, visit' },
-    { value: 'unsure', label: 'No idea', detail: 'Completely legal answer' },
+    { value: 'out', label: 'Elsewhere', detail: 'Store, appointment, visit' },
+    { value: 'unsure', label: 'Not sure', detail: 'We can still build a useful trail' },
   ],
 }
 
 const LAST_ACTION: ClueQuestion = {
   id: 'lastAction',
   title: 'What happened around that time?',
-  helper: 'Choose the closest scene. FindTrail will move those spots up the list.',
+  helper: 'Choose the closest scene. We will put its likely places first.',
   options: [
-    { value: 'arrived', label: 'Came in or left', detail: 'Doors, keys, unloading' },
+    { value: 'arrived', label: 'Went through a doorway', detail: 'Came in, headed out, unloaded' },
     { value: 'changed', label: 'Changed clothes', detail: 'Pockets, laundry, bedroom' },
     { value: 'sat', label: 'Sat or lay down', detail: 'Couch, chair, bed' },
     { value: 'carried', label: 'Used a bag', detail: 'Work bag, shopping bag, pouch' },
-    { value: 'cleaned', label: 'Cleaned or moved things', detail: 'A side quest may have relocated it' },
-    { value: 'unsure', label: 'Nothing stands out', detail: 'We will use the usual route' },
+    { value: 'cleaned', label: 'Cleaned or moved things', detail: 'It may have moved with the task' },
+    { value: 'unsure', label: 'Not sure', detail: 'We will use the usual route' },
   ],
 }
 
