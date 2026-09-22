@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTrail, getFoundSuggestions, mostLikelyLocation, mostSuccessfulStop } from './trailEngine'
+import { buildTrail, compactActiveSearch, getFocusedStops, getFoundSuggestions, getTrailStage, getWiderStops, isFocusedPassComplete, mostLikelyLocation, mostSuccessfulStop } from './trailEngine'
 import type { FoundEntry, SavedItem } from './types'
 
 const history: FoundEntry[] = [
@@ -45,7 +45,41 @@ describe('buildTrail', () => {
   it('never repeats stops and always ends with a slow sweep', () => {
     const trail = buildTrail('wallet', 'Wallet', { itemDetail: 'pocket', lastPlace: 'car', lastAction: 'carried' }, [])
     expect(new Set(trail.map((stop) => stop.id)).size).toBe(trail.length)
+    expect(getFocusedStops(trail)).toHaveLength(3)
+    expect(getWiderStops(trail)).toHaveLength(3)
+    expect(trail).toHaveLength(7)
     expect(trail.at(-1)?.id).toBe('slow-sweep')
+  })
+
+  it('keeps the visible route in two three-place passes', () => {
+    const trail = buildTrail('keys', 'Keys', { itemDetail: 'car', lastPlace: 'home', lastAction: 'arrived' }, [])
+    expect(getTrailStage(trail, 0)).toMatchObject({ name: 'focused', current: 1, total: 3 })
+    expect(isFocusedPassComplete(trail, 2)).toBe(true)
+    expect(getTrailStage(trail, 3)).toMatchObject({ name: 'wider', current: 1, total: 3 })
+    expect(getTrailStage(trail, trail.length - 1)).toMatchObject({ name: 'final', current: 1, total: 1 })
+  })
+
+  it('moves an older long search safely into the focused route', () => {
+    const oldStops = [
+      ...Array.from({ length: 8 }, (_, index) => ({ id: `place-${index + 1}`, title: `Place ${index + 1}`, instruction: 'Check here.', spots: ['One spot'] })),
+      { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check slowly.', spots: ['Likeliest place'], kind: 'final' as const },
+    ]
+    const migrated = compactActiveSearch({
+      version: 3,
+      id: 'old-search',
+      itemId: 'keys',
+      itemLabel: 'Keys',
+      answers: {},
+      stops: oldStops,
+      currentIndex: 7,
+      checkedSpots: {},
+      startedAt: '2026-09-21T12:00:00.000Z',
+      lastUpdatedAt: '2026-09-21T12:05:00.000Z',
+    })
+
+    expect(migrated.stops).toHaveLength(7)
+    expect(migrated.stops.at(-1)?.id).toBe('slow-sweep')
+    expect(migrated.currentIndex).toBe(6)
   })
 
   it('offers current-stop and item suggestions without duplicates', () => {

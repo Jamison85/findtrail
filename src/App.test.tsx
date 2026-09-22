@@ -46,7 +46,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Build my search trail' }))
     expect(await screen.findByRole('heading', { name: 'The landing zone' }, transitionWait)).toBeInTheDocument()
     expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuetext', 'Stop 1 of 9')
+    expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuetext', 'Place 1 of 3 in the focused pass')
   }, 10000)
 
   it('accepts a custom item name', () => {
@@ -179,7 +179,49 @@ describe('FindTrail app', () => {
 
     expect(screen.getByText('This area is fully checked. Move on when you’re ready.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Area checked · next place' }))
-    expect(screen.getByRole('progressbar', { name: 'Search trail progress' })).toHaveAttribute('aria-valuenow', '2')
+    expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuenow', '2')
+  })
+
+  it('resumes at the focused checkpoint and reveals only the next three places', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3,
+      settings: { ...DEFAULT_SETTINGS, motion: 'reduced' },
+      history: [],
+      savedItems: [],
+      activeSearch: {
+        version: 3,
+        id: 'active-focused-checkpoint',
+        itemId: 'keys',
+        itemLabel: 'Keys',
+        answers: { itemDetail: 'car', lastPlace: 'home', lastAction: 'arrived' },
+        stops: [
+          { id: 'entry', title: 'The landing zone', instruction: 'Check the landing zone.', spots: ['Entry hook'] },
+          { id: 'pockets', title: 'Current pockets', instruction: 'Check pockets.', spots: ['Current pants'] },
+          { id: 'counter', title: 'Flat surfaces', instruction: 'Check surfaces.', spots: ['Kitchen counter'] },
+          { id: 'car', title: 'The car drop zones', instruction: 'Check the car.', spots: ['Console'] },
+          { id: 'bags', title: 'Bags, one pocket at a time', instruction: 'Check bags.', spots: ['Work bag'] },
+          { id: 'seat', title: 'Where you sat down', instruction: 'Check seating.', spots: ['Couch'] },
+          { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check slowly.', spots: ['Likeliest place'], kind: 'final' },
+        ],
+        currentIndex: 2,
+        checkedSpots: { entry: ['Entry hook'], pockets: ['Current pants'] },
+        startedAt: '2026-09-22T12:00:00.000Z',
+        lastUpdatedAt: '2026-09-22T12:05:00.000Z',
+      },
+    }))
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+
+    expect(screen.getByRole('heading', { name: 'Pause before going wider.' })).toBeInTheDocument()
+    const preview = screen.getByRole('list', { name: 'Next places to check for Keys' })
+    expect(within(preview).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(preview).queryByText('Slow final sweep')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search these 3 places' }))
+    expect(screen.getByRole('heading', { name: 'The car drop zones' })).toBeInTheDocument()
+    expect(screen.getByText('Place 1 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Wider pass progress' })).toHaveAttribute('aria-valuenow', '1')
   })
 
   it('skips clue handoff delays when reduced motion is enabled', () => {

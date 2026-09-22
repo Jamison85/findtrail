@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRecognition, speak, stopSpeaking } from '../speech'
+import { getTrailStage, isFocusedPassComplete, isWiderPassComplete } from '../trailEngine'
 import type { ActiveSearch, Settings } from '../types'
 import { Icon } from './Icon'
 
@@ -30,7 +31,21 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
   const headingRef = useRef<HTMLHeadingElement>(null)
   const voiceSupported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition)
   const spokenText = useMemo(() => `${stop.title}. ${stop.instruction}. Check ${stop.spots.join(', ')}.`, [stop])
-  const progress = ((search.currentIndex + 1) / search.stops.length) * 100
+  const stage = getTrailStage(search.stops, search.currentIndex)
+  const progress = (stage.current / stage.total) * 100
+  const focusedPassComplete = isFocusedPassComplete(search.stops, search.currentIndex)
+  const widerPassComplete = isWiderPassComplete(search.stops, search.currentIndex)
+  const nextLabel = isLastStop
+    ? 'Still missing · next steps'
+    : focusedPassComplete
+      ? 'Focused pass complete'
+      : widerPassComplete
+        ? 'Wider pass done · final sweep'
+        : stage.name === 'safety'
+          ? 'Safety step done · start search'
+          : areaChecked
+            ? 'Area checked · next place'
+            : 'Nothing here · next place'
   const reduceMotion = settings.motion === 'reduced'
     || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 
@@ -123,17 +138,17 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
         <button className="icon-button" onClick={onBack} aria-label="Return home"><Icon name="back" /></button>
         <div className="trail-identity">
           <span className="trail-identity__item"><Icon name={search.itemId} size={15} />{search.itemLabel}</span>
-          <strong>Stop {search.currentIndex + 1} of {search.stops.length}</strong>
+          <strong>{stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total}`}</strong>
         </div>
         <button className="text-button" onClick={onEditClues}>Clues</button>
       </header>
 
       <div className="trail-route">
         <div className="trail-route__meta">
-          <span>One place at a time</span>
+          <span>{stage.label}</span>
           <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} ruled out` : 'Trail ready'}</strong>
         </div>
-        <div className="trail-progress" role="progressbar" aria-label="Search trail progress" aria-valuemin={1} aria-valuemax={search.stops.length} aria-valuenow={search.currentIndex + 1} aria-valuetext={`Stop ${search.currentIndex + 1} of ${search.stops.length}`}>
+        <div className="trail-progress" role="progressbar" aria-label={`${stage.label} progress`} aria-valuemin={1} aria-valuemax={stage.total} aria-valuenow={stage.current} aria-valuetext={stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total} in the ${stage.label.toLocaleLowerCase()}`}>
           <span style={{ width: `${progress}%` }} />
         </div>
       </div>
@@ -181,7 +196,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
       <div className="sticky-actions trail-action-dock">
         <div className="trail-action-dock__main">
           <button className="button button--found" onClick={onFound} disabled={departing}><Icon name="spark" size={20} /> Found it</button>
-          <button className="button button--primary" onClick={advanceTrail} disabled={departing}>{isLastStop ? 'Still missing · next steps' : areaChecked ? 'Area checked · next place' : 'Nothing here · next place'}</button>
+          <button className="button button--primary" onClick={advanceTrail} disabled={departing}>{nextLabel}</button>
         </div>
         <button className="trail-reset-button" onClick={onCalm} disabled={departing}><Icon name="calm" size={16} />I need a reset</button>
       </div>

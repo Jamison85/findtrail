@@ -9,8 +9,9 @@ import { Icon } from './components/Icon'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
+import { WidenSearchView } from './components/WidenSearchView'
 import { ITEMS, ITEM_BY_ID } from './data'
-import { buildTrail } from './trailEngine'
+import { buildTrail, compactActiveSearch, getWiderStartIndex, isFocusedPassComplete } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
 import type { ActiveSearch, ClueOption, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
@@ -40,7 +41,10 @@ function shouldReduceMotion(settings: Settings): boolean {
 }
 
 export default function App() {
-  const [data, setData] = useState<PersistedData>(() => loadData())
+  const [data, setData] = useState<PersistedData>(() => {
+    const loaded = loadData()
+    return loaded.activeSearch ? { ...loaded, activeSearch: compactActiveSearch(loaded.activeSearch) } : loaded
+  })
   const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(window.location.search).get('screen') === 'calm' ? 'calm' : 'home')
   const [clueIndex, setClueIndex] = useState(0)
   const [customOpen, setCustomOpen] = useState(false)
@@ -167,7 +171,7 @@ export default function App() {
   function resumeSearch() {
     if (!active) return
     if (active.stops.length) {
-      setScreen('trail')
+      setScreen(isFocusedPassComplete(active.stops, active.currentIndex) ? 'widen' : 'trail')
       return
     }
     const questions = ITEM_BY_ID[active.itemId].questions
@@ -188,6 +192,10 @@ export default function App() {
 
   function nextStop() {
     if (!active) return
+    if (isFocusedPassComplete(active.stops, active.currentIndex)) {
+      setScreen('widen')
+      return
+    }
     if (active.currentIndex >= active.stops.length - 1) {
       setScreen('end')
       return
@@ -198,6 +206,17 @@ export default function App() {
       setReturnScreen('trail')
       setScreen('calm')
     }
+  }
+
+  function widenSearch() {
+    if (!active) return
+    const nextIndex = getWiderStartIndex(active.stops)
+    if (nextIndex === null) {
+      setScreen('trail')
+      return
+    }
+    updateActive((current) => ({ ...current, currentIndex: nextIndex }))
+    setScreen('trail')
   }
 
   function openFound() {
@@ -311,7 +330,7 @@ export default function App() {
     }
     const summary = `${parsed.data.history.length} found ${parsed.data.history.length === 1 ? 'place' : 'places'} and ${parsed.data.savedItems.length} saved ${parsed.data.savedItems.length === 1 ? 'home' : 'homes'}`
     if (!window.confirm(`Restore ${summary}? This will replace the FindTrail data on this device.`)) return
-    setData(parsed.data)
+      setData(parsed.data.activeSearch ? { ...parsed.data, activeSearch: compactActiveSearch(parsed.data.activeSearch) } : parsed.data)
     setBackupStatus({ message: 'Backup restored.', kind: 'success' })
   }
 
@@ -338,6 +357,7 @@ export default function App() {
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
+        {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
         {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} />}
