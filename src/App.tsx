@@ -375,71 +375,73 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
 
   return (
     <section className={data.activeSearch ? 'view home-view home-view--active' : 'view home-view'} aria-labelledby="view-heading">
-      <section className="home-hero">
-        <HomeArtwork />
-        <header className="brand-header">
-          <div className="brand-lockup"><span className="brand-mark"><Icon name="trail" /></span><strong>FindTrail</strong></div>
-          <span className="local-pill"><Icon name="lock" size={13} />Private on this device</span>
-        </header>
+      <header className="brand-header">
+        <div className="brand-lockup"><span className="brand-mark"><Icon name="trail" /></span><strong>FindTrail</strong></div>
+        <span className="local-pill"><Icon name="lock" size={13} />Private on this device</span>
+      </header>
 
-        {data.activeSearch ? (
-          <article className="resume-card">
-            <div className="resume-card__icon"><Icon name={ITEM_BY_ID[data.activeSearch.itemId].icon} /></div>
-            <div>
-              <span>Trail in progress</span>
-              <h1 id="view-heading" tabIndex={-1}>Keep looking for {data.activeSearch.itemLabel.toLocaleLowerCase()}?</h1>
-              <p>{data.activeSearch.stops.length ? `Ready at stop ${data.activeSearch.currentIndex + 1}.` : 'Your clues are saved.'}</p>
+      <div className="home-main">
+        <section className="home-hero">
+          <HomeArtwork />
+
+          {data.activeSearch ? (
+            <article className="resume-card">
+              <div className="resume-card__icon"><Icon name={ITEM_BY_ID[data.activeSearch.itemId].icon} /></div>
+              <div>
+                <span>Trail in progress</span>
+                <h1 id="view-heading" tabIndex={-1}>Keep looking for {data.activeSearch.itemLabel.toLocaleLowerCase()}?</h1>
+                <p>{data.activeSearch.stops.length ? `Ready at stop ${data.activeSearch.currentIndex + 1}.` : 'Your clues are saved.'}</p>
+              </div>
+              <button className="button button--primary" onClick={onResume}>Resume trail</button>
+              <button className="text-button text-button--muted" onClick={onDiscard}>End this search</button>
+            </article>
+          ) : (
+            <div className="hero-copy">
+              <h1 id="view-heading" tabIndex={-1} aria-label="A clear path to finding what’s missing.">A clear path to <em>finding what’s missing.</em></h1>
+              <p>Choose what’s missing. FindTrail organizes your search and keeps you moving toward the next likely place.</p>
             </div>
-            <button className="button button--primary" onClick={onResume}>Resume trail</button>
-            <button className="text-button text-button--muted" onClick={onDiscard}>End this search</button>
-          </article>
-        ) : (
-          <div className="hero-copy">
-            <span className="eyebrow">Retrace with a plan</span>
-            <h1 id="view-heading" tabIndex={-1} aria-label="A clear path to finding what’s missing.">A clear path to<br /><em>finding what’s missing.</em></h1>
-            <p>Choose what’s missing. FindTrail organizes your search and keeps you moving toward the next likely place.</p>
+          )}
+        </section>
+
+        <div className="item-picker">
+          <div className="section-heading">
+            <h2>What went missing?</h2>
+            <small>One tap</small>
           </div>
-        )}
-      </section>
+          {pinnedItems.length > 0 && <div className="pinned-items" role="group" aria-label="Pinned items">
+            {pinnedItems.map((item) => <button key={item.id} className="pinned-item" onClick={() => onStart('other', item.itemLabel)}><Icon name="pin" size={15} /><span>{item.itemLabel}</span></button>)}
+          </div>}
+          <div className="item-grid">
+            {ITEMS.map((item) => {
+              const itemClass = [
+                'item-button',
+                item.id === 'other' && customOpen ? 'is-active' : '',
+                item.id === departingItemId ? 'is-departing' : '',
+              ].filter(Boolean).join(' ')
+              return (
+                <button key={item.id} className={itemClass} onClick={() => chooseItem(item.id)} aria-haspopup={item.id === 'other' ? 'dialog' : undefined} aria-expanded={item.id === 'other' ? customOpen : undefined}>
+                  <span className="item-button__icon"><Icon name={item.icon} size={23} /></span>
+                  <strong>{item.label}</strong>
+                  <small>{item.hint}</small>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
-      <div className="item-picker">
-        <div className="section-heading">
-          <div><span>Start here</span><h2>What went missing?</h2></div>
-          <small>One tap</small>
-        </div>
-        {pinnedItems.length > 0 && <div className="pinned-items" role="group" aria-label="Pinned items">
-          {pinnedItems.map((item) => <button key={item.id} className="pinned-item" onClick={() => onStart('other', item.itemLabel)}><Icon name="pin" size={15} /><span>{item.itemLabel}</span></button>)}
-        </div>}
-        <div className="item-grid">
-          {ITEMS.map((item) => {
-            const itemClass = [
-              'item-button',
-              item.id === 'other' && customOpen ? 'is-active' : '',
-              item.id === departingItemId ? 'is-departing' : '',
-            ].filter(Boolean).join(' ')
-            return (
-              <button key={item.id} className={itemClass} onClick={() => chooseItem(item.id)} aria-haspopup={item.id === 'other' ? 'dialog' : undefined} aria-expanded={item.id === 'other' ? customOpen : undefined}>
-                <span className="item-button__icon"><Icon name={item.icon} size={23} /></span>
-                <strong>{item.label}</strong>
-                <small>{item.hint}</small>
-              </button>
-            )
-          })}
-        </div>
+        {!data.activeSearch && (latest ? (
+          <button className="recent-card" onClick={() => onOpenHistory(latest.id)} aria-label={`Open ${latest.itemLabel}, found at ${latest.foundLocation}, in history`}>
+            <span className="recent-card__icon"><Icon name="history" size={23} /></span>
+            <span className="recent-card__copy"><small>Last found</small><strong>{latest.itemLabel}</strong><span>{latest.foundLocation}</span></span>
+            <span className="recent-card__arrow"><Icon name="forward" size={20} /></span>
+          </button>
+        ) : (
+          <div className="recent-card recent-card--empty">
+            <span className="recent-card__icon"><Icon name="trail" size={23} /></span>
+            <span className="recent-card__copy"><small>Your first trail</small><strong>Ready when you are.</strong><span>Recent finds will appear here.</span></span>
+          </div>
+        ))}
       </div>
-
-      {!data.activeSearch && (latest ? (
-        <button className="recent-card" onClick={() => onOpenHistory(latest.id)} aria-label={`Open ${latest.itemLabel}, found at ${latest.foundLocation}, in history`}>
-          <span className="recent-card__icon"><Icon name="history" size={23} /></span>
-          <span className="recent-card__copy"><small>Last found</small><strong>{latest.itemLabel}</strong><span>{latest.foundLocation}</span></span>
-          <span className="recent-card__arrow"><Icon name="forward" size={20} /></span>
-        </button>
-      ) : (
-        <div className="recent-card recent-card--empty">
-          <span className="recent-card__icon"><Icon name="trail" size={23} /></span>
-          <span className="recent-card__copy"><small>Your first trail</small><strong>Ready when you are.</strong><span>Recent finds will appear here.</span></span>
-        </div>
-      ))}
 
       {customOpen && (
         <div className="custom-item-scrim" onMouseDown={(event) => { if (event.currentTarget === event.target) setCustomOpen(false) }}>
