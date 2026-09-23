@@ -1,0 +1,161 @@
+@layer screens {
+  .launch-experience {
+    min-height: 100dvh;
+  }
+
+  .launch-experience.is-covered {
+    pointer-events: none;
+    animation: launch-app-reveal 2.15s cubic-bezier(.22, .61, .36, 1) both;
+  }
+
+  .launch-splash {
+    position: fixed;
+    z-index: 2000;
+    inset: 0 auto 0 50%;
+    display: grid;
+    width: min(100%, 540px);
+    min-height: 100dvh;
+    place-items: center;
+    overflow: hidden;
+    color: var(--evergreen);
+    background:
+      radial-gradient(circle at 52% 42%, rgba(245, 228, 221, .7), transparent 18rem),
+      linear-gradient(180deg, #fffaf3 0%, #fdf8f1 56%, #f8efe5 100%);
+    transform: translateX(-50%);
+    animation: launch-splash-exit 2.15s cubic-bezier(.22, .61, .36, 1) both;
+  }
+
+  .launch-splash__glow {
+    position: absolute;
+    width: min(74vw, 360px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200, 107, 83, .12), rgba(232, 199, 131, .07) 34%, transparent 68%);
+    filter: blur(10px);
+    opacity: 0;
+    transform: scale(.82);
+    animation: launch-glow 2.15s ease-out both;
+  }
+
+  .launch-splash__lockup {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    margin-top: -2vh;
+  }
+
+  .launch-splash__mark {
+    width: clamp(118px, 31vw, 148px);
+    height: clamp(118px, 31vw, 148px);
+    overflow: visible;
+    color: var(--evergreen);
+    filter: drop-shadow(0 12px 22px rgba(23, 58, 52, .08));
+  }
+
+  .launch-splash__mark .brand-mark__trail {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: launch-trail-draw .8s cubic-bezier(.45, 0, .18, 1) .25s forwards;
+  }
+
+  .launch-splash__mark .brand-mark__endpoint {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(.45);
+    animation: launch-endpoint .35s cubic-bezier(.2, .9, .25, 1.35) .9s forwards;
+  }
+
+  .launch-splash__wordmark {
+    opacity: 0;
+    color: var(--evergreen);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.75rem, 7vw, 2.15rem);
+    font-weight: 650;
+    letter-spacing: -.035em;
+    transform: translateY(6px);
+    animation: launch-wordmark .4s ease-out 1.05s forwards;
+  }
+
+  @keyframes launch-trail-draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes launch-endpoint {
+    0% { opacity: 0; transform: scale(.45); filter: drop-shadow(0 0 0 rgba(200, 107, 83, 0)); }
+    70% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 14px rgba(200, 107, 83, .3)); }
+    100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 5px rgba(200, 107, 83, .16)); }
+  }
+
+  @keyframes launch-wordmark {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes launch-glow {
+    0%, 37% { opacity: 0; transform: scale(.82); }
+    58% { opacity: 1; transform: scale(1); }
+    86% { opacity: .72; transform: scale(1.04); }
+    100% { opacity: 0; transform: scale(1.08); }
+  }
+
+  @keyframes launch-splash-exit {
+    0%, 86% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
+  }
+
+  @keyframes launch-app-reveal {
+    0%, 82% { opacity: .72; transform: scale(1.008); filter: blur(2px); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+
+  .launch-splash.is-reduced-motion {
+    animation-duration: .85s;
+  }
+
+  .launch-splash.is-reduced-motion .launch-splash__glow {
+    animation: none;
+    opacity: .36;
+    transform: scale(1);
+  }
+
+  .launch-splash.is-reduced-motion .launch-splash__mark .brand-mark__trail {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .launch-splash.is-reduced-motion .launch-splash__mark .brand-mark__endpoint {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .launch-splash.is-reduced-motion .launch-splash__wordmark {
+    animation: launch-wordmark-reduced .24s ease-out .08s forwards;
+  }
+
+  .launch-experience.is-reduced-launch {
+    animation: launch-app-reveal-reduced .85s ease-out both;
+  }
+
+  @keyframes launch-wordmark-reduced {
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes launch-app-reveal-reduced {
+    0%, 64% { opacity: .92; }
+    100% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .launch-splash {
+      animation-duration: .85s;
+    }
+
+    .launch-splash__glow { animation: none; opacity: .3; transform: scale(1); }
+    .launch-splash__mark .brand-mark__trail { stroke-dashoffset: 0; animation: none; }
+    .launch-splash__mark .brand-mark__endpoint { opacity: 1; transform: none; animation: none; }
+    .launch-splash__wordmark { animation: launch-wordmark-reduced .24s ease-out .08s forwards; }
+    .launch-experience.is-covered { animation: launch-app-reveal-reduced .85s ease-out both; }
+  }
+}
