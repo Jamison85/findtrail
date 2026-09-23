@@ -4,7 +4,7 @@
     padding-bottom: 156px;
     overflow-x: hidden;
     background:
-      radial-gradient(ellipse at 105% -6%, rgba(114, 82, 102, .17), transparent 17rem),
+      radial-gradient(ellipse at 105% -6%, rgba(200, 107, 83, .17), transparent 17rem),
       radial-gradient(ellipse at -10% 32%, rgba(120, 152, 137, .15), transparent 20rem),
       linear-gradient(180deg, #edf3ee 0%, var(--paper) 42%, #f3eadf 100%);
   }
@@ -65,7 +65,7 @@
     white-space: nowrap;
   }
 
-  .trail-identity__item svg { flex: 0 0 auto; color: var(--plum); }
+  .trail-identity__item svg { flex: 0 0 auto; color: var(--clay); }
   .trail-identity strong { font-size: .86rem; }
 
   .trail-route {
@@ -106,8 +106,8 @@
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--clay-deep), var(--plum));
-    box-shadow: 0 0 10px rgba(114, 82, 102, .2);
+    background: linear-gradient(90deg, var(--clay-deep), var(--clay));
+    box-shadow: 0 0 10px rgba(200, 107, 83, .2);
     transition: width .32s cubic-bezier(.2, .72, .2, 1);
   }
 
@@ -150,7 +150,7 @@
 
   .trail-view > article.stop-card--history,
   .trail-view > article.stop-card--learned {
-    border-color: rgba(114, 82, 102, .17);
+    border-color: rgba(200, 107, 83, .17);
     background: linear-gradient(145deg, rgba(255, 253, 249, .98), rgba(244, 234, 240, .96));
   }
 
@@ -160,12 +160,12 @@
   }
 
   .trail-view > article.stop-card--safety {
-    border-color: rgba(189, 98, 69, .25);
+    border-color: rgba(169, 86, 67, .25);
     background: linear-gradient(145deg, #fffaf5, #fbe8dc);
   }
 
   .trail-view > article.stop-card--final {
-    border-color: rgba(114, 82, 102, .2);
+    border-color: rgba(200, 107, 83, .2);
     background: linear-gradient(145deg, #fffdf9, #eee5df);
   }
 
@@ -215,7 +215,7 @@
   .stop-marker strong { font-family: Georgia, serif; font-size: 1.08rem; line-height: .9; }
   .stop-card--safety .stop-marker { background: var(--clay-deep); }
   .stop-card--history .stop-marker,
-  .stop-card--learned .stop-marker { background: var(--plum); }
+  .stop-card--learned .stop-marker { background: var(--clay); }
 
   .reason {
     display: grid;
@@ -224,10 +224,10 @@
     align-items: center;
     margin: 15px 0 2px;
     padding: 9px 11px 9px 9px;
-    border: 1px solid rgba(114, 82, 102, .12);
+    border: 1px solid rgba(200, 107, 83, .12);
     border-radius: 15px;
-    color: var(--plum);
-    background: rgba(114, 82, 102, .065);
+    color: var(--clay);
+    background: rgba(200, 107, 83, .065);
     font-size: .7rem;
     font-weight: 650;
     line-height: 1.35;
@@ -240,7 +240,7 @@
     place-items: center;
     border-radius: 11px;
     color: white;
-    background: var(--plum);
+    background: var(--clay);
   }
 
   .reason > span:last-child { display: grid; gap: 1px; }
@@ -261,8 +261,8 @@
     min-width: 42px;
     padding: 5px 8px;
     border-radius: 99px;
-    color: var(--plum);
-    background: var(--plum-soft);
+    color: var(--clay);
+    background: var(--clay-soft);
     font-size: .58rem;
     font-variant-numeric: tabular-nums;
     font-weight: 850;
@@ -359,7 +359,7 @@
     align-items: center;
     margin-top: 16px;
     padding: 9px 10px;
-    border: 1px solid rgba(189, 98, 69, .12);
+    border: 1px solid rgba(169, 86, 67, .12);
     border-radius: 15px;
     color: var(--ink-soft);
     background: rgba(248, 238, 229, .72);
@@ -374,7 +374,7 @@
     place-items: center;
     border-radius: 12px;
     color: var(--clay-text);
-    background: rgba(233, 138, 102, .16);
+    background: rgba(200, 107, 83, .16);
   }
 
   .side-quest-note strong {
@@ -415,10 +415,10 @@
   }
 
   .trail-utilities .voice-tool.is-listening {
-    border-color: var(--plum);
+    border-color: var(--clay);
     color: white;
-    background: var(--plum);
-    box-shadow: 0 8px 20px rgba(114, 82, 102, .18);
+    background: var(--clay);
+    box-shadow: 0 8px 20px rgba(200, 107, 83, .18);
   }
 
   .voice-status { position: relative; z-index: 1; max-width: 31rem; margin: 8px auto; }
@@ -458,7 +458,7 @@
   .trail-action-dock .button--found {
     color: #41291f;
     background: var(--clay);
-    box-shadow: 0 9px 22px rgba(189, 98, 69, .2), inset 0 1px 0 rgba(255,255,255,.22);
+    box-shadow: 0 9px 22px rgba(169, 86, 67, .2), inset 0 1px 0 rgba(255,255,255,.22);
   }
 
   .trail-action-dock .button--primary {
