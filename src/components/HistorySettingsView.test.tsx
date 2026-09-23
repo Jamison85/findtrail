@@ -64,11 +64,13 @@ describe('SettingsView', () => {
     render(<SettingsView
       data={data}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={{ message: 'Backup downloaded.', kind: 'success' }}
       onUpdate={onUpdate}
       onUpdateSavedItem={onUpdateSavedItem}
       onRemoveSavedItem={onRemoveSavedItem}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={onExport}
       onRestore={vi.fn()}
       onClear={onClear}
@@ -97,15 +99,38 @@ describe('SettingsView', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Backup downloaded.')
   })
 
+  it('keeps iPhone Home Screen instructions available in Settings', () => {
+    const onShowIOSInstallHelp = vi.fn()
+    render(<SettingsView
+      data={data}
+      canInstall={false}
+      iosInstallHelpAvailable={true}
+      backupStatus={null}
+      onUpdate={vi.fn()}
+      onUpdateSavedItem={vi.fn()}
+      onRemoveSavedItem={vi.fn()}
+      onInstall={vi.fn()}
+      onShowIOSInstallHelp={onShowIOSInstallHelp}
+      onExport={vi.fn()}
+      onRestore={vi.fn()}
+      onClear={vi.fn()}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Add FindTrail to Home Screen/i }))
+    expect(onShowIOSInstallHelp).toHaveBeenCalledOnce()
+  })
+
   it('presents failed restores as errors instead of success', () => {
     render(<SettingsView
       data={data}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={{ message: 'That backup is damaged.', kind: 'error' }}
       onUpdate={vi.fn()}
       onUpdateSavedItem={vi.fn()}
       onRemoveSavedItem={vi.fn()}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={vi.fn()}
       onRestore={vi.fn()}
       onClear={vi.fn()}
@@ -120,11 +145,13 @@ describe('SettingsView', () => {
     render(<SettingsView
       data={{ ...data, history: [], savedItems: [] }}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={null}
       onUpdate={vi.fn()}
       onUpdateSavedItem={vi.fn()}
       onRemoveSavedItem={vi.fn()}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={vi.fn()}
       onRestore={vi.fn()}
       onClear={vi.fn()}
