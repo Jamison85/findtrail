@@ -32,7 +32,7 @@ describe('StillMissingView', () => {
     renderView()
 
     expect(screen.getByRole('heading', { name: 'Pause the search loop.' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Focused trail complete.*2 places checked.*3 exact spots ruled out/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Focused trail complete.*2 places visited.*3 exact spots ruled out/i)).toBeInTheDocument()
     const plan = screen.getByRole('list', { name: 'Next actions for Keys' })
     expect(within(plan).getAllByRole('listitem')).toHaveLength(3)
     expect(within(plan).getByText('Start here')).toBeInTheDocument()
