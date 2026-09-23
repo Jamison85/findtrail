@@ -132,6 +132,14 @@
 
   .calm-reset-label::after { transform: scaleX(-1); }
 
+  .calm-reset-label__feather {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: brightness(1.1) sepia(.15) drop-shadow(0 1px 5px rgba(0, 0, 0, .28));
+    transform: rotate(-12deg);
+  }
+
   .calm-copy h1 {
     max-width: 29rem;
     margin: 0 auto 8px;
