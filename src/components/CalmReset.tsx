@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Settings } from '../types'
 import { HorizonRipples } from './HorizonRipples'
 import { Icon } from './Icon'
+import { FeatherMark } from './FeatherMark'
 
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
 const TOTAL_SECONDS = 30
@@ -86,7 +87,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
       <div className="calm-view__content">
         <div className="calm-copy">
-          <span className="calm-reset-label"><Icon name="calm" size={13} /> 30-second reset</span>
+          <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> 30-second reset</span>
           <h1 id="view-heading" tabIndex={-1}>The search can wait one breath.</h1>
           <p>Attention gets noisy when the search gets frantic. Let the horizon widen your awareness.</p>
         </div>
