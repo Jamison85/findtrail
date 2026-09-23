@@ -88,7 +88,6 @@
   .calm-skip svg { opacity: .76; }
 
   .calm-skip:focus-visible,
-  .calm-restart:focus-visible,
   .calm-resume:focus-visible {
     outline: 3px solid #fff3df;
     outline-offset: 3px;
@@ -329,21 +328,7 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: 7px;
-    padding: 0 7px 9px;
-  }
-
-  .calm-rhythm-label {
-    grid-column: 1;
-    color: rgba(248, 215, 169, .84);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: .76rem;
-    font-style: italic;
-    font-weight: 500;
-    letter-spacing: .008em;
-    text-align: center;
-    text-transform: none;
+    padding: 0 7px 10px;
   }
 
   .calm-progress {
@@ -365,36 +350,6 @@
     box-shadow: 0 0 9px rgba(239, 190, 121, .16);
     transition: width .1s linear;
   }
-
-  .calm-cycle-meta {
-    display: flex;
-    grid-column: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    color: rgba(206, 217, 203, .58);
-    font-size: .59rem;
-    font-weight: 540;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, .28);
-    white-space: nowrap;
-  }
-
-  .calm-cycle-markers {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .calm-cycle-markers span {
-    width: 5px;
-    height: 5px;
-    border-radius: 999px;
-    background: rgba(184, 195, 173, .2);
-    transition: width .25s ease, background .25s ease;
-  }
-
-  .calm-cycle-markers span.is-complete { background: rgba(126, 169, 145, .58); }
-  .calm-cycle-markers span.is-current { width: 13px; background: rgba(239, 190, 121, .78); }
 
   .calm-resume {
     display: flex;
@@ -435,41 +390,6 @@
     background: rgba(247, 241, 231, .055);
     transform: translateY(1px);
   }
-
-  .calm-instrument__note {
-    display: flex;
-    min-height: 22px;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 5px 2px 0;
-    color: rgba(203, 214, 200, .46);
-    font-size: .56rem;
-    font-weight: 500;
-    text-align: center;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, .24);
-  }
-
-  .calm-instrument__note > span::after {
-    margin-left: 12px;
-    color: rgba(203, 214, 200, .22);
-    content: "•";
-  }
-
-  .calm-restart {
-    display: inline-flex;
-    min-height: 26px;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 4px;
-    padding: 0;
-    color: rgba(216, 224, 215, .58);
-    background: transparent;
-    font-size: .58rem;
-    font-weight: 560;
-  }
-
-  .calm-restart:active { opacity: .68; }
 
   @keyframes calm-scene-enter {
     from { opacity: 0; }
@@ -568,9 +488,8 @@
     .calm-guidance__hint { font-size: .6rem; }
     .calm-feather-anchor { width: clamp(78px, 23vw, 98px); }
     .calm-instrument { padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
-    .calm-breath-card { gap: 6px; padding-bottom: 7px; }
+    .calm-breath-card { padding-bottom: 7px; }
     .calm-resume { min-height: 46px; margin-top: 1px; }
-    .calm-instrument__note { padding-top: 4px; }
   }
 
   @media (max-width: 380px) {
@@ -582,9 +501,6 @@
       width: clamp(98px, 28vw, 106px);
     }
     .calm-instrument { width: 100%; margin-left: 0; padding-inline: 5px; }
-    .calm-cycle-meta { gap: 8px; font-size: .58rem; }
-    .calm-instrument__note { gap: 9px; font-size: .54rem; }
-    .calm-instrument__note > span::after { margin-left: 9px; }
   }
 
   :root[data-text-size="large"] .calm-view {
@@ -613,7 +529,6 @@
     }
 
     .calm-progress span,
-    .calm-cycle-markers span,
     .calm-resume { transition: none; }
   }
 }
