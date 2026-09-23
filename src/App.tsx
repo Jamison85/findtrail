@@ -84,7 +84,7 @@ export default function App() {
     if (!launching) return
     const experience = launchExperience.current
     experience?.setAttribute('inert', '')
-    const timer = window.setTimeout(() => setLaunching(false), launchReducedMotion ? 850 : 2150)
+    const timer = window.setTimeout(() => setLaunching(false), launchReducedMotion ? 850 : 1800)
     return () => {
       window.clearTimeout(timer)
       experience?.removeAttribute('inert')
