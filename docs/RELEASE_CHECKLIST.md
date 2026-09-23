@@ -12,6 +12,7 @@
 
 - [x] Home custom-item sheet opens and submits without changing page height
 - [x] Home recent-find card opens the matching history detail
+- [x] First-run onboarding appears before Home and can resume after an interrupted first visit
 - [x] First-use Home state remains useful without saved history
 - [x] Common-item and custom-item searches complete
 - [x] Clue answers visibly change trail order
@@ -24,12 +25,13 @@
 - [x] Backup round-trips and malformed backups are rejected
 - [x] Installed-app update notice preserves user control
 - [x] History can be cleared only after confirmation
-- [x] History summarizes learned locations and restarts the matching search
+- [x] History summarizes learned locations, ranks repeated useful patterns first, and restarts the matching search
 - [x] Settings separates guidance, appearance, saved homes, backup, and destructive controls
+- [x] iPhone Home Screen instructions remain available from Settings after the first-use coach
 - [x] Calm reset resumes the correct screen
 - [x] Ambient horizon reset completes three truthful 10-second cycles
 - [x] Reset has no sound control or audio path
-- [x] Touch ripples are decorative and reduced motion receives a still horizon
+- [x] Feather-contact ripple is clearly visible without overpowering the reset, and reduced motion receives a still horizon
 - [x] Update notices wait until a root screen and never shrink the reset
 - [x] Clue selections settle before advancing and skip delay with reduced motion
 - [x] Last checked exact spot carries into the found-place screen
@@ -39,14 +41,14 @@
 
 ## Visual and accessibility
 
-- [x] Search journey 2.3.0 at 360 × 800 Android viewport
-- [x] Search journey 2.3.0 at 412 × 915 Galaxy-class viewport
-- [x] Search journey 2.3.0 at 430 × 932 iPhone-class viewport
-- [x] Search journey 2.3.0 at 768 × 1024 tablet viewport
-- [ ] Ambient reset 2.4.0 at 360 × 800 Android viewport
-- [ ] Ambient reset 2.4.0 at 412 × 915 Galaxy-class viewport
-- [ ] Ambient reset 2.4.0 at 430 × 932 iPhone-class viewport
-- [ ] Ambient reset 2.4.0 at 768 × 1024 tablet viewport
+- [x] FindTrail 2.12 search journey at 360 × 800 Android viewport
+- [x] FindTrail 2.12 search journey at 412 × 915 Galaxy-class viewport
+- [x] FindTrail 2.12 search journey at 430 × 932 iPhone-class viewport
+- [x] FindTrail 2.12 search journey at 768 × 1024 tablet viewport
+- [ ] FindTrail 2.12 ambient reset at 360 × 800 Android viewport
+- [ ] FindTrail 2.12 ambient reset at 412 × 915 Galaxy-class viewport
+- [ ] FindTrail 2.12 ambient reset at 430 × 932 iPhone-class viewport
+- [ ] FindTrail 2.12 ambient reset at 768 × 1024 tablet viewport
 - [x] Keyboard-only navigation
 - [x] Visible focus states and logical focus order
 - [x] 200% text zoom without lost controls
