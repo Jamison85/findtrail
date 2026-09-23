@@ -3,6 +3,7 @@ import { createRecognition, speak, stopSpeaking } from '../speech'
 import { getTrailStage, isFocusedPassComplete, isWiderPassComplete } from '../trailEngine'
 import type { ActiveSearch, Settings } from '../types'
 import { Icon } from './Icon'
+import { FeatherMark } from './FeatherMark'
 
 interface TrailViewProps {
   search: ActiveSearch
@@ -198,7 +199,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
           <button className="button button--found" onClick={onFound} disabled={departing}><Icon name="spark" size={20} /> Found it</button>
           <button className="button button--primary" onClick={advanceTrail} disabled={departing}>{nextLabel}</button>
         </div>
-        <button className="trail-reset-button" onClick={onCalm} disabled={departing}><Icon name="calm" size={16} />I need a reset</button>
+        <button className="trail-reset-button" onClick={onCalm} disabled={departing}><FeatherMark className="reset-action-feather" />I need a reset</button>
       </div>
     </section>
   )
