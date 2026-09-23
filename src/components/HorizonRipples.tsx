@@ -126,9 +126,11 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
             const ovalDy = screenDy / ovalScale
             const distance = Math.sqrt((dx * dx) + (ovalDy * ovalDy))
             const fromRing = distance - rippleRadius
-            const packetWidth = 30 + (rippleTime * 12)
+            const normalizedRadius = Math.min(1, distance / Math.max(1, maxRippleRadius))
+            const ringFrequency = .48 - (normalizedRadius * .2)
+            const packetWidth = 24 + (normalizedRadius * 26) + (rippleTime * 6)
             const packet = Math.exp(-(fromRing * fromRing) / (2 * packetWidth * packetWidth))
-            const rings = Math.sin(fromRing * .34) * packet
+            const rings = Math.sin(fromRing * ringFrequency) * packet
             const perspectiveWeight = screenDy >= 0 ? 1 : .76
             const guardProgress = Math.min(1, Math.max(0, (sampleY - protectedHorizonY) / Math.max(1, fullRippleY - protectedHorizonY)))
             const horizonRippleGuard = guardProgress * guardProgress * (3 - (2 * guardProgress))
@@ -159,13 +161,14 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
 
         const ringAlpha = rippleFade * .18
         const visibleRadius = Math.max(0, rippleRadius)
-        for (const offset of [-34, 0, 34]) {
-          const radius = visibleRadius + offset
-          if (radius <= 0) continue
+        const ringScales = [.34, .54, .76, 1]
+        for (const scale of ringScales) {
+          const radius = visibleRadius * scale
+          if (radius <= 10) continue
           context.beginPath()
           context.ellipse(centerX, contactY, radius, radius * ovalScale, 0, 0, Math.PI * 2)
-          context.strokeStyle = `rgba(219, 231, 220, ${Math.max(0, ringAlpha - Math.abs(offset) * .0018)})`
-          context.lineWidth = offset === 0 ? 1.35 : .8
+          context.strokeStyle = `rgba(219, 231, 220, ${ringAlpha * (.42 + (scale * .58))})`
+          context.lineWidth = .62 + (scale * .7)
           context.stroke()
         }
         context.restore()
