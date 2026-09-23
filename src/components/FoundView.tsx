@@ -171,7 +171,7 @@ export function CompleteView({ summary, durationLabel, onHome, onAnother }: Comp
             <dt>{summary.itemLabel} turned up at</dt>
             <dd>{summary.location}</dd>
           </div>
-          <div><dt>Places checked</dt><dd>{summary.stopsChecked}</dd></div>
+          <div><dt>Places visited</dt><dd>{summary.stopsChecked}</dd></div>
           <div><dt>Search time</dt><dd>{durationLabel}</dd></div>
         </dl>
 
