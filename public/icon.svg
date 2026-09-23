@@ -1,8 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FindTrail">
-  <rect width="512" height="512" rx="118" fill="#173a34"/>
-  <circle cx="376" cy="128" r="54" fill="#e98a66"/>
-  <path d="M-30 294c93-87 187-82 269-12 72 62 161 51 303-53v283H-30Z" fill="#789889"/>
-  <path d="M-20 365c93-64 171-55 245 8 83 71 168 53 307-34v173H-20Z" fill="#365d52"/>
-  <path d="M205 525c15-94 112-105 110-174-1-47-59-53-45-101 11-37 80-50 128-93-19 50-83 75-85 107-4 40 65 48 68 105 3 67-74 84-103 156Z" fill="#f7f1e7"/>
-  <circle cx="215" cy="427" r="16" fill="#e98a66"/>
+  <rect width="512" height="512" rx="118" fill="#113d34"/>
+  <path
+    d="M105 410C142 350 226 360 286 318C352 271 285 231 205 216C216 155 286 123 356 90"
+    fill="none"
+    stroke="#fdf8f1"
+    stroke-width="47"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="382" cy="69" r="26" fill="#c68b53"/>
 </svg>
