@@ -11,6 +11,7 @@ import './still-missing-polish.css'
 import './found-view-polish.css'
 import './history-settings-polish.css'
 import './install-coach.css'
+import './onboarding.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
