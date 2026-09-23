@@ -9,13 +9,6 @@ export function LaunchSplash({ reducedMotion }: { reducedMotion: boolean }) {
     >
       <div className="launch-splash__atmosphere" aria-hidden="true" />
       <div className="launch-splash__glow" aria-hidden="true" />
-      <img
-        className="launch-splash__native-icon"
-        src={`${import.meta.env.BASE_URL}icon.svg`}
-        alt=""
-        aria-hidden="true"
-        draggable="false"
-      />
       <div className="launch-splash__lockup" aria-hidden="true">
         <BrandMark className="launch-splash__mark" />
         <strong className="launch-splash__wordmark">FindTrail</strong>
