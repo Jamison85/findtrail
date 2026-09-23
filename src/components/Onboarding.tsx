@@ -12,18 +12,43 @@ export function hasCompletedOnboarding(): boolean {
   }
 }
 
+function hasMeaningfulExistingUse(): boolean {
+  try {
+    const raw = window.localStorage.getItem('findtrail:data:v3')
+      ?? window.localStorage.getItem('findtrail:data:v2')
+    if (!raw) return false
+
+    const parsed = JSON.parse(raw) as {
+      activeSearch?: unknown
+      history?: unknown
+      savedItems?: unknown
+      settings?: {
+        motion?: unknown
+        textSize?: unknown
+        speakSteps?: unknown
+        calmPause?: unknown
+      }
+    }
+
+    if (parsed.activeSearch) return true
+    if (Array.isArray(parsed.history) && parsed.history.length > 0) return true
+    if (Array.isArray(parsed.savedItems) && parsed.savedItems.length > 0) return true
+
+    const settings = parsed.settings
+    return Boolean(settings && (
+      settings.motion !== 'system'
+      || settings.textSize !== 'standard'
+      || settings.speakSteps !== false
+      || settings.calmPause !== true
+    ))
+  } catch {
+    return false
+  }
+}
+
 export function shouldShowOnboarding(): boolean {
   if (hasCompletedOnboarding()) return false
-
-  try {
-    const hasExistingUse = Boolean(
-      window.localStorage.getItem('findtrail:data:v3')
-      || window.localStorage.getItem('findtrail:data:v2'),
-    )
-    return !hasExistingUse
-  } catch {
-    return true
-  }
+  return !hasMeaningfulExistingUse()
 }
 
 function rememberOnboarding(): void {
