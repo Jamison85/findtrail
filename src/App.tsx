@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
+import { BrandMark } from './components/BrandMark'
 import { CalmReset } from './components/CalmReset'
 import { CompleteView, FoundView } from './components/FoundView'
 import type { FoundSummary } from './components/FoundView'
@@ -447,7 +448,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
   return (
     <section className={data.activeSearch ? 'view home-view home-view--active' : 'view home-view'} aria-labelledby="view-heading">
       <header className="brand-header">
-        <div className="brand-lockup"><span className="brand-mark"><Icon name="trail" /></span><strong>FindTrail</strong></div>
+        <div className="brand-lockup"><BrandMark className="brand-mark" /><strong>FindTrail</strong></div>
         <span className="local-pill"><Icon name="lock" size={13} />Private on this device</span>
       </header>
 
