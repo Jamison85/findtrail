@@ -5,7 +5,7 @@
 
   .launch-experience.is-covered {
     pointer-events: none;
-    animation: launch-app-reveal 2.15s cubic-bezier(.22, .61, .36, 1) both;
+    animation: launch-app-reveal 1.8s cubic-bezier(.22, .61, .36, 1) both;
   }
 
   .launch-splash {
@@ -20,7 +20,7 @@
     color: var(--evergreen);
     background: #fdf8f1;
     transform: translateX(-50%);
-    animation: launch-splash-exit 2.15s cubic-bezier(.22, .61, .36, 1) both;
+    animation: launch-splash-exit 1.8s cubic-bezier(.22, .61, .36, 1) both;
   }
 
   .launch-splash__atmosphere {
@@ -31,19 +31,7 @@
       radial-gradient(circle at 52% 42%, rgba(245, 228, 221, .7), transparent 18rem),
       linear-gradient(180deg, rgba(255, 250, 243, .94) 0%, rgba(253, 248, 241, .12) 56%, rgba(248, 239, 229, .9) 100%);
     opacity: 0;
-    animation: launch-atmosphere-in .42s ease-out .18s forwards;
-  }
-
-  .launch-splash__native-icon {
-    position: absolute;
-    z-index: 2;
-    width: clamp(112px, 28vw, 132px);
-    height: clamp(112px, 28vw, 132px);
-    object-fit: contain;
-    filter: drop-shadow(0 10px 24px rgba(17, 61, 52, .08));
-    transform: translateY(-2vh) scale(1);
-    transform-origin: center;
-    animation: launch-native-handoff .42s cubic-bezier(.4, 0, .2, 1) .08s forwards;
+    animation: launch-atmosphere-in .32s ease-out .04s forwards;
   }
 
   .launch-splash__glow {
@@ -55,7 +43,7 @@
     filter: blur(10px);
     opacity: 0;
     transform: scale(.82);
-    animation: launch-glow 2.15s ease-out both;
+    animation: launch-glow 1.8s ease-out both;
   }
 
   .launch-splash__lockup {
@@ -78,7 +66,7 @@
   .launch-splash__mark .brand-mark__trail {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    animation: launch-trail-draw .8s cubic-bezier(.45, 0, .18, 1) .36s forwards;
+    animation: launch-trail-draw .72s cubic-bezier(.45, 0, .18, 1) .06s forwards;
   }
 
   .launch-splash__mark .brand-mark__endpoint {
@@ -86,7 +74,7 @@
     transform-box: fill-box;
     transform-origin: center;
     transform: scale(.45);
-    animation: launch-endpoint .35s cubic-bezier(.2, .9, .25, 1.35) 1s forwards;
+    animation: launch-endpoint .32s cubic-bezier(.2, .9, .25, 1.35) .76s forwards;
   }
 
   .launch-splash__wordmark {
@@ -97,16 +85,11 @@
     font-weight: 650;
     letter-spacing: -.035em;
     transform: translateY(6px);
-    animation: launch-wordmark .4s ease-out 1.12s forwards;
+    animation: launch-wordmark .34s ease-out .9s forwards;
   }
 
   @keyframes launch-atmosphere-in {
     to { opacity: 1; }
-  }
-
-  @keyframes launch-native-handoff {
-    0%, 28% { opacity: 1; transform: translateY(-2vh) scale(1); }
-    100% { opacity: 0; transform: translateY(-2vh) scale(1.055); visibility: hidden; }
   }
 
   @keyframes launch-trail-draw {
@@ -131,12 +114,12 @@
   }
 
   @keyframes launch-splash-exit {
-    0%, 86% { opacity: 1; }
+    0%, 82% { opacity: 1; }
     100% { opacity: 0; visibility: hidden; }
   }
 
   @keyframes launch-app-reveal {
-    0%, 82% { opacity: .72; transform: scale(1.008); filter: blur(2px); }
+    0%, 78% { opacity: .72; transform: scale(1.008); filter: blur(2px); }
     100% { opacity: 1; transform: scale(1); filter: blur(0); }
   }
 
@@ -147,10 +130,6 @@
   .launch-splash.is-reduced-motion .launch-splash__atmosphere {
     animation: none;
     opacity: .55;
-  }
-
-  .launch-splash.is-reduced-motion .launch-splash__native-icon {
-    animation: launch-native-handoff-reduced .24s ease-out .06s forwards;
   }
 
   .launch-splash.is-reduced-motion .launch-splash__glow {
@@ -178,10 +157,6 @@
     animation: launch-app-reveal-reduced .85s ease-out both;
   }
 
-  @keyframes launch-native-handoff-reduced {
-    to { opacity: 0; transform: translateY(-2vh) scale(1.02); visibility: hidden; }
-  }
-
   @keyframes launch-wordmark-reduced {
     to { opacity: 1; transform: none; }
   }
@@ -197,7 +172,6 @@
     }
 
     .launch-splash__atmosphere { animation: none; opacity: .55; }
-    .launch-splash__native-icon { animation: launch-native-handoff-reduced .24s ease-out .06s forwards; }
     .launch-splash__glow { animation: none; opacity: .3; transform: scale(1); }
     .launch-splash__mark .brand-mark__trail { stroke-dashoffset: 0; animation: none; }
     .launch-splash__mark .brand-mark__endpoint { opacity: 1; transform: none; animation: none; }
