@@ -70,5 +70,6 @@ describe('FoundView', () => {
     expect(screen.getByText('Entry tray')).toBeInTheDocument()
     expect(screen.getByText('Home spot saved.')).toBeInTheDocument()
     expect(screen.getByText('FindTrail will check here first next time.')).toBeInTheDocument()
+    expect(screen.getByText('Places visited')).toBeInTheDocument()
   })
 })

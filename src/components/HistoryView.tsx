@@ -37,10 +37,15 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
       const key = itemIdentity(entry.itemId, entry.itemLabel)
       if (!latestByItem.has(key)) latestByItem.set(key, entry)
     })
-    return [...latestByItem.values()].map((entry) => ({
-      entry,
-      likely: mostLikelyLocation(history, entry.itemId, entry.itemLabel),
-    })).filter((pattern) => pattern.likely).slice(0, 3)
+    return [...latestByItem.values()]
+      .map((entry) => ({
+        entry,
+        likely: mostLikelyLocation(history, entry.itemId, entry.itemLabel),
+        latestFoundAt: Date.parse(entry.foundAt) || 0,
+      }))
+      .filter((pattern) => pattern.likely)
+      .sort((a, b) => (b.likely?.count ?? 0) - (a.likely?.count ?? 0) || b.latestFoundAt - a.latestFoundAt)
+      .slice(0, 3)
   }, [history])
   const itemCount = useMemo(() => new Set(history.map((entry) => itemIdentity(entry.itemId, entry.itemLabel))).size, [history])
 
@@ -115,7 +120,7 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
                       <div id={detailId} className="history-entry__detail">
                         <div className="history-entry__location"><span>Exact place</span><strong>{entry.foundLocation}</strong></div>
                         <dl>
-                          <div><dt>Places checked</dt><dd>{entry.stopsChecked}</dd></div>
+                          <div><dt>Places visited</dt><dd>{entry.stopsChecked}</dd></div>
                           <div><dt>Search time</dt><dd>{formatDuration(entry.durationSeconds)}</dd></div>
                           <div><dt>Found</dt><dd>{dateLabel(entry.foundAt)}</dd></div>
                         </dl>

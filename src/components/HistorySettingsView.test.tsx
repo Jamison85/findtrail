@@ -46,6 +46,33 @@ describe('HistoryView', () => {
     expect(onStart).toHaveBeenCalledWith('keys', 'Keys')
   })
 
+  it('puts repeated learned locations ahead of newer one-off finds', () => {
+    const rankedHistory: FoundEntry[] = [
+      {
+        id: 'wallet-new', itemId: 'wallet', itemLabel: 'Wallet', foundLocation: 'Kitchen counter', foundAt: '2026-09-22T12:00:00.000Z',
+        answers: {}, stopsChecked: 1, durationSeconds: 30,
+      },
+      {
+        id: 'phone-new', itemId: 'phone', itemLabel: 'Phone', foundLocation: 'Couch', foundAt: '2026-09-21T12:00:00.000Z',
+        answers: {}, stopsChecked: 1, durationSeconds: 25,
+      },
+      {
+        id: 'keys-two', itemId: 'keys', itemLabel: 'Keys', foundLocation: 'Blue bowl', foundAt: '2026-09-20T12:00:00.000Z',
+        answers: {}, stopsChecked: 2, durationSeconds: 50,
+      },
+      {
+        id: 'keys-one', itemId: 'keys', itemLabel: 'Keys', foundLocation: 'Blue bowl', foundAt: '2026-09-18T12:00:00.000Z',
+        answers: {}, stopsChecked: 1, durationSeconds: 40,
+      },
+    ]
+
+    render(<HistoryView history={rankedHistory} initialEntryId={null} onStart={vi.fn()} />)
+    const learnedPatterns = screen.getAllByRole('button', { name: /Most likely place:/i })
+
+    expect(learnedPatterns[0]).toHaveAccessibleName('Find Keys again. Most likely place: Blue bowl')
+    expect(learnedPatterns[0]).toHaveTextContent('Found here 2 times')
+  })
+
   it('gives first use a private, purposeful empty state', () => {
     render(<HistoryView history={[]} initialEntryId={null} onStart={vi.fn()} />)
     expect(screen.getByRole('heading', { name: 'No found places yet' })).toBeInTheDocument()
@@ -64,11 +91,13 @@ describe('SettingsView', () => {
     render(<SettingsView
       data={data}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={{ message: 'Backup downloaded.', kind: 'success' }}
       onUpdate={onUpdate}
       onUpdateSavedItem={onUpdateSavedItem}
       onRemoveSavedItem={onRemoveSavedItem}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={onExport}
       onRestore={vi.fn()}
       onClear={onClear}
@@ -97,15 +126,38 @@ describe('SettingsView', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Backup downloaded.')
   })
 
+  it('keeps iPhone Home Screen instructions available in Settings', () => {
+    const onShowIOSInstallHelp = vi.fn()
+    render(<SettingsView
+      data={data}
+      canInstall={false}
+      iosInstallHelpAvailable={true}
+      backupStatus={null}
+      onUpdate={vi.fn()}
+      onUpdateSavedItem={vi.fn()}
+      onRemoveSavedItem={vi.fn()}
+      onInstall={vi.fn()}
+      onShowIOSInstallHelp={onShowIOSInstallHelp}
+      onExport={vi.fn()}
+      onRestore={vi.fn()}
+      onClear={vi.fn()}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Add FindTrail to Home Screen/i }))
+    expect(onShowIOSInstallHelp).toHaveBeenCalledOnce()
+  })
+
   it('presents failed restores as errors instead of success', () => {
     render(<SettingsView
       data={data}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={{ message: 'That backup is damaged.', kind: 'error' }}
       onUpdate={vi.fn()}
       onUpdateSavedItem={vi.fn()}
       onRemoveSavedItem={vi.fn()}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={vi.fn()}
       onRestore={vi.fn()}
       onClear={vi.fn()}
@@ -120,11 +172,13 @@ describe('SettingsView', () => {
     render(<SettingsView
       data={{ ...data, history: [], savedItems: [] }}
       canInstall={false}
+      iosInstallHelpAvailable={false}
       backupStatus={null}
       onUpdate={vi.fn()}
       onUpdateSavedItem={vi.fn()}
       onRemoveSavedItem={vi.fn()}
       onInstall={vi.fn()}
+      onShowIOSInstallHelp={vi.fn()}
       onExport={vi.fn()}
       onRestore={vi.fn()}
       onClear={vi.fn()}

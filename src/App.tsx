@@ -6,6 +6,8 @@ import type { FoundSummary } from './components/FoundView'
 import { HistoryView } from './components/HistoryView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
+import { canShowIOSInstallInstructions, IOSInstallCoach } from './components/IOSInstallCoach'
+import { Onboarding, shouldShowOnboarding } from './components/Onboarding'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
@@ -60,7 +62,11 @@ export default function App() {
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null)
   const [backupStatus, setBackupStatus] = useState<{ message: string; kind: 'success' | 'error' } | null>(null)
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null)
+  const [onboardingOpen, setOnboardingOpen] = useState(() => shouldShowOnboarding())
+  const [iosInstallHelpRequest, setIosInstallHelpRequest] = useState(0)
   const previousScreen = useRef(screen)
+  const focusItemPickerOnHome = useRef(false)
+  const onboardingWasOpen = useRef(onboardingOpen)
 
   const active = data.activeSearch
   const activeItem = active ? ITEM_BY_ID[active.itemId] : null
@@ -103,10 +109,26 @@ export default function App() {
   useEffect(() => {
     if (previousScreen.current !== screen) {
       window.scrollTo({ top: 0, behavior: 'auto' })
-      window.setTimeout(() => document.getElementById('view-heading')?.focus({ preventScroll: true }), 0)
+      const focusPicker = screen === 'home' && focusItemPickerOnHome.current
+      focusItemPickerOnHome.current = false
+      window.setTimeout(() => {
+        document.getElementById(focusPicker ? 'item-picker-heading' : 'view-heading')?.focus({ preventScroll: true })
+        if (focusPicker) {
+          const picker = document.getElementById('item-picker')
+          picker?.classList.add('is-reentry')
+          window.setTimeout(() => picker?.classList.remove('is-reentry'), 900)
+        }
+      }, 0)
       previousScreen.current = screen
     }
   }, [screen])
+
+  useEffect(() => {
+    if (onboardingWasOpen.current && !onboardingOpen) {
+      window.setTimeout(() => document.getElementById('view-heading')?.focus({ preventScroll: true }), 0)
+    }
+    onboardingWasOpen.current = onboardingOpen
+  }, [onboardingOpen])
 
   function navigate(next: Screen) {
     if (next === 'calm') setReturnScreen(active?.stops.length ? 'trail' : 'home')
@@ -345,13 +367,24 @@ export default function App() {
     setInstallPrompt(null)
   }
 
+  function findAnotherItem() {
+    focusItemPickerOnHome.current = true
+    setScreen('home')
+  }
+
   const rootScreen = ['home', 'history', 'settings'].includes(screen)
+  const iosInstallHelpAvailable = canShowIOSInstallInstructions()
+
+  if (onboardingOpen) {
+    return <Onboarding onComplete={() => setOnboardingOpen(false)} />
+  }
 
   return (
     <div className="app-shell">
       <a className="skip-link" href="#app-content">Skip to content</a>
+      <IOSInstallCoach requestKey={iosInstallHelpRequest} />
       {!online && <div className="offline-banner" role="status">Offline mode · your saved trail still works</div>}
-      {updateWorker && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
+      {updateWorker && rootScreen && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
       {storageError && <div className="storage-banner" role="alert">This browser blocked saving. Keep this tab open until your search is finished.<button onClick={() => setStorageError(false)} aria-label="Dismiss"><Icon name="close" size={17} /></button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
@@ -359,10 +392,10 @@ export default function App() {
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
         {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
-        {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={() => setScreen('home')} />}
+        {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
-        {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
+        {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
         {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {} })); setScreen('trail') }} onHome={() => setScreen('home')} />}
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
@@ -441,9 +474,9 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
           )}
         </section>
 
-        <div className="item-picker">
+        <div id="item-picker" className="item-picker">
           <div className="section-heading">
-            <h2>What went missing?</h2>
+            <h2 id="item-picker-heading" tabIndex={-1}>What went missing?</h2>
             <small>One tap</small>
           </div>
           {pinnedItems.length > 0 && <div className="pinned-items" role="group" aria-label="Pinned items">

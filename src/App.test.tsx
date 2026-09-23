@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { ONBOARDING_STORAGE_KEY } from './components/Onboarding'
 import { DEFAULT_SETTINGS, STORAGE_KEY } from './storage'
 
 async function buildTrailFromDoorway() {
@@ -11,8 +12,27 @@ async function buildTrailFromDoorway() {
 describe('FindTrail app', () => {
   beforeEach(() => {
     localStorage.clear()
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, '1')
     sessionStorage.clear()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+
+
+
+  it('welcomes a genuinely new user before showing the home screen', () => {
+    localStorage.removeItem(ONBOARDING_STORAGE_KEY)
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
+    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork__trail')).toHaveClass('is-playing')
+    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBe('true')
+    expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
   it('plays the calm home trail once per session', () => {
@@ -78,7 +98,9 @@ describe('FindTrail app', () => {
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Entry tray' } })
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for work badge/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Back home' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Find another item' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'What went missing?' })).toHaveFocus())
+    expect(document.getElementById('item-picker')).toHaveClass('is-reentry')
 
     const pinned = screen.getByRole('group', { name: 'Pinned items' })
     fireEvent.click(within(pinned).getByRole('button', { name: 'Work badge' }))
@@ -113,7 +135,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
 
-  it('keeps the update notice available during the focused reset', async () => {
+  it('holds an update notice until the user returns to a root screen', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
       activeSearch: null,
@@ -128,12 +150,18 @@ describe('FindTrail app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /keys/i }))
     fireEvent.click(await screen.findByText('Car keys'))
+    expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
+
     fireEvent.click(await screen.findByText('At home'))
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
-    expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
+    expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
+    expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
   })
 
   it('carries the last checked spot into the found-place step', async () => {
@@ -283,7 +311,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Still missing · next steps' }))
     expect(screen.getByRole('heading', { name: 'Do one next move' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /30-second reset/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Focused trail complete.*1 place checked/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Focused trail complete.*1 place visited/i)).toBeInTheDocument()
   })
 
   it('announces an installed-app update and applies it on request', async () => {

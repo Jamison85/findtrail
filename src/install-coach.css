@@ -1,0 +1,179 @@
+.install-coach__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(18, 38, 33, 0.34);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.install-coach {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: min(86dvh, 760px);
+  overflow: auto;
+  padding: 26px 22px calc(22px + env(safe-area-inset-bottom));
+  border: 1px solid rgba(23, 58, 52, 0.11);
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  background:
+    radial-gradient(circle at 86% 4%, rgba(198, 154, 85, 0.14), transparent 30%),
+    #f7f1e7;
+  color: #173a34;
+  box-shadow: 0 -18px 50px rgba(18, 38, 33, 0.18);
+  animation: install-coach-rise 260ms ease-out both;
+}
+
+.install-coach__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(23, 58, 52, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.48);
+  color: #173a34;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.install-coach__mark {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 18px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 17px;
+  box-shadow: 0 8px 20px rgba(23, 58, 52, 0.16);
+}
+
+.install-coach__mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.install-coach__heading > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #8a6733;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.install-coach__heading h2 {
+  max-width: 390px;
+  margin: 0;
+  font-size: clamp(1.55rem, 7vw, 2rem);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.install-coach__heading p {
+  max-width: 460px;
+  margin: 10px 0 20px;
+  color: #4f625d;
+  line-height: 1.48;
+}
+
+.install-coach__steps {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.install-coach__steps li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  min-height: 66px;
+  padding: 11px 13px;
+  border: 1px solid rgba(23, 58, 52, 0.09);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.install-coach__step-number {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e7ddc8;
+  color: #173a34;
+  font-weight: 850;
+}
+
+.install-coach__steps strong,
+.install-coach__steps small {
+  display: block;
+}
+
+.install-coach__steps strong {
+  font-size: 0.94rem;
+  line-height: 1.28;
+}
+
+.install-coach__steps small {
+  margin-top: 3px;
+  color: #65736f;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.install-coach__share-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #8a6733;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.install-coach__footer {
+  margin-top: 18px;
+}
+
+.install-coach__footer p {
+  margin: 0 2px 14px;
+  color: #65736f;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+@keyframes install-coach-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 640px) {
+  .install-coach__scrim {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .install-coach {
+    border-bottom: 1px solid rgba(23, 58, 52, 0.11);
+    border-radius: 28px;
+    padding-bottom: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-coach {
+    animation: none;
+  }
+}

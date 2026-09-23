@@ -1,6 +1,7 @@
 import { getFocusedStops, getWiderStops } from '../trailEngine'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
+import { FeatherMark } from './FeatherMark'
 
 interface WidenSearchViewProps {
   search: ActiveSearch
@@ -14,7 +15,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
   const focusedStops = getFocusedStops(search.stops)
   const widerStops = getWiderStops(search.stops)
   const checkedSpotCount = focusedStops.reduce((total, stop) => total + (search.checkedSpots[stop.id]?.length ?? 0), 0)
-  const placeLabel = `${focusedStops.length} strongest ${focusedStops.length === 1 ? 'place' : 'places'}`
+  const placeLabel = `${focusedStops.length} strongest ${focusedStops.length === 1 ? 'place' : 'places'} visited`
   const spotLabel = checkedSpotCount > 0 ? `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked` : 'Progress saved'
 
   return (
@@ -37,9 +38,9 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
         </div>
       </div>
 
-      <div className="widen-status" role="status" aria-label={`${placeLabel} completed. ${spotLabel}. Your trail is saved.`}>
+      <div className="widen-status" role="status" aria-label={`${placeLabel}. ${spotLabel}. Your trail is saved.`}>
         <span><Icon name="trail" size={18} /></span>
-        <p><strong>{placeLabel} completed</strong><small>{spotLabel} · trail saved</small></p>
+        <p><strong>{placeLabel}</strong><small>{spotLabel} · trail saved</small></p>
       </div>
 
       <section className="widen-panel" aria-labelledby="widen-heading">
@@ -59,7 +60,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
       </section>
 
       <div className="widen-choices" aria-label="Other next steps">
-        <button className="button button--secondary" onClick={onReset}><Icon name="calm" size={18} />30-second reset</button>
+        <button className="button button--secondary" onClick={onReset}><FeatherMark className="reset-action-feather" />30-second reset</button>
         <button className="text-button" onClick={onFound}><Icon name="spark" size={16} />I found it after all</button>
         <button className="text-button text-button--muted" onClick={onHome}>Save and leave</button>
       </div>

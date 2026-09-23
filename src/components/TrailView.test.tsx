@@ -53,6 +53,8 @@ describe('TrailView', () => {
     expect(screen.getByRole('group', { name: 'Places to check at The landing zone' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Read aloud' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hands-free voice commands are unavailable in this browser' })).toBeDisabled()
+    expect(screen.getByText(/Sneaky little side quest\./)).toBeInTheDocument()
+    expect(screen.queryByText(/Sneaky bastard\./)).not.toBeInTheDocument()
   })
 
   it('gives the next stop a short visual handoff before advancing', () => {

@@ -2,7 +2,7 @@
 
 FindTrail is a calm, local-first progressive web app for finding misplaced items. It turns a frantic whole-house search into one useful place at a time, remembers where items were found, and gently promotes likely locations during future searches.
 
-Version 2.8 finishes the product's memory and control surfaces. History now turns found-item records into clear learned-place shortcuts, expandable search details, and one-tap repeat searches. Settings now groups search guidance, appearance, saved homes, privacy, backup, and destructive controls by intent instead of presenting one long utility list. The production Home, Trail, Found, Still Missing recovery, 30-second feather-and-water reset, local voice, backup and restore, and update-ready notices remain intact.
+Version 2.12 finishes the first-run and search-polish pass. New users get a short three-step onboarding before Home loads, iPhone users keep reusable Home Screen install guidance, Reset uses the natural feather consistently, learned History shortcuts prioritize repeated useful locations, and update notices wait for a root screen instead of interrupting an active search. The production Home, clue flow, focused and wider trails, Found learning, Still Missing recovery, 30-second feather-and-water reset, local voice, backup and restore, offline shell, and local-first privacy model remain intact.
 
 ## Product principles
 

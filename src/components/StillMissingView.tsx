@@ -2,6 +2,7 @@ import { ITEM_BY_ID } from '../data'
 import { getRecoveryActions } from '../recovery'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
+import { FeatherMark } from './FeatherMark'
 
 interface StillMissingViewProps {
   search: ActiveSearch
@@ -76,9 +77,9 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
         </div>
       </div>
 
-      <div className="recovery-status" role="status" aria-label={`Focused trail complete. ${placeCount} checked. ${spotCount} ruled out. Trail saved automatically.`}>
+      <div className="recovery-status" role="status" aria-label={`Focused trail complete. ${placeCount} visited. ${spotCount} ruled out. Trail saved automatically.`}>
         <span className="recovery-status__mark"><Icon name="check" size={17} /></span>
-        <span><strong>Focused trail complete</strong><small>{placeCount} checked{checkedSpotCount > 0 ? ` · ${spotCount} ruled out` : ''}</small></span>
+        <span><strong>Focused trail complete</strong><small>{placeCount} visited{checkedSpotCount > 0 ? ` · ${spotCount} ruled out` : ''}</small></span>
         <small className="recovery-status__saved">Saved</small>
       </div>
 
@@ -107,7 +108,7 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
           <p>Reset your attention first, or repeat the same trail at half speed.</p>
         </div>
         <div className="recovery-choice__primary">
-          <button className="button button--primary" onClick={onReset}><Icon name="calm" size={19} /><span>30-second reset</span></button>
+          <button className="button button--primary" onClick={onReset}><FeatherMark className="reset-action-feather" /><span>30-second reset</span></button>
           <button className="button button--secondary" onClick={onRestart}><Icon name="refresh" size={18} /><span>Repeat trail</span></button>
         </div>
         <div className="recovery-choice__quiet">

@@ -122,14 +122,14 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
             const packet = Math.exp(-(fromRing * fromRing) / (2 * 19 * 19))
             const rings = Math.sin(fromRing * .43) * packet
             const perspectiveWeight = screenDy >= 0 ? 1 : .72
-            const pulse = rings * rippleFade * perspectiveWeight * 8
+            const pulse = rings * rippleFade * perspectiveWeight * 10
             const length = Math.max(1, distance)
 
             shiftX += (dx / length) * pulse
             shiftY += (ovalDy / length) * pulse * .18
 
             const dimple = Math.exp(-(distance * distance) / (2 * 12 * 12))
-            shiftY += dimple * contactFade * 3.2
+            shiftY += dimple * contactFade * 4
           }
 
           const sourceX = Math.max(0, Math.min(width - tileWidth, x + shiftX))

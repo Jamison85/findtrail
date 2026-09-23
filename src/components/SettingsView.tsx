@@ -6,11 +6,13 @@ import { Icon } from './Icon'
 interface SettingsViewProps {
   data: PersistedData
   canInstall: boolean
+  iosInstallHelpAvailable: boolean
   backupStatus: { message: string; kind: 'success' | 'error' } | null
   onUpdate: (next: Partial<Settings>) => void
   onUpdateSavedItem: (id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) => void
   onRemoveSavedItem: (id: string) => void
   onInstall: () => void
+  onShowIOSInstallHelp: () => void
   onExport: () => void
   onRestore: (file: File) => void
   onClear: () => void
@@ -36,7 +38,7 @@ function SettingsSection({ icon, title, detail, children, className = '' }: Sett
   )
 }
 
-export function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdateSavedItem, onRemoveSavedItem, onInstall, onExport, onRestore, onClear }: SettingsViewProps) {
+export function SettingsView({ data, canInstall, iosInstallHelpAvailable, backupStatus, onUpdate, onUpdateSavedItem, onRemoveSavedItem, onInstall, onShowIOSInstallHelp, onExport, onRestore, onClear }: SettingsViewProps) {
   const fileInput = useRef<HTMLInputElement>(null)
   const findLabel = `${data.history.length} saved ${data.history.length === 1 ? 'find' : 'finds'}`
   const homeLabel = `${data.savedItems.length} saved ${data.savedItems.length === 1 ? 'home' : 'homes'}`
@@ -53,13 +55,19 @@ export function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdat
         <p><strong>Private on this device</strong><small>{findLabel} · {homeLabel} · no account or tracking</small></p>
       </div>
 
-      {canInstall && (
+      {canInstall ? (
         <button className="install-card" onClick={onInstall}>
           <span><Icon name="download" /></span>
           <div><strong>Install FindTrail</strong><small>Open it from your home screen, even offline.</small></div>
           <b>Install</b>
         </button>
-      )}
+      ) : iosInstallHelpAvailable ? (
+        <button className="install-card" onClick={onShowIOSInstallHelp}>
+          <span><Icon name="download" /></span>
+          <div><strong>Add FindTrail to Home Screen</strong><small>See the iPhone steps again anytime.</small></div>
+          <b>How</b>
+        </button>
+      ) : null}
 
       <SettingsSection icon="trail" title="During a search" detail="Guidance while you move through a trail.">
         <SettingToggle label="Read new stops aloud" detail="Uses FindTrail’s local voice. The first use downloads its voice model." checked={data.settings.speakSteps} onChange={(value) => onUpdate({ speakSteps: value })} />
@@ -106,7 +114,7 @@ export function SettingsView({ data, canInstall, backupStatus, onUpdate, onUpdat
         </div>
       </SettingsSection>
 
-      <footer className="version-note">FindTrail 2.11 · A clear path to finding what’s missing.</footer>
+      <footer className="version-note">FindTrail 2.12 · A clear path to finding what’s missing.</footer>
     </section>
   )
 }
