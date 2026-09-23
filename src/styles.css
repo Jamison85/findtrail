@@ -214,7 +214,7 @@
   .trail-route { max-width: 31rem; margin: 0 auto 13px; }
   .trail-route > span { display: block; margin-top: 6px; color: var(--ink-soft); font-size: .62rem; text-align: right; }
   .trail-progress { height: 6px; overflow: hidden; border-radius: 99px; background: rgba(23, 58, 52, .09); box-shadow: inset 0 1px 2px rgba(23, 58, 52, .07); }
-  .trail-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--clay), var(--clay)); transition: width .3s ease; }
+  .trail-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--clay), var(--clay-deep)); transition: width .3s ease; }
   .trail-view > article { max-width: 31rem; margin: 0 auto; padding: clamp(17px, 4.7vw, 24px); border: 1px solid rgba(23, 58, 52, .1); border-radius: 28px; background: var(--white); box-shadow: var(--shadow-md); animation: stop-enter .2s ease both; }
   .trail-view > article.stop-card--history, .trail-view > article.stop-card--learned { background: linear-gradient(145deg, #fffaf2, #f0e3ea); }
   .trail-view > article.stop-card--home { border-color: rgba(41, 78, 69, .3); background: linear-gradient(145deg, #fffdf9, #e4eee7); }
