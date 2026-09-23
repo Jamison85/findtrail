@@ -8,7 +8,7 @@ describe('CalmReset', () => {
     vi.useRealTimers()
   })
 
-  it('guides three ten-second breaths with a four-in six-out rhythm and can restart', () => {
+  it('guides the reset without repeating the breath instructions in the footer', () => {
     vi.useFakeTimers()
     let now = 0
     vi.spyOn(performance, 'now').mockImplementation(() => now)
@@ -17,30 +17,22 @@ describe('CalmReset', () => {
     expect(document.querySelector('.horizon-ripples')).toBeInTheDocument()
     expect(document.querySelector('.calm-feather')?.getAttribute('src')).toContain('findtrail-natural-feather-v2.webp')
     expect(document.querySelector('.calm-feather-anchor')).toBeInTheDocument()
-    expect(document.querySelector('.feather-ripple')).not.toBeInTheDocument()
     expect(screen.getByText('Rise with the feather')).toBeInTheDocument()
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
-    expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
-    expect(screen.getByText('4 in · 6 out rhythm')).toBeInTheDocument()
-    expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
+    expect(screen.queryByText('4 in · 6 out rhythm')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Cycle 1 of 3/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Breathe comfortably. Never force the pace.')).not.toBeInTheDocument()
 
     now = 4_100
     act(() => vi.advanceTimersByTime(100))
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe out')
     expect(screen.getByText('Drift down with it')).toBeInTheDocument()
 
-    now = 20_100
-    act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByLabelText('Breath 3 of 3')).toBeInTheDocument()
-
     now = 30_000
     act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByText('Three breaths complete')).toBeInTheDocument()
-    expect(screen.getByText('Ready when you are')).toBeInTheDocument()
+    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Reset complete')
+    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '30')
     expect(screen.getByRole('button', { name: /resume with clear eyes/i })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Restart the 30-second reset' }))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
-    expect(screen.getByLabelText('Breath 1 of 3')).toBeInTheDocument()
   })
 })

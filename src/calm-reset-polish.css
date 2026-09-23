@@ -88,7 +88,6 @@
   .calm-skip svg { opacity: .76; }
 
   .calm-skip:focus-visible,
-  .calm-restart:focus-visible,
   .calm-resume:focus-visible {
     outline: 3px solid #fff3df;
     outline-offset: 3px;
@@ -174,41 +173,31 @@
 
   .calm-guidance {
     position: absolute;
-    top: clamp(70px, 9dvh, 92px);
-    left: calc(50% + clamp(68px, 17vw, 82px));
+    top: clamp(74px, 9.5dvh, 96px);
+    left: calc(50% + clamp(72px, 18vw, 88px));
     display: grid;
-    width: clamp(104px, 29vw, 124px);
-    min-height: 98px;
+    width: clamp(100px, 27vw, 118px);
+    min-height: 88px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     align-items: center;
-    gap: 4px;
-    padding: 9px 7px 9px 15px;
-    border: 0;
-    border-radius: 0 16px 16px 0;
+    gap: 2px;
+    padding: 0;
     color: #fff6e8;
-    background: linear-gradient(90deg, rgba(4, 22, 18, .72), rgba(4, 22, 18, .38) 68%, transparent);
-    box-shadow: none;
-    backdrop-filter: blur(6px);
+    background: transparent;
     text-align: left;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, .42);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, .62), 0 1px 2px rgba(0, 0, 0, .72);
   }
 
   .calm-guidance::before {
-    position: absolute;
-    top: 12px;
-    bottom: 12px;
-    left: 0;
-    width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(242, 196, 132, .72), transparent);
-    content: "";
+    display: none;
   }
 
   .calm-guidance__phase {
     align-self: end;
     color: #fff6e8;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(.96rem, 4vw, 1.08rem);
+    font-size: clamp(.9rem, 3.7vw, 1rem);
     font-style: italic;
     font-weight: 500;
     line-height: 1.08;
@@ -217,25 +206,25 @@
 
   .calm-guidance__count {
     display: flex;
-    min-height: 34px;
+    min-height: 38px;
     align-items: baseline;
-    gap: 6px;
-    padding-top: 3px;
+    gap: 5px;
+    padding-top: 1px;
     border-top: 0;
     color: #f4c786;
   }
 
   .calm-guidance__count b {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.95rem;
+    font-size: 2.15rem;
     font-weight: 400;
     line-height: .9;
   }
 
   .calm-guidance__count small {
     margin-bottom: 0;
-    color: rgba(232, 232, 218, .72);
-    font-size: .56rem;
+    color: rgba(232, 232, 218, .68);
+    font-size: .53rem;
     font-weight: 600;
     letter-spacing: .01em;
     text-transform: none;
@@ -244,8 +233,8 @@
   .calm-guidance__hint {
     align-self: start;
     margin-top: 0;
-    color: rgba(222, 229, 217, .8);
-    font-size: .67rem;
+    color: rgba(222, 229, 217, .74);
+    font-size: .63rem;
     font-weight: 560;
     line-height: 1.28;
   }
@@ -329,21 +318,7 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: 7px;
-    padding: 0 7px 9px;
-  }
-
-  .calm-rhythm-label {
-    grid-column: 1;
-    color: rgba(248, 215, 169, .84);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: .76rem;
-    font-style: italic;
-    font-weight: 500;
-    letter-spacing: .008em;
-    text-align: center;
-    text-transform: none;
+    padding: 0 7px 10px;
   }
 
   .calm-progress {
@@ -365,36 +340,6 @@
     box-shadow: 0 0 9px rgba(239, 190, 121, .16);
     transition: width .1s linear;
   }
-
-  .calm-cycle-meta {
-    display: flex;
-    grid-column: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    color: rgba(206, 217, 203, .58);
-    font-size: .59rem;
-    font-weight: 540;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, .28);
-    white-space: nowrap;
-  }
-
-  .calm-cycle-markers {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .calm-cycle-markers span {
-    width: 5px;
-    height: 5px;
-    border-radius: 999px;
-    background: rgba(184, 195, 173, .2);
-    transition: width .25s ease, background .25s ease;
-  }
-
-  .calm-cycle-markers span.is-complete { background: rgba(126, 169, 145, .58); }
-  .calm-cycle-markers span.is-current { width: 13px; background: rgba(239, 190, 121, .78); }
 
   .calm-resume {
     display: flex;
@@ -435,41 +380,6 @@
     background: rgba(247, 241, 231, .055);
     transform: translateY(1px);
   }
-
-  .calm-instrument__note {
-    display: flex;
-    min-height: 22px;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 5px 2px 0;
-    color: rgba(203, 214, 200, .46);
-    font-size: .56rem;
-    font-weight: 500;
-    text-align: center;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, .24);
-  }
-
-  .calm-instrument__note > span::after {
-    margin-left: 12px;
-    color: rgba(203, 214, 200, .22);
-    content: "•";
-  }
-
-  .calm-restart {
-    display: inline-flex;
-    min-height: 26px;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 4px;
-    padding: 0;
-    color: rgba(216, 224, 215, .58);
-    background: transparent;
-    font-size: .58rem;
-    font-weight: 560;
-  }
-
-  .calm-restart:active { opacity: .68; }
 
   @keyframes calm-scene-enter {
     from { opacity: 0; }
@@ -561,16 +471,15 @@
     .calm-copy h1 { margin-bottom: 6px; font-size: clamp(1.7rem, 7.3vw, 2.15rem); }
     .calm-copy p { font-size: .7rem; line-height: 1.34; }
     .calm-breath-stage { min-height: 158px; }
-    .calm-guidance { top: 54px; min-height: 88px; padding: 8px 7px 8px 13px; }
+    .calm-guidance { top: 58px; min-height: 82px; padding: 0; }
     .calm-guidance__phase { font-size: .9rem; }
     .calm-guidance__count { min-height: 31px; }
     .calm-guidance__count b { font-size: 1.78rem; }
     .calm-guidance__hint { font-size: .6rem; }
     .calm-feather-anchor { width: clamp(78px, 23vw, 98px); }
     .calm-instrument { padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
-    .calm-breath-card { gap: 6px; padding-bottom: 7px; }
+    .calm-breath-card { padding-bottom: 7px; }
     .calm-resume { min-height: 46px; margin-top: 1px; }
-    .calm-instrument__note { padding-top: 4px; }
   }
 
   @media (max-width: 380px) {
@@ -578,13 +487,10 @@
     .calm-copy h1 { font-size: 1.8rem; }
     .calm-copy p { font-size: .74rem; }
     .calm-guidance {
-      left: calc(50% + 68px);
-      width: clamp(98px, 28vw, 106px);
+      left: calc(50% + 72px);
+      width: clamp(94px, 26vw, 102px);
     }
     .calm-instrument { width: 100%; margin-left: 0; padding-inline: 5px; }
-    .calm-cycle-meta { gap: 8px; font-size: .58rem; }
-    .calm-instrument__note { gap: 9px; font-size: .54rem; }
-    .calm-instrument__note > span::after { margin-left: 9px; }
   }
 
   :root[data-text-size="large"] .calm-view {
@@ -613,7 +519,6 @@
     }
 
     .calm-progress span,
-    .calm-cycle-markers span,
     .calm-resume { transition: none; }
   }
 }
