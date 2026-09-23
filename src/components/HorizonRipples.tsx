@@ -125,20 +125,28 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
             const screenDy = sampleY - contactY
             const ovalDy = screenDy / ovalScale
             const distance = Math.sqrt((dx * dx) + (ovalDy * ovalDy))
-            const fromRing = distance - rippleRadius
             const normalizedRadius = Math.min(1, distance / Math.max(1, maxRippleRadius))
-            const ringFrequency = .48 - (normalizedRadius * .2)
-            const packetWidth = 24 + (normalizedRadius * 26) + (rippleTime * 6)
-            const packet = Math.exp(-(fromRing * fromRing) / (2 * packetWidth * packetWidth))
-            const rings = Math.sin(fromRing * ringFrequency) * packet
+            const angle = Math.atan2(ovalDy, dx)
+            const organicWarp = (
+              (Math.sin((angle * 3.2) + (seconds * .12)) * 6)
+              + (Math.sin((angle * 7.1) - (seconds * .08)) * 2.6)
+            ) * (.32 + (normalizedRadius * .68))
+            const warpedDistance = distance + organicWarp
+            const fromFront = warpedDistance - rippleRadius
+            const packetWidth = 20 + (normalizedRadius * 30) + (rippleTime * 8)
+            const frontPosition = fromFront / packetWidth
+            const leadingWave = frontPosition * Math.exp(-.5 * frontPosition * frontPosition)
+            const trailingPosition = (fromFront + (packetWidth * 1.55)) / (packetWidth * 1.22)
+            const trailingWave = trailingPosition * Math.exp(-.5 * trailingPosition * trailingPosition) * .28
+            const waterWave = leadingWave + trailingWave
             const perspectiveWeight = screenDy >= 0 ? 1 : .76
             const guardProgress = Math.min(1, Math.max(0, (sampleY - protectedHorizonY) / Math.max(1, fullRippleY - protectedHorizonY)))
             const horizonRippleGuard = guardProgress * guardProgress * (3 - (2 * guardProgress))
-            const pulse = rings * rippleFade * perspectiveWeight * horizonRippleGuard * 15
+            const pulse = waterWave * rippleFade * perspectiveWeight * horizonRippleGuard * 14
             const length = Math.max(1, distance)
 
             shiftX += (dx / length) * pulse
-            shiftY += (ovalDy / length) * pulse * .22
+            shiftY += (ovalDy / length) * pulse * .24
 
             const dimple = Math.exp(-(distance * distance) / (2 * 15 * 15))
             shiftY += dimple * contactFade * horizonRippleGuard * 5
@@ -153,26 +161,6 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
         }
       }
 
-      if (rippleActive) {
-        context.save()
-        context.beginPath()
-        context.rect(0, protectedHorizonY, width, Math.max(0, height - protectedHorizonY))
-        context.clip()
-
-        const ringAlpha = rippleFade * .18
-        const visibleRadius = Math.max(0, rippleRadius)
-        const ringScales = [.34, .54, .76, 1]
-        for (const scale of ringScales) {
-          const radius = visibleRadius * scale
-          if (radius <= 10) continue
-          context.beginPath()
-          context.ellipse(centerX, contactY, radius, radius * ovalScale, 0, 0, Math.PI * 2)
-          context.strokeStyle = `rgba(219, 231, 220, ${ringAlpha * (.42 + (scale * .58))})`
-          context.lineWidth = .62 + (scale * .7)
-          context.stroke()
-        }
-        context.restore()
-      }
     }
 
     function tick(now: number) {
