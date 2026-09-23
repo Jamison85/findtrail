@@ -250,10 +250,10 @@
   font-size: .68rem;
 }
 
-.onboarding-feather img {
+.onboarding-feather svg {
   width: 28px;
   height: 28px;
-  object-fit: contain;
+  overflow: visible;
   transform: rotate(-12deg);
 }
 
