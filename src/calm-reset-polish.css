@@ -302,16 +302,27 @@
     animation: calm-instrument-enter .4s ease-out .14s both;
     flex: 0 0 auto;
     width: 100%;
-    padding: 13px 14px max(11px, env(safe-area-inset-bottom));
-    border: 1px solid rgba(230, 236, 222, .1);
-    border-radius: 24px;
-    background: linear-gradient(180deg, rgba(8, 34, 28, .34), rgba(4, 22, 18, .54));
-    box-shadow: 0 16px 42px rgba(1, 10, 8, .16), inset 0 1px 0 rgba(255, 255, 255, .035);
-    backdrop-filter: blur(18px) saturate(1.04);
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .calm-instrument::before {
-    display: none;
+    position: absolute;
+    z-index: -1;
+    inset: -44px calc(var(--page-pad) * -1) -2px;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(4, 20, 16, 0) 0%,
+      rgba(4, 20, 16, .14) 28%,
+      rgba(3, 17, 14, .54) 70%,
+      rgba(3, 15, 12, .78) 100%
+    );
+    content: "";
   }
 
   .calm-breath-card {
@@ -319,15 +330,15 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    gap: 8px;
-    padding: 0 3px 10px;
+    gap: 7px;
+    padding: 0 7px 9px;
   }
 
   .calm-rhythm-label {
     grid-column: 1;
-    color: rgba(248, 215, 169, .8);
+    color: rgba(248, 215, 169, .84);
     font-family: Georgia, "Times New Roman", serif;
-    font-size: .78rem;
+    font-size: .76rem;
     font-style: italic;
     font-weight: 500;
     letter-spacing: .008em;
@@ -337,11 +348,13 @@
 
   .calm-progress {
     grid-column: 1;
+    width: min(100%, 320px);
     height: 2px;
+    justify-self: center;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(196, 211, 199, .11);
-    box-shadow: none;
+    background: rgba(196, 211, 199, .13);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .012);
   }
 
   .calm-progress span {
@@ -358,10 +371,11 @@
     grid-column: 1;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    color: rgba(206, 217, 203, .6);
-    font-size: .61rem;
+    gap: 9px;
+    color: rgba(206, 217, 203, .58);
+    font-size: .59rem;
     font-weight: 540;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .28);
     white-space: nowrap;
   }
 
@@ -384,22 +398,23 @@
 
   .calm-resume {
     display: flex;
-    width: 100%;
-    min-height: 49px;
+    width: min(100%, 360px);
+    min-height: 48px;
+    margin-inline: auto;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-top: 2px;
-    padding: 0 16px;
-    border: 1px solid rgba(244, 232, 210, .14);
+    margin-top: 1px;
+    padding: 0 18px;
+    border: 1px solid rgba(244, 232, 210, .2);
     border-radius: 999px;
     color: rgba(252, 246, 233, .88);
-    background: rgba(247, 241, 231, .085);
+    background: rgba(247, 241, 231, .11);
     font-family: Georgia, "Times New Roman", serif;
     font-size: .91rem;
     font-weight: 500;
     letter-spacing: 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+    box-shadow: 0 10px 26px rgba(1, 10, 8, .14), inset 0 1px 0 rgba(255, 255, 255, .045);
     transition: transform .2s ease, background .2s ease, color .2s ease;
   }
 
@@ -423,15 +438,16 @@
 
   .calm-instrument__note {
     display: flex;
-    min-height: 23px;
+    min-height: 22px;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 6px 2px 0;
-    color: rgba(203, 214, 200, .5);
-    font-size: .58rem;
+    gap: 10px;
+    padding: 5px 2px 0;
+    color: rgba(203, 214, 200, .46);
+    font-size: .56rem;
     font-weight: 500;
     text-align: center;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .24);
   }
 
   .calm-instrument__note > span::after {
@@ -551,7 +567,7 @@
     .calm-guidance__count b { font-size: 1.78rem; }
     .calm-guidance__hint { font-size: .6rem; }
     .calm-feather-anchor { width: clamp(78px, 23vw, 98px); }
-    .calm-instrument { padding: 10px 12px max(8px, env(safe-area-inset-bottom)); border-radius: 21px; }
+    .calm-instrument { padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
     .calm-breath-card { gap: 6px; padding-bottom: 7px; }
     .calm-resume { min-height: 46px; margin-top: 1px; }
     .calm-instrument__note { padding-top: 4px; }
@@ -565,7 +581,7 @@
       left: calc(50% + 68px);
       width: clamp(98px, 28vw, 106px);
     }
-    .calm-instrument { width: 100%; margin-left: 0; padding-inline: 11px; }
+    .calm-instrument { width: 100%; margin-left: 0; padding-inline: 5px; }
     .calm-cycle-meta { gap: 8px; font-size: .58rem; }
     .calm-instrument__note { gap: 9px; font-size: .54rem; }
     .calm-instrument__note > span::after { margin-left: 9px; }
