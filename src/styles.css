@@ -101,6 +101,7 @@
   .bottom-nav { position: fixed; z-index: 15; bottom: 0; left: 50%; display: grid; width: min(100%, 540px); height: var(--nav-height); grid-template-columns: repeat(4, 1fr); padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(23, 58, 52, .1); background: rgba(255, 253, 249, .96); box-shadow: 0 -10px 30px rgba(23, 58, 52, .07); backdrop-filter: blur(18px); transform: translateX(-50%); }
   .bottom-nav__item { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 14px; color: var(--ink-soft); background: transparent; font-size: .67rem; font-weight: 750; }
   .bottom-nav__item.is-active { color: var(--evergreen); background: var(--sage); }
+  .bottom-nav__feather { width: 23px; height: 23px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(23, 58, 52, .14)); transform: rotate(-10deg); }
   .field { display: grid; gap: 7px; width: 100%; color: var(--ink-soft); font-size: .78rem; font-weight: 800; }
   .field input { width: 100%; font-size: 1rem; font-weight: 600; }
   .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; clip-path: inset(50%) !important; }
