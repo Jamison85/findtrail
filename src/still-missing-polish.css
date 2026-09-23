@@ -5,7 +5,7 @@
     padding-bottom: max(28px, env(safe-area-inset-bottom));
     overflow: hidden;
     background:
-      radial-gradient(circle at -8% 2%, rgba(114, 82, 102, .17), transparent 18rem),
+      radial-gradient(circle at -8% 2%, rgba(200, 107, 83, .17), transparent 18rem),
       radial-gradient(circle at 110% 34%, rgba(120, 152, 137, .2), transparent 20rem),
       linear-gradient(180deg, #edf3ee 0%, var(--paper) 45%, #f2e9dc 100%);
   }
@@ -24,7 +24,7 @@
   }
 
   .end-view::before { top: 150px; right: -160px; }
-  .end-view::after { bottom: 120px; left: -175px; border-color: rgba(114, 82, 102, .07); transform: rotate(-28deg); }
+  .end-view::after { bottom: 120px; left: -175px; border-color: rgba(200, 107, 83, .07); transform: rotate(-28deg); }
 
   .recovery-topbar,
   .end-hero,
@@ -99,7 +99,7 @@
     height: 9px;
     border-radius: 50%;
     background: var(--clay);
-    box-shadow: 0 0 0 5px rgba(233, 138, 102, .12);
+    box-shadow: 0 0 0 5px rgba(200, 107, 83, .12);
     content: "";
   }
 
@@ -172,7 +172,7 @@
     bottom: 30px;
     left: 17px;
     width: 1px;
-    background: rgba(114, 82, 102, .18);
+    background: rgba(200, 107, 83, .18);
     content: "";
   }
 
@@ -200,7 +200,7 @@
   .end-view--medicine .recovery-step--priority,
   .end-view--wallet .recovery-step--priority,
   .end-view--money .recovery-step--priority {
-    border-color: rgba(189, 98, 69, .18);
+    border-color: rgba(169, 86, 67, .18);
     background: linear-gradient(145deg, rgba(251, 232, 220, .9), rgba(255, 250, 244, .92));
   }
 
@@ -209,9 +209,9 @@
     width: 35px;
     height: 35px;
     place-items: center;
-    border: 1px solid rgba(114, 82, 102, .17);
+    border: 1px solid rgba(200, 107, 83, .17);
     border-radius: 12px;
-    color: var(--plum);
+    color: var(--clay);
     background: var(--white);
     font-size: .7rem;
     font-variant-numeric: tabular-nums;
@@ -225,7 +225,7 @@
   .end-view--money .recovery-step--priority .recovery-step__number { border-color: var(--clay-deep); background: var(--clay-deep); }
 
   .recovery-step > div { display: grid; min-width: 0; gap: 3px; padding-top: 1px; }
-  .recovery-step small { color: var(--plum); font-size: .56rem; font-weight: 870; letter-spacing: .07em; text-transform: uppercase; }
+  .recovery-step small { color: var(--clay); font-size: .56rem; font-weight: 870; letter-spacing: .07em; text-transform: uppercase; }
   .recovery-step strong { font-size: .82rem; line-height: 1.25; }
   .recovery-step p { font-size: .69rem; line-height: 1.42; }
 

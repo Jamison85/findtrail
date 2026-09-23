@@ -95,7 +95,7 @@
 }
 
 .onboarding-item svg {
-  color: var(--plum);
+  color: var(--clay);
 }
 
 .onboarding-item.is-selected {
@@ -129,7 +129,7 @@
 
 .onboarding-clues__question small,
 .onboarding-trail article > small {
-  color: var(--plum);
+  color: var(--clay);
   font-size: .65rem;
   font-weight: 850;
   letter-spacing: .11em;
@@ -207,7 +207,7 @@
   height: 13px;
   border-color: var(--clay);
   background: #fff4ef;
-  box-shadow: 0 0 0 5px rgba(233, 138, 102, .13);
+  box-shadow: 0 0 0 5px rgba(200, 107, 83, .13);
 }
 
 .onboarding-trail article {

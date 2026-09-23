@@ -2,7 +2,7 @@
   .widen-view {
     min-height: 100dvh;
     background:
-      radial-gradient(circle at 90% 4%, rgba(114, 82, 102, .13), transparent 15rem),
+      radial-gradient(circle at 90% 4%, rgba(200, 107, 83, .13), transparent 15rem),
       linear-gradient(165deg, #faf5ec 0 56%, #e4eee7 100%);
   }
 
@@ -130,7 +130,7 @@
   .widen-panel header small {
     display: block;
     margin-bottom: 1px;
-    color: var(--plum);
+    color: var(--clay);
     font-size: .61rem;
     font-weight: 850;
     letter-spacing: .09em;
@@ -166,8 +166,8 @@
     height: 28px;
     place-items: center;
     border-radius: 9px;
-    color: var(--plum);
-    background: var(--plum-soft);
+    color: var(--clay);
+    background: var(--clay-soft);
     font-size: .67rem;
     font-weight: 900;
   }
