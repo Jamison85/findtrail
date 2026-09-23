@@ -77,9 +77,9 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
         </div>
       </div>
 
-      <div className="recovery-status" role="status" aria-label={`Focused trail complete. ${placeCount} checked. ${spotCount} ruled out. Trail saved automatically.`}>
+      <div className="recovery-status" role="status" aria-label={`Focused trail complete. ${placeCount} visited. ${spotCount} ruled out. Trail saved automatically.`}>
         <span className="recovery-status__mark"><Icon name="check" size={17} /></span>
-        <span><strong>Focused trail complete</strong><small>{placeCount} checked{checkedSpotCount > 0 ? ` · ${spotCount} ruled out` : ''}</small></span>
+        <span><strong>Focused trail complete</strong><small>{placeCount} visited{checkedSpotCount > 0 ? ` · ${spotCount} ruled out` : ''}</small></span>
         <small className="recovery-status__saved">Saved</small>
       </div>
 
