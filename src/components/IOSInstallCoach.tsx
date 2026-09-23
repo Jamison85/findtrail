@@ -16,6 +16,11 @@ function isIOSDevice(): boolean {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
+export function canShowIOSInstallInstructions(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
+  return isIOSDevice() && !isRunningStandalone()
+}
+
 function markCoachSeen(): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, '1')
@@ -32,11 +37,19 @@ function hasSeenCoach(): boolean {
   }
 }
 
-export function IOSInstallCoach({ enabled = true }: { enabled?: boolean }) {
+export function IOSInstallCoach({ enabled = true, requestKey = 0 }: { enabled?: boolean; requestKey?: number }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!enabled || !isIOSDevice() || isRunningStandalone() || hasSeenCoach()) return
+    if (!enabled || !canShowIOSInstallInstructions()) return
+
+    if (requestKey > 0) {
+      markCoachSeen()
+      setVisible(true)
+      return
+    }
+
+    if (hasSeenCoach()) return
 
     const timer = window.setTimeout(() => {
       markCoachSeen()
@@ -44,7 +57,7 @@ export function IOSInstallCoach({ enabled = true }: { enabled?: boolean }) {
     }, SHOW_DELAY_MS)
 
     return () => window.clearTimeout(timer)
-  }, [enabled])
+  }, [enabled, requestKey])
 
   if (!visible) return null
 
