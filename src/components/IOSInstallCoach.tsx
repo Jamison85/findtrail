@@ -32,11 +32,11 @@ function hasSeenCoach(): boolean {
   }
 }
 
-export function IOSInstallCoach() {
+export function IOSInstallCoach({ enabled = true }: { enabled?: boolean }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!isIOSDevice() || isRunningStandalone() || hasSeenCoach()) return
+    if (!enabled || !isIOSDevice() || isRunningStandalone() || hasSeenCoach()) return
 
     const timer = window.setTimeout(() => {
       markCoachSeen()
@@ -44,7 +44,7 @@ export function IOSInstallCoach() {
     }, SHOW_DELAY_MS)
 
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [enabled])
 
   if (!visible) return null
 
