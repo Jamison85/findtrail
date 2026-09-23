@@ -8,6 +8,7 @@ import { HistoryView } from './components/HistoryView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
 import { canShowIOSInstallInstructions, IOSInstallCoach } from './components/IOSInstallCoach'
+import { LaunchSplash } from './components/LaunchSplash'
 import { Onboarding, shouldShowOnboarding } from './components/Onboarding'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
@@ -65,16 +66,30 @@ export default function App() {
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null)
   const [onboardingOpen, setOnboardingOpen] = useState(() => shouldShowOnboarding())
   const [iosInstallHelpRequest, setIosInstallHelpRequest] = useState(0)
+  const [launching, setLaunching] = useState(() => import.meta.env.MODE !== 'test')
+  const launchExperience = useRef<HTMLDivElement>(null)
   const previousScreen = useRef(screen)
   const focusItemPickerOnHome = useRef(false)
   const onboardingWasOpen = useRef(onboardingOpen)
 
   const active = data.activeSearch
   const activeItem = active ? ITEM_BY_ID[active.itemId] : null
+  const launchReducedMotion = shouldReduceMotion(data.settings)
 
   useEffect(() => {
     if (!saveData(data)) setStorageError(true)
   }, [data])
+
+  useEffect(() => {
+    if (!launching) return
+    const experience = launchExperience.current
+    experience?.setAttribute('inert', '')
+    const timer = window.setTimeout(() => setLaunching(false), launchReducedMotion ? 850 : 2150)
+    return () => {
+      window.clearTimeout(timer)
+      experience?.removeAttribute('inert')
+    }
+  }, [launching, launchReducedMotion])
 
   useEffect(() => {
     const onlineHandler = () => setOnline(true)
@@ -376,11 +391,9 @@ export default function App() {
   const rootScreen = ['home', 'history', 'settings'].includes(screen)
   const iosInstallHelpAvailable = canShowIOSInstallInstructions()
 
-  if (onboardingOpen) {
-    return <Onboarding onComplete={() => setOnboardingOpen(false)} />
-  }
-
-  return (
+  const experience = onboardingOpen ? (
+    <Onboarding onComplete={() => setOnboardingOpen(false)} />
+  ) : (
     <div className="app-shell">
       <a className="skip-link" href="#app-content">Skip to content</a>
       <IOSInstallCoach requestKey={iosInstallHelpRequest} />
@@ -401,6 +414,19 @@ export default function App() {
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
     </div>
+  )
+
+  return (
+    <>
+      <div
+        ref={launchExperience}
+        className={`launch-experience${launching ? ' is-covered' : ''}${launching && launchReducedMotion ? ' is-reduced-launch' : ''}`}
+        aria-hidden={launching ? true : undefined}
+      >
+        {experience}
+      </div>
+      {launching && <LaunchSplash reducedMotion={launchReducedMotion} />}
+    </>
   )
 }
 
