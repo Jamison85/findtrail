@@ -7,7 +7,7 @@ interface HorizonRipplesProps {
 
 const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const RESET_SECONDS = 30
-const RIPPLE_SECONDS = 5.4
+const RIPPLE_SECONDS = 8.4
 
 export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -82,7 +82,7 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
       const rippleTime = Math.min(1, Math.max(0, age / RIPPLE_SECONDS))
       const rippleActive = age >= 0 && age <= RIPPLE_SECONDS && !reducedMotion
       const rippleAttack = Math.min(1, Math.max(0, age / .16))
-      const rippleTail = 1 - Math.min(1, Math.max(0, (rippleTime - .58) / .42))
+      const rippleTail = 1 - Math.min(1, Math.max(0, (rippleTime - .68) / .32))
       const rippleFade = rippleActive ? rippleAttack * rippleTail : 0
       const ovalScale = .245 + (rippleTime * .035)
       const centerX = width * .5
@@ -92,7 +92,8 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
         width * .56,
         Math.max(0, height - contactY) / ovalScale,
       )
-      const rippleRadius = (1 - Math.pow(1 - rippleTime, 1.28)) * maxRippleRadius
+      const rippleProgress = rippleTime * rippleTime * (3 - (2 * rippleTime))
+      const rippleRadius = rippleProgress * maxRippleRadius
       const contactFade = Math.max(0, 1 - (age / .55))
 
       context.clearRect(0, 0, width, height)
