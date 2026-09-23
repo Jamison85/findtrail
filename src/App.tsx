@@ -66,6 +66,7 @@ export default function App() {
   const [iosInstallHelpRequest, setIosInstallHelpRequest] = useState(0)
   const previousScreen = useRef(screen)
   const focusItemPickerOnHome = useRef(false)
+  const onboardingWasOpen = useRef(onboardingOpen)
 
   const active = data.activeSearch
   const activeItem = active ? ITEM_BY_ID[active.itemId] : null
@@ -114,14 +115,20 @@ export default function App() {
         document.getElementById(focusPicker ? 'item-picker-heading' : 'view-heading')?.focus({ preventScroll: true })
         if (focusPicker) {
           const picker = document.getElementById('item-picker')
-          picker?.classList.remove('is-reentry')
-          window.requestAnimationFrame(() => picker?.classList.add('is-reentry'))
+          picker?.classList.add('is-reentry')
           window.setTimeout(() => picker?.classList.remove('is-reentry'), 900)
         }
       }, 0)
       previousScreen.current = screen
     }
   }, [screen])
+
+  useEffect(() => {
+    if (onboardingWasOpen.current && !onboardingOpen) {
+      window.setTimeout(() => document.getElementById('view-heading')?.focus({ preventScroll: true }), 0)
+    }
+    onboardingWasOpen.current = onboardingOpen
+  }, [onboardingOpen])
 
   function navigate(next: Screen) {
     if (next === 'calm') setReturnScreen(active?.stops.length ? 'trail' : 'home')
