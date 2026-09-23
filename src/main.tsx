@@ -10,6 +10,7 @@ import './widen-search-polish.css'
 import './still-missing-polish.css'
 import './found-view-polish.css'
 import './history-settings-polish.css'
+import './install-coach.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
