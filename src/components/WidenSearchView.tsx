@@ -1,6 +1,7 @@
 import { getFocusedStops, getWiderStops } from '../trailEngine'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
+import { FeatherMark } from './FeatherMark'
 
 interface WidenSearchViewProps {
   search: ActiveSearch
@@ -59,7 +60,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
       </section>
 
       <div className="widen-choices" aria-label="Other next steps">
-        <button className="button button--secondary" onClick={onReset}><Icon name="calm" size={18} />30-second reset</button>
+        <button className="button button--secondary" onClick={onReset}><FeatherMark className="reset-action-feather" />30-second reset</button>
         <button className="text-button" onClick={onFound}><Icon name="spark" size={16} />I found it after all</button>
         <button className="text-button text-button--muted" onClick={onHome}>Save and leave</button>
       </div>
