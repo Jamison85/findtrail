@@ -15,7 +15,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
   const focusedStops = getFocusedStops(search.stops)
   const widerStops = getWiderStops(search.stops)
   const checkedSpotCount = focusedStops.reduce((total, stop) => total + (search.checkedSpots[stop.id]?.length ?? 0), 0)
-  const placeLabel = `${focusedStops.length} strongest ${focusedStops.length === 1 ? 'place' : 'places'}`
+  const placeLabel = `${focusedStops.length} strongest ${focusedStops.length === 1 ? 'place' : 'places'} visited`
   const spotLabel = checkedSpotCount > 0 ? `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked` : 'Progress saved'
 
   return (
@@ -38,9 +38,9 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
         </div>
       </div>
 
-      <div className="widen-status" role="status" aria-label={`${placeLabel} completed. ${spotLabel}. Your trail is saved.`}>
+      <div className="widen-status" role="status" aria-label={`${placeLabel}. ${spotLabel}. Your trail is saved.`}>
         <span><Icon name="trail" size={18} /></span>
-        <p><strong>{placeLabel} completed</strong><small>{spotLabel} · trail saved</small></p>
+        <p><strong>{placeLabel}</strong><small>{spotLabel} · trail saved</small></p>
       </div>
 
       <section className="widen-panel" aria-labelledby="widen-heading">
