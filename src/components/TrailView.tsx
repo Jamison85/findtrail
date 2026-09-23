@@ -182,7 +182,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
 
         <aside className="side-quest-note">
           <span className="side-quest-note__icon"><Icon name="calm" size={18} /></span>
-          <span><strong>Side-quest shield</strong>Stay in this area. No organizing or “quick checks” elsewhere yet. Sneaky bastard.</span>
+          <span><strong>Side-quest shield</strong>Stay in this area. No organizing or “quick checks” elsewhere yet. Sneaky little side quest.</span>
         </aside>
       </article>
 
