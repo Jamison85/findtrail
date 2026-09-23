@@ -24,26 +24,21 @@ describe('FindTrail app', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toBeInTheDocument()
-    expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
-    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
+    expect(screen.queryByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
 
     expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
-    expect(document.querySelector('.home-artwork__trail')).toHaveClass('is-playing')
-    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBe('true')
+    expect(screen.getByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
-  it('plays the calm home trail once per session', () => {
-    const first = render(<App />)
-    const trail = document.querySelector('.home-artwork__trail')
-    expect(trail).toHaveClass('is-playing')
-    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBe('true')
-
-    first.unmount()
+  it('keeps the home artwork static instead of implying search checkpoints', () => {
     render(<App />)
-    expect(document.querySelector('.home-artwork__trail')).toHaveClass('is-settled')
+    expect(screen.getByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
+    expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
   })
 
   it('hands the selected item smoothly into a focused trail', async () => {
