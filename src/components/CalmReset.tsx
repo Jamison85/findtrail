@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Settings } from '../types'
 import { HorizonRipples } from './HorizonRipples'
 import { Icon } from './Icon'
+import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
 
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
@@ -73,7 +74,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
-        <strong className="calm-brand">FindTrail</strong>
+        <strong className="calm-brand"><BrandMark className="calm-brand__mark" />FindTrail</strong>
         <button className="calm-skip" onClick={onResume} aria-label="Skip">
           Skip <Icon name="close" size={14} />
         </button>
