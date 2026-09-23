@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
 import { Icon } from './Icon'
 
@@ -94,7 +95,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
     <section className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <header className="onboarding__topbar">
         <div className="onboarding__brand">
-          <span className="onboarding__brand-mark"><Icon name="trail" size={19} /></span>
+          <BrandMark className="onboarding__brand-mark" />
           <strong>FindTrail</strong>
         </div>
         <button type="button" className="onboarding__skip" onClick={finish}>Skip</button>
