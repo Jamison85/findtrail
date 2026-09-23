@@ -37,10 +37,15 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
       const key = itemIdentity(entry.itemId, entry.itemLabel)
       if (!latestByItem.has(key)) latestByItem.set(key, entry)
     })
-    return [...latestByItem.values()].map((entry) => ({
-      entry,
-      likely: mostLikelyLocation(history, entry.itemId, entry.itemLabel),
-    })).filter((pattern) => pattern.likely).slice(0, 3)
+    return [...latestByItem.values()]
+      .map((entry) => ({
+        entry,
+        likely: mostLikelyLocation(history, entry.itemId, entry.itemLabel),
+        latestFoundAt: Date.parse(entry.foundAt) || 0,
+      }))
+      .filter((pattern) => pattern.likely)
+      .sort((a, b) => (b.likely?.count ?? 0) - (a.likely?.count ?? 0) || b.latestFoundAt - a.latestFoundAt)
+      .slice(0, 3)
   }, [history])
   const itemCount = useMemo(() => new Set(history.map((entry) => itemIdentity(entry.itemId, entry.itemLabel))).size, [history])
 
