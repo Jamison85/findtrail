@@ -65,7 +65,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
       timerRef.current = null
     }
-  }, []
+  }, [])
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
