@@ -1,16 +1,20 @@
-# FindTrail 2.8 QA report
+# FindTrail 2.12 QA report
 
-Run date: 2026-09-21
+Run date: 2026-09-22
 
 ## Automated release checks
 
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | 49 passed across 10 files |
+| Vitest unit and component tests | Pass: current unit and component suite |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
 | Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
+| First-run onboarding | Pass: onboarding renders before Home, completion is remembered, and an empty auto-saved record does not strand a half-finished first run |
+| iPhone install guidance | Pass: one-time instructions defer until after onboarding and can be reopened later from Settings |
+| Reset icon language | Pass: all actions that launch the reset use the same natural feather mark |
+| Find-another handoff | Pass: the success action returns to and focuses the Home item picker instead of duplicating Back home |
 | Offline shell inclusion | Pass: versioned artwork is pre-cached |
 | Home motion regression | Pass: plays once per session and settles |
 | Item handoff regression | Pass: selected tile settles before the first clue appears |
@@ -21,8 +25,8 @@ Run date: 2026-09-21
 | Found-place carry-forward | Pass: the last checked exact spot is ready to save automatically |
 | Found capture | Pass: one exact place is the only required input; suggestions and manual entry share one controlled value |
 | Found learning | Pass: successful search area, found history, saved home priority, and custom-item pinning retain their existing behavior |
-| Success confirmation | Pass: the saved location, places checked, elapsed time, and home/history result are stated explicitly |
-| History learning | Pass: found records become per-item likely-place summaries with accurate repeat counts |
+| Success confirmation | Pass: the saved location, places visited, elapsed time, and home/history result are stated explicitly |
+| History learning | Pass: found records become per-item likely-place summaries, with repeated locations ranked ahead of newer one-off finds |
 | History repeat search | Pass: learned-place and expanded-record actions restart the matching item trail |
 | History disclosure | Pass: recent entries expose exact place, places checked, search time, and date without crowding the list |
 | Settings organization | Pass: search, appearance, saved homes, private data, backup, and destructive controls remain distinct |
@@ -32,10 +36,10 @@ Run date: 2026-09-21
 | Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
 | Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |
 | Ambient reset regression | Pass: three timed breaths, progress semantics, skip, and trail return remain functional |
-| Reset rendering | Pass: still-lake artwork, natural feather motion, living water, contact ripple, and reduced-motion fallback |
+| Reset rendering | Pass: still-lake artwork, natural feather motion, living water, strengthened contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
-| Focused-screen notices | Pass: update and offline notices remain reachable during an active search |
-| Hosted GitHub Actions | Pass: PR #26, Production checks run 163 |
+| Focused-screen notices | Pass: update-ready notices wait for Home, History, or Settings instead of interrupting an active search or reset |
+| Hosted GitHub Actions | Pass: PR #30 Production checks |
 
 ## Browser and resilience checks
 
@@ -76,6 +80,6 @@ Run date: 2026-09-21
 
 ## Still required before final production approval
 
-- Confirm the 2.8 History and Settings screens on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
+- Confirm the 2.12 onboarding, History, Settings, and Reset screens on the hosted build at 360 × 800, 412 × 915, 430 × 932, and 768 × 1024.
 - Install on Jamo's Galaxy S25 Ultra and complete one real search.
 - Confirm microphone permission and speech behavior on the actual device/browser.
