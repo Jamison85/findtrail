@@ -7,6 +7,7 @@ import { HistoryView } from './components/HistoryView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
 import { IOSInstallCoach } from './components/IOSInstallCoach'
+import { Onboarding, shouldShowOnboarding } from './components/Onboarding'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
@@ -61,6 +62,7 @@ export default function App() {
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null)
   const [backupStatus, setBackupStatus] = useState<{ message: string; kind: 'success' | 'error' } | null>(null)
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null)
+  const [onboardingOpen, setOnboardingOpen] = useState(() => shouldShowOnboarding())
   const previousScreen = useRef(screen)
 
   const active = data.activeSearch
@@ -351,7 +353,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#app-content">Skip to content</a>
-      <IOSInstallCoach />
+      {onboardingOpen && <Onboarding onComplete={() => setOnboardingOpen(false)} />}
+      <IOSInstallCoach enabled={!onboardingOpen} />
       {!online && <div className="offline-banner" role="status">Offline mode · your saved trail still works</div>}
       {updateWorker && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
       {storageError && <div className="storage-banner" role="alert">This browser blocked saving. Keep this tab open until your search is finished.<button onClick={() => setStorageError(false)} aria-label="Dismiss"><Icon name="close" size={17} /></button></div>}
