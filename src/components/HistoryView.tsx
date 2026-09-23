@@ -115,7 +115,7 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
                       <div id={detailId} className="history-entry__detail">
                         <div className="history-entry__location"><span>Exact place</span><strong>{entry.foundLocation}</strong></div>
                         <dl>
-                          <div><dt>Places checked</dt><dd>{entry.stopsChecked}</dd></div>
+                          <div><dt>Places visited</dt><dd>{entry.stopsChecked}</dd></div>
                           <div><dt>Search time</dt><dd>{formatDuration(entry.durationSeconds)}</dd></div>
                           <div><dt>Found</dt><dd>{dateLabel(entry.foundAt)}</dd></div>
                         </dl>
