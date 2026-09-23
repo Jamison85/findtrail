@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { ONBOARDING_STORAGE_KEY } from './components/Onboarding'
 import { DEFAULT_SETTINGS, STORAGE_KEY } from './storage'
 
 async function buildTrailFromDoorway() {
@@ -11,8 +12,22 @@ async function buildTrailFromDoorway() {
 describe('FindTrail app', () => {
   beforeEach(() => {
     localStorage.clear()
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, '1')
     sessionStorage.clear()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+
+
+
+  it('welcomes a genuinely new user before showing the home screen', () => {
+    localStorage.removeItem(ONBOARDING_STORAGE_KEY)
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
   it('plays the calm home trail once per session', () => {
