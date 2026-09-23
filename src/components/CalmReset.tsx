@@ -29,14 +29,12 @@ function phaseFor(elapsed: number): ResetPhase {
 }
 
 export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => void; hasSearch: boolean; motion: Settings['motion'] }) {
-  const [run, setRun] = useState(0)
   const [elapsed, setElapsed] = useState(0)
   const reducedMotion = useReducedMotion(motion)
   const timerRef = useRef<number | null>(null)
 
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
   const complete = remaining === 0
-  const cycle = complete ? 3 : Math.min(3, Math.floor(elapsed / CYCLE_SECONDS) + 1)
   const withinCycle = elapsed % CYCLE_SECONDS
   const phase = complete ? 'Reset complete' : phaseFor(elapsed)
   const phaseSeconds = complete
@@ -67,15 +65,11 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
       timerRef.current = null
     }
-  }, [run])
-
-  function restart() {
-    setRun((value) => value + 1)
-  }
+  }, []
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} restartKey={run} />
+      <HorizonRipples reducedMotion={reducedMotion} restartKey={0} />
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
@@ -104,7 +98,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         </div>
       </div>
 
-      <div key={`flight-${run}`} className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
+      <div className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
         <div className="calm-feather-anchor">
           <div className="calm-feather-drift">
             <img className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />
@@ -115,21 +109,8 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       <footer className="calm-instrument">
         <div className="calm-breath-card">
           <span className="sr-only" aria-live="polite">{phase}</span>
-          <strong className="calm-rhythm-label">
-            {complete ? 'Ready when you are' : '4 in · 6 out rhythm'}
-          </strong>
-
           <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
             <span style={{ width: `${Math.min(100, (elapsed / TOTAL_SECONDS) * 100)}%` }} />
-          </div>
-
-          <div className="calm-cycle-meta">
-            <div className="calm-cycle-markers" aria-label={complete ? 'Three of three breaths complete' : `Breath ${cycle} of 3`}>
-              {[1, 2, 3].map((marker) => (
-                <span key={marker} className={marker < cycle || complete ? 'is-complete' : marker === cycle ? 'is-current' : ''} />
-              ))}
-            </div>
-            <span>{complete ? 'Three breaths complete' : `Cycle ${cycle} of 3 · ${remaining}s remaining`}</span>
           </div>
         </div>
 
@@ -138,12 +119,6 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
           <i aria-hidden="true"><Icon name="forward" size={18} /></i>
         </button>
 
-        <div className="calm-instrument__note">
-          <span>Breathe comfortably. Never force the pace.</span>
-          <button className="calm-restart" onClick={restart} aria-label="Restart the 30-second reset">
-            <Icon name="refresh" size={13} /> Restart
-          </button>
-        </div>
         <span className="sr-only">{hasSearch ? 'This returns to your active search.' : 'This returns to the home screen.'}</span>
       </footer>
     </section>
