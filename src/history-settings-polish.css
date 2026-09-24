@@ -165,6 +165,12 @@
   .history-entry__detail dt { color: var(--ink-soft); font-size: .56rem; }
   .history-entry__detail dd { margin: 0; font-size: .72rem; font-weight: 820; font-variant-numeric: tabular-nums; }
   .history-entry__detail .button { min-height: 44px; font-size: .7rem; }
+  .history-edit { display: grid; gap: 7px; }
+  .history-edit label { color: var(--ink-soft); font-size: .72rem; font-weight: 800; }
+  .history-edit input { width: 100%; }
+  .history-edit > div, .history-entry__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+  .history-entry__actions { justify-content: space-between; }
+  .history-entry__actions .text-button { min-height: 44px; }
 
   .history-empty {
     display: grid;

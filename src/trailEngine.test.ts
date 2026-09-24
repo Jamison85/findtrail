@@ -42,6 +42,21 @@ describe('buildTrail', () => {
     expect(buildTrail('medicine', 'Medicine', { itemDetail: 'urgent' }, [], [{ ...savedHome, id: 'item:medicine', itemId: 'medicine', itemLabel: 'Medicine' }])[0].id).toBe('safety-help')
   })
 
+  it('keeps actionable phone clues in the short trail ahead of an old saved home', () => {
+    const phoneHome = { ...savedHome, id: 'item:phone', itemId: 'phone' as const, itemLabel: 'Phone' }
+    const ringing = buildTrail('phone', 'Phone', { itemDetail: 'ring', lastPlace: 'home', lastAction: 'sat' }, [], [phoneHome])
+    const dead = buildTrail('phone', 'Phone', { itemDetail: 'dead', lastPlace: 'home', lastAction: 'sat' }, [], [phoneHome])
+    expect(ringing[0].id).toBe('ring-phone')
+    expect(dead[0].id).toBe('chargers')
+    expect(ringing[1].kind).toBe('home')
+  })
+
+  it('starts with the attached phone for a wallet and the current place before a past home', () => {
+    const wallet = buildTrail('wallet', 'Wallet', { itemDetail: 'phone', lastPlace: 'work', lastAction: 'sat' }, [], [{ ...savedHome, id: 'item:wallet', itemId: 'wallet', itemLabel: 'Wallet' }])
+    expect(wallet[0].id).toBe('attached-phone')
+    expect(wallet.findIndex((stop) => stop.kind === 'home')).toBeGreaterThan(wallet.findIndex((stop) => stop.id === 'work'))
+  })
+
   it('never repeats stops and always ends with a slow sweep', () => {
     const trail = buildTrail('wallet', 'Wallet', { itemDetail: 'pocket', lastPlace: 'car', lastAction: 'carried' }, [])
     expect(new Set(trail.map((stop) => stop.id)).size).toBe(trail.length)

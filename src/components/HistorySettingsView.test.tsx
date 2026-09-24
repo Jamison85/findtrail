@@ -32,9 +32,10 @@ const data: PersistedData = {
 }
 
 describe('HistoryView', () => {
+  const actions = { onHome: vi.fn(), onUpdateEntry: vi.fn(), onRemoveEntry: vi.fn() }
   it('turns found history into useful item patterns and expandable records', () => {
     const onStart = vi.fn()
-    render(<HistoryView history={history} initialEntryId="keys-new" onStart={onStart} />)
+    render(<HistoryView history={history} initialEntryId="keys-new" onStart={onStart} {...actions} />)
 
     expect(screen.getByRole('heading', { name: 'What FindTrail remembers' })).toBeInTheDocument()
     expect(screen.getByLabelText('3 saved finds across 2 items')).toBeInTheDocument()
@@ -44,6 +45,12 @@ describe('HistoryView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Find Keys again. Most likely place: Blue bowl' }))
     expect(onStart).toHaveBeenCalledWith('keys', 'Keys')
+    fireEvent.click(screen.getByRole('button', { name: 'Correct place' }))
+    fireEvent.change(screen.getByLabelText('Correct this place'), { target: { value: 'Hall shelf' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save correction' }))
+    expect(actions.onUpdateEntry).toHaveBeenCalledWith('keys-new', 'Hall shelf')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this find' }))
+    expect(actions.onRemoveEntry).toHaveBeenCalledWith('keys-new')
   })
 
   it('puts repeated learned locations ahead of newer one-off finds', () => {
@@ -66,7 +73,7 @@ describe('HistoryView', () => {
       },
     ]
 
-    render(<HistoryView history={rankedHistory} initialEntryId={null} onStart={vi.fn()} />)
+    render(<HistoryView history={rankedHistory} initialEntryId={null} onStart={vi.fn()} {...actions} />)
     const learnedPatterns = screen.getAllByRole('button', { name: /Most likely place:/i })
 
     expect(learnedPatterns[0]).toHaveAccessibleName('Find Keys again. Most likely place: Blue bowl')
@@ -74,7 +81,7 @@ describe('HistoryView', () => {
   })
 
   it('gives first use a private, purposeful empty state', () => {
-    render(<HistoryView history={[]} initialEntryId={null} onStart={vi.fn()} />)
+    render(<HistoryView history={[]} initialEntryId={null} onStart={vi.fn()} {...actions} />)
     expect(screen.getByRole('heading', { name: 'No found places yet' })).toBeInTheDocument()
     expect(screen.getByText(/without sending that information anywhere/i)).toBeInTheDocument()
   })

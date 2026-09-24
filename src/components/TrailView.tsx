@@ -8,15 +8,17 @@ import { FeatherMark } from './FeatherMark'
 interface TrailViewProps {
   search: ActiveSearch
   settings: Settings
+  offerReset: boolean
+  onDismissReset: () => void
   onBack: () => void
   onToggleSpot: (spot: string) => void
-  onNext: () => void
+  onNext: (skipped?: boolean) => void
   onFound: () => void
   onCalm: () => void
   onEditClues: () => void
 }
 
-export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFound, onCalm, onEditClues }: TrailViewProps) {
+export function TrailView({ search, settings, offerReset, onDismissReset, onBack, onToggleSpot, onNext, onFound, onCalm, onEditClues }: TrailViewProps) {
   const stop = search.stops[search.currentIndex]
   const checked = search.checkedSpots[stop.id] ?? []
   const totalChecked = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
@@ -39,14 +41,14 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
   const nextLabel = isLastStop
     ? 'Still missing · next steps'
     : focusedPassComplete
-      ? 'Focused pass complete'
+      ? 'Continue to wider search'
       : widerPassComplete
-        ? 'Wider pass done · final sweep'
+        ? 'Continue to final sweep'
         : stage.name === 'safety'
-          ? 'Safety step done · start search'
+          ? 'Continue to search'
           : areaChecked
             ? 'Area checked · next place'
-            : 'Nothing here · next place'
+            : checked.length > 0 ? 'Next place' : 'Skip this place'
   const reduceMotion = settings.motion === 'reduced'
     || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 
@@ -94,13 +96,13 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
     recognitionRef.current?.stop()
     setListening(false)
     if (reduceMotion) {
-      onNext()
+      onNext(stage.name !== 'safety' && checked.length === 0)
       return
     }
     setDeparting(true)
     advanceTimerRef.current = window.setTimeout(() => {
       advanceTimerRef.current = null
-      onNext()
+      onNext(stage.name !== 'safety' && checked.length === 0)
     }, 190)
   }
 
@@ -147,7 +149,7 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
       <div className="trail-route">
         <div className="trail-route__meta">
           <span>{stage.label}</span>
-          <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} ruled out` : 'Trail ready'}</strong>
+          <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} checked` : 'No spots checked yet'}</strong>
         </div>
         <div className="trail-progress" role="progressbar" aria-label={`${stage.label} progress`} aria-valuemin={1} aria-valuemax={stage.total} aria-valuenow={stage.current} aria-valuetext={stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total} in the ${stage.label.toLocaleLowerCase()}`}>
           <span style={{ width: `${progress}%` }} />
@@ -185,6 +187,8 @@ export function TrailView({ search, settings, onBack, onToggleSpot, onNext, onFo
           <span><strong>Side-quest shield</strong>Stay in this area. No organizing or “quick checks” elsewhere yet. Sneaky little side quest.</span>
         </aside>
       </article>
+
+      {offerReset && <div className="trail-pause-offer" role="status"><span><strong>Want a 30-second reset?</strong><small>Your place is saved.</small></span><button onClick={onCalm}>Take reset</button><button onClick={onDismissReset}>Not now</button></div>}
 
       <div className="trail-utilities" aria-label="Search assistance">
         <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>

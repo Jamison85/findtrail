@@ -15,9 +15,11 @@ export interface FoundSummary {
 interface FoundViewProps {
   search: ActiveSearch
   value: string
+  foundInCurrentArea: boolean
   saveAsHome: boolean
   pinCustomItem: boolean
   onChange: (value: string) => void
+  onFoundInCurrentArea: (value: boolean) => void
   onSaveAsHome: (value: boolean) => void
   onPinCustomItem: (value: boolean) => void
   onSave: () => void
@@ -62,7 +64,7 @@ function SuccessTrail({ icon }: { icon: ItemId }) {
   )
 }
 
-export function FoundView({ search, value, saveAsHome, pinCustomItem, onChange, onSaveAsHome, onPinCustomItem, onSave, onBack }: FoundViewProps) {
+export function FoundView({ search, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onBack }: FoundViewProps) {
   const item = ITEM_BY_ID[search.itemId]
   const stop = search.stops[search.currentIndex]
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
@@ -124,9 +126,13 @@ export function FoundView({ search, value, saveAsHome, pinCustomItem, onChange, 
           <small>A useful detail helps: “blue bowl,” not just “kitchen.”</small>
         </label>
 
-        <div className="found-learning" role="note">
-          <span><Icon name="trail" size={18} /></span>
-          <p><strong>This find already teaches the trail.</strong><small>The search area that worked can move earlier next time.</small></p>
+        <div className="found-area-choice" role="group" aria-label="Was the item in this suggested area?">
+          <strong>Was it in the area you just searched?</strong>
+          <p>The exact place is saved either way. Confirming this area helps order a future trail.</p>
+          <div>
+            <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this area</button>
+            <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>Somewhere else</button>
+          </div>
         </div>
 
         <div className="found-memory-options">

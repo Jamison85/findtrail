@@ -45,7 +45,7 @@ function recoveryIntro(search: ActiveSearch): RecoveryIntro {
 
   return {
     title: 'Pause the search loop.',
-    detail: `You checked the strongest places for ${search.itemLabel.toLocaleLowerCase()}. Pick one next move and give it time to work.`,
+    detail: `You visited the suggested areas for ${search.itemLabel.toLocaleLowerCase()}. Pick one next move and give it time to work.`,
     priorityLabel: 'Start here',
   }
 }
@@ -55,8 +55,10 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
   const intro = recoveryIntro(search)
   const checkedSpotCount = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
   const item = ITEM_BY_ID[search.itemId]
-  const placeCount = `${search.stops.length} ${search.stops.length === 1 ? 'place' : 'places'}`
-  const spotCount = `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'}`
+  const visitedCount = search.stops.filter((stop) => stop.kind !== 'safety').length
+  const placeCount = `${visitedCount} ${visitedCount === 1 ? 'area' : 'areas'}`
+  const spotCount = `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked`
+  const skippedCount = search.skippedStops?.length ?? 0
 
   return (
     <section className={`view end-view end-view--${search.itemId}`} aria-labelledby="view-heading">
@@ -77,9 +79,9 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
         </div>
       </div>
 
-      <div className="recovery-status" role="status" aria-label={`Focused trail complete. ${placeCount} visited. ${spotCount} ruled out. Trail saved automatically.`}>
+      <div className="recovery-status" role="status" aria-label={`Trail explored. ${placeCount} visited. ${spotCount}. ${skippedCount} ${skippedCount === 1 ? 'area' : 'areas'} skipped. Trail saved automatically.`}>
         <span className="recovery-status__mark"><Icon name="check" size={17} /></span>
-        <span><strong>Focused trail complete</strong><small>{placeCount} visited{checkedSpotCount > 0 ? ` · ${spotCount} ruled out` : ''}</small></span>
+        <span><strong>Trail explored</strong><small>{placeCount} visited · {spotCount}{skippedCount ? ` · ${skippedCount} skipped` : ''}</small></span>
         <small className="recovery-status__saved">Saved</small>
       </div>
 
@@ -105,7 +107,7 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
       <section className="recovery-choice" aria-labelledby="recovery-choice-heading">
         <div className="recovery-choice__copy">
           <h2 id="recovery-choice-heading">Ready for another pass?</h2>
-          <p>Reset your attention first, or repeat the same trail at half speed.</p>
+          <p>Reset your attention first, or repeat the same trail.</p>
         </div>
         <div className="recovery-choice__primary">
           <button className="button button--primary" onClick={onReset}><FeatherMark className="reset-action-feather" /><span>30-second reset</span></button>

@@ -14,9 +14,10 @@ import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { WidenSearchView } from './components/WidenSearchView'
-import { ITEMS, ITEM_BY_ID } from './data'
+import { ITEMS, ITEM_BY_ID, STOPS } from './data'
 import { buildTrail, compactActiveSearch, getWiderStartIndex, isFocusedPassComplete } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
+import { trapDialogFocus } from './modalFocus'
 import type { ActiveSearch, ClueOption, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
 interface InstallPromptEvent extends Event {
@@ -54,10 +55,13 @@ export default function App() {
   const [customOpen, setCustomOpen] = useState(false)
   const [customName, setCustomName] = useState('')
   const [foundLocation, setFoundLocation] = useState('')
+  const [foundInCurrentArea, setFoundInCurrentArea] = useState(false)
+  const [foundReturnScreen, setFoundReturnScreen] = useState<Screen>('trail')
   const [saveAsHome, setSaveAsHome] = useState(false)
   const [pinCustomItem, setPinCustomItem] = useState(true)
   const [foundSummary, setFoundSummary] = useState<FoundSummary | null>(null)
   const [returnScreen, setReturnScreen] = useState<Screen>('home')
+  const [pauseOffer, setPauseOffer] = useState(false)
   const [storageError, setStorageError] = useState(false)
   const [online, setOnline] = useState(() => navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
@@ -77,7 +81,7 @@ export default function App() {
   const launchReducedMotion = shouldReduceMotion(data.settings)
 
   useEffect(() => {
-    if (!saveData(data)) setStorageError(true)
+    setStorageError(!saveData(data))
   }, [data])
 
   useEffect(() => {
@@ -169,6 +173,7 @@ export default function App() {
     setClueIndex(0)
     setFoundSummary(null)
     setFoundLocation('')
+    setPauseOffer(false)
     setCustomOpen(false)
     setCustomName('')
     setScreen('clues')
@@ -187,13 +192,13 @@ export default function App() {
   function saveClueAnswer(value: string) {
     const answers = answersThroughCurrentClue(value)
     if (!answers) return
-    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {} }))
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
   }
 
   function answerClue(value: string) {
     const answers = answersThroughCurrentClue(value)
     if (!answers || !activeItem || clueIndex >= activeItem.questions.length - 1) return
-    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {} }))
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
     setClueIndex((current) => current + 1)
   }
 
@@ -202,14 +207,14 @@ export default function App() {
     const answers = answersThroughCurrentClue(value)
     if (!answers) return
     const stops = buildTrail(active.itemId, active.itemLabel, answers, data.history, data.savedItems)
-    updateActive((current) => ({ ...current, answers, stops, currentIndex: 0, checkedSpots: {} }))
+    updateActive((current) => ({ ...current, answers, stops, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
     setScreen('trail')
   }
 
   function resumeSearch() {
     if (!active) return
     if (active.stops.length) {
-      setScreen(isFocusedPassComplete(active.stops, active.currentIndex) ? 'widen' : 'trail')
+      setScreen(active.widenReady ? 'widen' : 'trail')
       return
     }
     const questions = ITEM_BY_ID[active.itemId].questions
@@ -228,22 +233,28 @@ export default function App() {
     })
   }
 
-  function nextStop() {
+  function nextStop(skipped = false) {
     if (!active) return
+    setPauseOffer(false)
+    const markProgress = (current: ActiveSearch) => ({
+      ...current,
+      skippedStops: skipped && !current.skippedStops?.includes(current.stops[current.currentIndex]?.id)
+        ? [...(current.skippedStops ?? []), current.stops[current.currentIndex].id]
+        : current.skippedStops ?? [],
+    })
     if (isFocusedPassComplete(active.stops, active.currentIndex)) {
+      updateActive((current) => ({ ...markProgress(current), widenReady: true }))
       setScreen('widen')
       return
     }
     if (active.currentIndex >= active.stops.length - 1) {
+      updateActive(markProgress)
       setScreen('end')
       return
     }
     const nextIndex = active.currentIndex + 1
-    updateActive((current) => ({ ...current, currentIndex: nextIndex }))
-    if (data.settings.calmPause && nextIndex > 0 && nextIndex % 3 === 0) {
-      setReturnScreen('trail')
-      setScreen('calm')
-    }
+    updateActive((current) => ({ ...markProgress(current), currentIndex: nextIndex }))
+    if (data.settings.calmPause && nextIndex > 0 && nextIndex % 3 === 0) setPauseOffer(true)
   }
 
   function widenSearch() {
@@ -253,7 +264,8 @@ export default function App() {
       setScreen('trail')
       return
     }
-    updateActive((current) => ({ ...current, currentIndex: nextIndex }))
+    updateActive((current) => ({ ...current, currentIndex: nextIndex, widenReady: false }))
+    if (data.settings.calmPause) setPauseOffer(true)
     setScreen('trail')
   }
 
@@ -261,6 +273,8 @@ export default function App() {
     const stop = active?.stops[active.currentIndex]
     const checked = stop ? active?.checkedSpots[stop.id] ?? [] : []
     setFoundLocation(checked.at(-1) ?? '')
+    setFoundInCurrentArea(false)
+    setFoundReturnScreen(screen)
     setSaveAsHome(false)
     setPinCustomItem(true)
     setScreen('found')
@@ -277,9 +291,9 @@ export default function App() {
       foundLocation: foundLocation.trim(),
       foundAt: now.toISOString(),
       answers: active.answers,
-      stopsChecked: active.currentIndex + 1,
+      stopsChecked: active.stops.slice(0, active.currentIndex + 1).filter((stop) => stop.kind !== 'safety').length,
       durationSeconds,
-      foundStopId: active.stops[active.currentIndex]?.id,
+      foundStopId: foundInCurrentArea ? active.stops[active.currentIndex]?.id : undefined,
       foundSpot: foundLocation.trim(),
     }
     setFoundSummary({
@@ -326,6 +340,27 @@ export default function App() {
     setData((current) => ({ ...current, history: [] }))
   }
 
+  function updateHistoryEntry(id: string, location: string) {
+    const exact = location.trim()
+    if (!exact) return
+    setData((current) => ({
+      ...current,
+      history: current.history.map((entry) => entry.id === id
+        ? { ...entry, foundLocation: exact, foundSpot: exact, foundStopId: undefined }
+        : entry),
+    }))
+  }
+
+  function removeHistoryEntry(id: string) {
+    const entry = data.history.find((candidate) => candidate.id === id)
+    if (!entry || !window.confirm(`Remove the ${entry.itemLabel} find at ${entry.foundLocation}?`)) return
+    setData((current) => ({ ...current, history: current.history.filter((candidate) => candidate.id !== id) }))
+  }
+
+  function retryStorage() {
+    setStorageError(!saveData(data))
+  }
+
   function updateSavedItem(id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) {
     setData((current) => ({
       ...current,
@@ -368,7 +403,13 @@ export default function App() {
     }
     const summary = `${parsed.data.history.length} found ${parsed.data.history.length === 1 ? 'place' : 'places'} and ${parsed.data.savedItems.length} saved ${parsed.data.savedItems.length === 1 ? 'home' : 'homes'}`
     if (!window.confirm(`Restore ${summary}? This will replace the FindTrail data on this device.`)) return
-      setData(parsed.data.activeSearch ? { ...parsed.data, activeSearch: compactActiveSearch(parsed.data.activeSearch) } : parsed.data)
+    const restored = parsed.data.activeSearch ? { ...parsed.data, activeSearch: compactActiveSearch(parsed.data.activeSearch) } : parsed.data
+    if (!saveData(restored)) {
+      setStorageError(true)
+      setBackupStatus({ message: 'This browser could not save the restored backup. Try again after freeing storage.', kind: 'error' })
+      return
+    }
+    setData(restored)
     setBackupStatus({ message: 'Backup restored.', kind: 'success' })
   }
 
@@ -399,18 +440,18 @@ export default function App() {
       <IOSInstallCoach requestKey={iosInstallHelpRequest} />
       {!online && <div className="offline-banner" role="status">Offline mode · your saved trail still works</div>}
       {updateWorker && rootScreen && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
-      {storageError && <div className="storage-banner" role="alert">This browser blocked saving. Keep this tab open until your search is finished.<button onClick={() => setStorageError(false)} aria-label="Dismiss"><Icon name="close" size={17} /></button></div>}
+      {storageError && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
-        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
+        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setPauseOffer(false); setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
-        {screen === 'found' && active && <FoundView search={active} value={foundLocation} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen('trail')} />}
+        {screen === 'found' && active && <FoundView search={active} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen(foundReturnScreen)} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
-        {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} />}
+        {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
         {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
-        {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {} })); setScreen('trail') }} onHome={() => setScreen('home')} />}
+        {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false })); setScreen('trail') }} onHome={() => setScreen('home')} />}
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
     </div>
@@ -447,6 +488,18 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
   const pinnedItems = data.savedItems.filter((item) => item.itemId === 'other' && item.pinned)
   const [departingItemId, setDepartingItemId] = useState<ItemId | null>(null)
   const handoffTimer = useRef<number | null>(null)
+  const customTrigger = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!customOpen) return
+    const background = document.querySelectorAll<HTMLElement>('.brand-header, .home-main, .bottom-nav')
+    const prior = Array.from(background, (element) => [element, element.inert] as const)
+    background.forEach((element) => { element.inert = true })
+    return () => {
+      prior.forEach(([element, wasInert]) => { element.inert = wasInert })
+      customTrigger.current?.focus({ preventScroll: true })
+    }
+  }, [customOpen])
 
   useEffect(() => () => {
     if (handoffTimer.current !== null) window.clearTimeout(handoffTimer.current)
@@ -517,7 +570,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
                 item.id === departingItemId ? 'is-departing' : '',
               ].filter(Boolean).join(' ')
               return (
-                <button key={item.id} className={itemClass} onClick={() => chooseItem(item.id)} aria-haspopup={item.id === 'other' ? 'dialog' : undefined} aria-expanded={item.id === 'other' ? customOpen : undefined}>
+                <button key={item.id} ref={item.id === 'other' ? customTrigger : undefined} className={itemClass} onClick={() => chooseItem(item.id)} aria-haspopup={item.id === 'other' ? 'dialog' : undefined} aria-expanded={item.id === 'other' ? customOpen : undefined}>
                   <span className="item-button__icon"><Icon name={item.icon} size={23} /></span>
                   <strong>{item.label}</strong>
                   <small>{item.hint}</small>
@@ -543,7 +596,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
 
       {customOpen && (
         <div className="custom-item-scrim" onMouseDown={(event) => { if (event.currentTarget === event.target) setCustomOpen(false) }}>
-          <form className="custom-item" role="dialog" aria-modal="true" aria-label="Custom item" onKeyDown={(event) => { if (event.key === 'Escape') setCustomOpen(false) }} onSubmit={(event) => { event.preventDefault(); if (customName.trim()) onStart('other', customName) }}>
+          <form className="custom-item" role="dialog" aria-modal="true" aria-labelledby="custom-item-heading" onKeyDown={(event) => { if (event.key === 'Escape') setCustomOpen(false); else trapDialogFocus(event) }} onSubmit={(event) => { event.preventDefault(); if (customName.trim()) onStart('other', customName) }}>
             <div className="custom-item__heading"><div><span className="eyebrow">Other item</span><h2 id="custom-item-heading">What are we finding?</h2></div><button type="button" className="icon-button" onClick={() => setCustomOpen(false)} aria-label="Close custom item"><Icon name="close" size={19} /></button></div>
             <label htmlFor="custom-name">What are we finding?</label>
             <input id="custom-name" value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder="Example: work badge" autoFocus maxLength={40} />
@@ -591,8 +644,12 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
   const orderedOptions = question.id === 'lastAction'
     ? [...question.options].sort((a, b) => optionOrder.indexOf(a.value) - optionOrder.indexOf(b.value))
     : question.options
-  const primaryOptions = question.id === 'lastAction' ? orderedOptions.slice(0, 4) : orderedOptions
-  const extraOptions = question.id === 'lastAction' ? orderedOptions.slice(4) : []
+  const primaryOptions = question.id === 'lastAction'
+    ? orderedOptions.filter((option, optionIndex) => optionIndex < 4 || option.value === 'unsure')
+    : orderedOptions
+  const extraOptions = question.id === 'lastAction'
+    ? orderedOptions.filter((option) => !primaryOptions.includes(option))
+    : []
   const selectedLabel = orderedOptions.find((option) => option.value === selectedValue)?.label
   const stepLabels = [itemAnswer ?? 'Item', lastPlaceAnswer ?? 'Place', selectedValue && isFinal ? 'Trail ready' : 'What changed']
 
@@ -610,6 +667,10 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
   function chooseAnswer(value: string) {
     if (selectionTimer.current !== null) return
     setSelectedValue(value)
+    if (search.itemId === 'medicine' && question.id === 'itemDetail' && value === 'urgent') {
+      onSave(value)
+      return
+    }
     if (isFinal) {
       onSave(value)
       return
@@ -659,6 +720,13 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
           {extraOptions.length > 0 && <button type="button" className="choice-more" aria-expanded={moreOpen} aria-controls="more-clue-options" onClick={() => setMoreOpen((open) => !open)}>{moreOpen ? 'Show fewer choices' : 'More possibilities or not sure'}<Icon name={moreOpen ? 'close' : 'forward'} size={16} /></button>}
           {moreOpen && extraOptions.length > 0 && <div id="more-clue-options" className="choice-list choice-list--extra">{extraOptions.map(renderOption)}</div>}
         </div>
+        {search.itemId === 'medicine' && question.id === 'itemDetail' && selectedValue === 'urgent' && (
+          <div className="clue-safety" role="alert">
+            <strong>Safety first</strong>
+            <p>{STOPS['safety-help'].instruction}</p>
+            <button type="button" className="button button--primary" onClick={() => onAnswer('urgent')}>Continue the search with help</button>
+          </div>
+        )}
         {isFinal ? (
           <div className="clue-finish">
             <p className="clue-finish__summary" aria-live="polite"><Icon name="trail" size={17} />{selectedLabel ? <span><small>Trail ready from</small><strong>{contextItem} · {lastPlaceAnswer} · {selectedLabel}</strong></span> : <span><small>Last step</small><strong>Choose the closest answer above.</strong></span>}</p>

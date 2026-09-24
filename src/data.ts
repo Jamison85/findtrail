@@ -106,6 +106,7 @@ export const STOPS: Record<string, SearchStop> = {
   'safety-help': { id: 'safety-help', title: 'Get backup while you search', instruction: 'If this medicine is time-critical, contact a pharmacist, clinician, or trusted person now. Keep searching with help.', spots: ['Tell someone nearby', 'Call the pharmacy or care team', 'Check your dose instructions'], reason: 'Safety comes first for urgent medicine.', kind: 'safety' },
   'card-safety': { id: 'card-safety', title: 'Protect the card', instruction: 'Open the card app and temporarily lock or freeze the missing card while you search.', spots: ['Lock or freeze the card', 'Check recent activity', 'Keep the issuer number handy'], reason: 'This limits damage without ending the search.', kind: 'safety' },
   'ring-phone': { id: 'ring-phone', title: 'Make it announce itself', instruction: 'Stop moving for a moment. Call, ping, or use the device-finding service, then listen.', spots: ['Call the phone', 'Use Find My or device finder', 'Listen room by room'], reason: 'Sound is faster than searching.' },
+  'attached-phone': { id: 'attached-phone', title: 'Find the phone first', instruction: 'If the wallet is attached to your phone, locate the phone and check its case or wallet attachment before searching other places.', spots: ['Find the phone', 'Check the phone case', 'Check where the attachment could have slipped'], reason: 'You said the wallet travels with your phone.' },
   chargers: { id: 'chargers', title: 'Charging places', instruction: 'Check only places where the phone could be plugged in or set down beside a cable.', spots: ['Bedside charger', 'Couch charger', 'Kitchen charger', 'Car charger'] },
   body: { id: 'body', title: 'The embarrassingly close check', instruction: 'Before walking anywhere, check your body and what you are wearing.', spots: ['On your face or head', 'Hanging from your shirt', 'In your hand', 'Current pockets'] },
   'drop-zone': { id: 'drop-zone', title: 'The landing zone', instruction: 'Check where your hands unloaded when you came through the door.', spots: ['Entry table or hook', 'Beside the door', 'Near shoes', 'First counter inside'] },
@@ -143,7 +144,7 @@ export const CLUE_PROMOTIONS: Record<string, Record<string, string[]>> = {
   },
   itemDetail: {
     pocket: ['pockets'], bag: ['bags'], car: ['car'], work: ['work'],
-    phone: ['phone'], ring: ['ring-phone'], silent: ['seating', 'bed'], dead: ['chargers'],
+    phone: ['attached-phone'], ring: ['ring-phone'], silent: ['seating', 'bed'], dead: ['chargers'],
     living: ['seating', 'blankets', 'tables'], bedroom: ['bed', 'blankets'],
     sun: ['car', 'bags'], readers: ['tables', 'papers'], carried: ['activity-area', 'counters'],
     home: ['usual-home'], cash: ['pockets', 'wallet', 'papers'], card: ['wallet', 'pockets'], both: ['wallet', 'pockets'],
