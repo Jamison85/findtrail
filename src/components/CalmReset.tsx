@@ -31,27 +31,30 @@ function phaseFor(elapsed: number): ResetPhase {
 
 export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => void; hasSearch: boolean; motion: Settings['motion'] }) {
   const [elapsed, setElapsed] = useState(0)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
   const reducedMotion = useReducedMotion(motion)
   const timerRef = useRef<number | null>(null)
+  const playing = startedAt !== null
 
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
   const complete = remaining === 0
   const withinCycle = elapsed % CYCLE_SECONDS
-  const phase = complete ? 'Reset complete' : phaseFor(elapsed)
+  const phase = !playing ? 'Follow the feather' : complete ? 'Reset complete' : phaseFor(elapsed)
   const phaseSeconds = complete
     ? 0
     : withinCycle < 4
       ? Math.max(1, Math.ceil(4 - withinCycle))
       : Math.max(1, Math.ceil(CYCLE_SECONDS - withinCycle))
-  const guidance = complete
+  const guidance = !playing
+    ? 'Breathe in as it rises, out as it falls.'
+    : complete
     ? 'Notice what feels quieter now.'
     : phase === 'Breathe in'
       ? 'Rise with the feather'
       : 'Drift down with it'
 
   useEffect(() => {
-    const startedAt = performance.now()
-    setElapsed(0)
+    if (startedAt === null) return
 
     timerRef.current = window.setInterval(() => {
       const next = Math.min(TOTAL_SECONDS, (performance.now() - startedAt) / 1000)
@@ -66,11 +69,16 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
       timerRef.current = null
     }
-  }, [])
+  }, [startedAt])
+
+  function beginReset() {
+    setElapsed(0)
+    setStartedAt(performance.now())
+  }
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} restartKey={0} />
+      <HorizonRipples reducedMotion={reducedMotion} playing={playing} restartKey={0} />
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
@@ -88,18 +96,18 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         </div>
 
         <div className="calm-breath-stage">
-          <div className={complete ? 'calm-guidance is-complete' : 'calm-guidance'} aria-hidden="true">
+          <div className={complete ? 'calm-guidance is-complete' : 'calm-guidance'}>
             <strong className="calm-guidance__phase">{complete ? 'Reset complete' : phase}</strong>
-            <span className="calm-guidance__count">
+            {playing && <span className="calm-guidance__count">
               <b>{complete ? '✓' : phaseSeconds}</b>
               {!complete && <small>seconds</small>}
-            </span>
+            </span>}
             <span className="calm-guidance__hint">{guidance}</span>
           </div>
         </div>
       </div>
 
-      <div className={reducedMotion ? 'calm-flight is-reduced-motion' : 'calm-flight'} aria-hidden="true">
+      <div className={`calm-flight${reducedMotion ? ' is-reduced-motion' : ''}${!playing ? ' is-waiting' : ''}`} aria-hidden="true">
         <div className="calm-feather-anchor">
           <div className="calm-feather-drift">
             <img className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />
@@ -109,15 +117,16 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
       <footer className="calm-instrument">
         <div className="calm-breath-card">
-          <span className="sr-only" aria-live="polite">{phase}</span>
-          <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
+          <span className="sr-only" aria-live="polite">{playing ? phase : 'Begin when you are ready.'}</span>
+          {playing && <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
             <span style={{ width: `${Math.min(100, (elapsed / TOTAL_SECONDS) * 100)}%` }} />
-          </div>
+          </div>}
         </div>
 
-        <button className="calm-resume" onClick={onResume}>
-          <span>Resume with clear eyes</span>
-          <i aria-hidden="true"><Icon name="forward" size={18} /></i>
+        <button className="calm-resume" onClick={playing ? onResume : beginReset}>
+          <span className="calm-resume__feather"><FeatherMark /></span>
+          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : 'Begin 30-second reset'}</span>
+          <i aria-hidden="true"><Icon name="forward" size={16} /></i>
         </button>
 
         <span className="sr-only">{hasSearch ? 'This returns to your active search.' : 'This returns to the home screen.'}</span>
