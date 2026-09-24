@@ -185,7 +185,7 @@ export function CompleteView({ summary, durationLabel, onHome, onAnother }: Comp
           <span><Icon name={summary.savedAsHome ? 'home' : 'trail'} size={19} /></span>
           <p>
             <strong>{summary.savedAsHome ? 'Home spot saved.' : 'Added to found history.'}</strong>
-            <small>{summary.savedAsHome ? 'FindTrail will check here first next time.' : 'This search area can move earlier next time.'}</small>
+            <small>{summary.savedAsHome ? 'FindTrail will check here first next time.' : 'This found place may appear earlier next time.'}</small>
           </p>
         </div>
 
