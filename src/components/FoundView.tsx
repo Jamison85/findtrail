@@ -14,6 +14,7 @@ export interface FoundSummary {
 
 interface FoundViewProps {
   search: ActiveSearch
+  currentStepTitle?: string
   value: string
   foundInCurrentArea: boolean
   saveAsHome: boolean
@@ -64,9 +65,9 @@ function SuccessTrail({ icon }: { icon: ItemId }) {
   )
 }
 
-export function FoundView({ search, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onBack }: FoundViewProps) {
+export function FoundView({ search, currentStepTitle, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onBack }: FoundViewProps) {
   const item = ITEM_BY_ID[search.itemId]
-  const stop = search.stops[search.currentIndex]
+  const stop = currentStepTitle ? search.stops[search.currentIndex] : undefined
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
   const ready = Boolean(value.trim())
 
@@ -126,14 +127,16 @@ export function FoundView({ search, value, foundInCurrentArea, saveAsHome, pinCu
           <small>A useful detail helps: “blue bowl,” not just “kitchen.”</small>
         </label>
 
-        <div className="found-area-choice" role="group" aria-label="Was the item in this suggested area?">
-          <strong>Was it in the area you just searched?</strong>
-          <p>The exact place is saved either way. Confirming this area helps order a future trail.</p>
-          <div>
-            <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this area</button>
-            <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>Somewhere else</button>
+        {currentStepTitle && (
+          <div className="found-area-choice" role="group" aria-label={`Did “${currentStepTitle}” help you find it?`}>
+            <strong>Did “{currentStepTitle}” help you find it?</strong>
+            <div>
+              <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this step</button>
+              <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>No, found another way</button>
+            </div>
+            <p>A yes helps put this step earlier next time. Your exact place is saved either way.</p>
           </div>
-        </div>
+        )}
 
         <div className="found-memory-options">
           <FoundToggle
