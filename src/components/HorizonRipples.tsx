@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 interface HorizonRipplesProps {
   reducedMotion: boolean
+  playing: boolean
   restartKey: number
 }
 
@@ -9,7 +10,7 @@ const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const RESET_SECONDS = 30
 const RIPPLE_SECONDS = 8.4
 
-export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProps) {
+export function HorizonRipples({ reducedMotion, playing, restartKey }: HorizonRipplesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -70,7 +71,7 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
     }
 
     function drawWater(now: number) {
-      if (!waterReady || (now - lastFrame < 33 && !reducedMotion)) return
+      if (!waterReady || (now - lastFrame < (playing ? 33 : 80) && !reducedMotion)) return
       lastFrame = now
 
       const width = canvas.width
@@ -79,10 +80,10 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
       const contactY = height * .565
       const seconds = (now - startedAt) / 1000
       const age = (now - impactAt) / 1000
-      const rippleTime = Math.min(1, Math.max(0, age / RIPPLE_SECONDS))
       const rippleActive = age >= 0 && age <= RIPPLE_SECONDS && !reducedMotion
       const rippleAttack = Math.min(1, Math.max(0, age / .16))
-      const rippleTail = 1 - Math.min(1, Math.max(0, (rippleTime - .68) / .32))
+      const rippleTime = Math.min(1, Math.max(0, age / RIPPLE_SECONDS))
+      const rippleTail = 1 - Math.min(1, Math.max(0, (rippleTime - .78) / .22))
       const rippleFade = rippleActive ? rippleAttack * rippleTail : 0
       const ovalScale = .245 + (rippleTime * .035)
       const centerX = width * .5
@@ -92,16 +93,31 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
         width * .56,
         Math.max(0, height - contactY) / ovalScale,
       )
-      const rippleProgress = rippleTime * rippleTime * (3 - (2 * rippleTime))
-      const rippleRadius = rippleProgress * maxRippleRadius
+      // A dropped feather disturbs the water more than once. Staggered, soft
+      // refraction fronts read as ripples without drawing visible ring outlines.
+      const wavefronts = [
+        { delay: 0, strength: 1 },
+        { delay: .62, strength: .72 },
+        { delay: 1.32, strength: .48 },
+      ].flatMap(({ delay, strength }) => {
+        const waveAge = age - delay
+        if (waveAge < 0 || waveAge > RIPPLE_SECONDS) return []
+        const progress = Math.min(1, waveAge / RIPPLE_SECONDS)
+        const eased = progress * progress * (3 - (2 * progress))
+        return [{
+          radius: eased * maxRippleRadius,
+          width: 19 + (eased * 31),
+          strength: strength * Math.min(1, waveAge / .26),
+        }]
+      })
       const contactFade = Math.max(0, 1 - (age / .55))
 
       context.clearRect(0, 0, width, height)
       context.drawImage(still, 0, 0)
       if (reducedMotion) return
 
-      const tileWidth = Math.max(24, Math.round(width / 15))
-      const tileHeight = 5
+      const tileWidth = Math.max(10, Math.min(16, Math.round(width / 48)))
+      const tileHeight = 4
 
       for (let y = Math.floor(horizon); y < height; y += tileHeight) {
         const depth = Math.max(0, (y - horizon) / (height - horizon))
@@ -132,17 +148,14 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
               + (Math.sin((angle * 7.1) - (seconds * .08)) * 2.6)
             ) * (.32 + (normalizedRadius * .68))
             const warpedDistance = distance + organicWarp
-            const fromFront = warpedDistance - rippleRadius
-            const packetWidth = 20 + (normalizedRadius * 30) + (rippleTime * 8)
-            const frontPosition = fromFront / packetWidth
-            const leadingWave = frontPosition * Math.exp(-.5 * frontPosition * frontPosition)
-            const trailingPosition = (fromFront + (packetWidth * 1.55)) / (packetWidth * 1.22)
-            const trailingWave = trailingPosition * Math.exp(-.5 * trailingPosition * trailingPosition) * .28
-            const waterWave = leadingWave + trailingWave
+            const waterWave = wavefronts.reduce((sum, wave) => {
+              const position = (warpedDistance - wave.radius) / wave.width
+              return sum + (position * Math.exp(-.5 * position * position) * wave.strength)
+            }, 0)
             const perspectiveWeight = screenDy >= 0 ? 1 : .76
             const guardProgress = Math.min(1, Math.max(0, (sampleY - protectedHorizonY) / Math.max(1, fullRippleY - protectedHorizonY)))
             const horizonRippleGuard = guardProgress * guardProgress * (3 - (2 * guardProgress))
-            const pulse = waterWave * rippleFade * perspectiveWeight * horizonRippleGuard * 14
+            const pulse = waterWave * rippleFade * perspectiveWeight * horizonRippleGuard * 17
             const length = Math.max(1, distance)
 
             shiftX += (dx / length) * pulse
@@ -169,13 +182,13 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
       const cycleIndex = Math.floor(elapsed / 10)
       const cyclePhase = elapsed % 10
 
-      if (elapsed < RESET_SECONDS && cyclePhase >= 9.28 && lastImpactCycle !== cycleIndex) {
+      if (playing && elapsed < RESET_SECONDS && cyclePhase >= 9.28 && lastImpactCycle !== cycleIndex) {
         lastImpactCycle = cycleIndex
         impactAt = now
       }
 
       drawWater(now)
-      if (elapsed < RESET_SECONDS + RIPPLE_SECONDS) animationFrame = window.requestAnimationFrame(tick)
+      if (!playing || elapsed < RESET_SECONDS + RIPPLE_SECONDS) animationFrame = window.requestAnimationFrame(tick)
     }
 
     function begin() {
@@ -201,7 +214,7 @@ export function HorizonRipples({ reducedMotion, restartKey }: HorizonRipplesProp
       resizeObserver?.disconnect()
       source.removeEventListener('load', begin)
     }
-  }, [reducedMotion, restartKey])
+  }, [reducedMotion, playing, restartKey])
 
   return <canvas ref={canvasRef} className="horizon-ripples" aria-hidden="true" />
 }
