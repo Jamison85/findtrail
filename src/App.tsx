@@ -270,7 +270,7 @@ export default function App() {
   }
 
   function openFound() {
-    const stop = active?.stops[active.currentIndex]
+    const stop = screen === 'trail' ? active?.stops[active.currentIndex] : undefined
     const checked = stop ? active?.checkedSpots[stop.id] ?? [] : []
     setFoundLocation(checked.at(-1) ?? '')
     setFoundInCurrentArea(false)
@@ -293,7 +293,7 @@ export default function App() {
       answers: active.answers,
       stopsChecked: active.stops.slice(0, active.currentIndex + 1).filter((stop) => stop.kind !== 'safety').length,
       durationSeconds,
-      foundStopId: foundInCurrentArea ? active.stops[active.currentIndex]?.id : undefined,
+      foundStopId: foundReturnScreen === 'trail' && foundInCurrentArea ? active.stops[active.currentIndex]?.id : undefined,
       foundSpot: foundLocation.trim(),
     }
     setFoundSummary({
@@ -446,7 +446,7 @@ export default function App() {
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setPauseOffer(false); setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
-        {screen === 'found' && active && <FoundView search={active} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen(foundReturnScreen)} />}
+        {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen(foundReturnScreen)} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}

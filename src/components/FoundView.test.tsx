@@ -23,6 +23,7 @@ const search: ActiveSearch = {
 
 const baseProps = {
   search,
+  currentStepTitle: 'The landing zone',
   saveAsHome: false,
   foundInCurrentArea: false,
   pinCustomItem: false,
@@ -39,8 +40,8 @@ describe('FoundView', () => {
     render(<FoundView {...baseProps} value="" />)
 
     expect(screen.getByRole('heading', { name: 'There it is.' })).toBeInTheDocument()
-    expect(screen.getByText('Was it in the area you just searched?')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Somewhere else' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Did “The landing zone” help you find it?')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Save this found place' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Entry table or hook' }))
@@ -57,8 +58,16 @@ describe('FoundView', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for keys/i }))
     expect(baseProps.onSaveAsHome).toHaveBeenCalledWith(true)
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, this area' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, this step' }))
     expect(baseProps.onFoundInCurrentArea).toHaveBeenCalledWith(true)
+  })
+
+  it('asks only for the exact location when no trail step is on screen', () => {
+    render(<FoundView {...baseProps} currentStepTitle={undefined} value="" />)
+
+    expect(screen.queryByRole('group', { name: /help you find it/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Entry table or hook' })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Exact place' })).toHaveValue('')
   })
 
   it('explains exactly what was remembered after saving', () => {
