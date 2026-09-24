@@ -207,7 +207,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Blue bowl' } })
-    expect(screen.getByRole('button', { name: 'Somewhere else' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
     expect(saved.history[0].foundLocation).toBe('Blue bowl')
@@ -288,6 +288,11 @@ describe('FindTrail app', () => {
     const preview = screen.getByRole('list', { name: 'Next places to check for Keys' })
     expect(within(preview).getAllByRole('listitem')).toHaveLength(3)
     expect(within(preview).queryByText('Slow final sweep')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'I found it after all' }))
+    expect(screen.queryByRole('group', { name: /help you find it/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Exact place' })).toHaveValue('')
+    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Search these 3 places' }))
     expect(screen.getByRole('heading', { name: 'The car drop zones' })).toBeInTheDocument()
