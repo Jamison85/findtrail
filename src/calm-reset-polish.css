@@ -155,8 +155,8 @@
   .calm-copy p {
     max-width: 22rem;
     margin: 0 auto;
-    color: #b8c3ad;
-    font-size: clamp(.78rem, 3.25vw, .88rem);
+    color: #d0dacb;
+    font-size: clamp(.86rem, 3.4vw, .95rem);
     font-weight: 580;
     line-height: 1.43;
     text-wrap: balance;
@@ -478,7 +478,7 @@
     .calm-view__content { grid-template-rows: auto minmax(158px, 1fr); gap: 6px; padding-top: 1px; }
     .calm-reset-label { margin-bottom: 5px; font-size: .56rem; }
     .calm-copy h1 { margin-bottom: 6px; font-size: clamp(1.7rem, 7.3vw, 2.15rem); }
-    .calm-copy p { font-size: .7rem; line-height: 1.34; }
+    .calm-copy p { font-size: .79rem; line-height: 1.4; }
     .calm-breath-stage { min-height: 158px; }
     .calm-guidance { top: 58px; min-height: 82px; padding: 0; }
     .calm-guidance__phase { font-size: .9rem; }

@@ -139,7 +139,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Attention gets noisy when the search gets frantic. Let the horizon widen your awareness.')).toBeInTheDocument()
+    expect(screen.getByText('Breathe in as the feather rises and out as it drifts down. Tap Begin whenever you are ready.')).toBeInTheDocument()
     expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
     expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /begin 30-second reset/i })).toBeInTheDocument()

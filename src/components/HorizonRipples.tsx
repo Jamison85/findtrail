@@ -127,6 +127,7 @@ export function HorizonRipples({ reducedMotion, playing, restartKey }: HorizonRi
         for (let x = 0; x < width; x += tileWidth) {
           const sampleX = x + (tileWidth * .5)
           const sampleY = y + (tileHeight * .5)
+          let shimmer = 0
           let shiftX = strength * (
             (Math.sin((sampleY * .071) + (seconds * 1.05)) * 2.1)
             + (Math.sin((sampleX * .031) - (sampleY * .018) - (seconds * .72)) * 1.35)
@@ -156,6 +157,10 @@ export function HorizonRipples({ reducedMotion, playing, restartKey }: HorizonRi
             const guardProgress = Math.min(1, Math.max(0, (sampleY - protectedHorizonY) / Math.max(1, fullRippleY - protectedHorizonY)))
             const horizonRippleGuard = guardProgress * guardProgress * (3 - (2 * guardProgress))
             const pulse = waterWave * rippleFade * perspectiveWeight * horizonRippleGuard * 17
+            const surfaceVariation = .74
+              + (Math.sin((sampleX * .021) + (seconds * .2)) * .16)
+              + (Math.sin((sampleY * .053) - (sampleX * .014)) * .1)
+            shimmer = waterWave * rippleFade * perspectiveWeight * horizonRippleGuard * surfaceVariation
             const length = Math.max(1, distance)
 
             shiftX += (dx / length) * pulse
@@ -171,6 +176,13 @@ export function HorizonRipples({ reducedMotion, playing, restartKey }: HorizonRi
           const drawHeight = Math.min(tileHeight + 1, height - y, height - sourceY)
 
           context.drawImage(still, sourceX, sourceY, drawWidth, drawHeight, x, y, drawWidth, drawHeight)
+          if (shimmer > .025) {
+            context.fillStyle = `rgba(245, 205, 151, ${Math.min(.23, shimmer * .38)})`
+            context.fillRect(x, y, drawWidth, drawHeight)
+          } else if (shimmer < -.025) {
+            context.fillStyle = `rgba(3, 22, 20, ${Math.min(.14, -shimmer * .24)})`
+            context.fillRect(x, y, drawWidth, drawHeight)
+          }
         }
       }
 
