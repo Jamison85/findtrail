@@ -30,7 +30,7 @@ describe('WidenSearchView', () => {
     render(<WidenSearchView search={search} {...actions} />)
 
     expect(screen.getByRole('heading', { name: 'Pause before going wider.' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/3 strongest places visited.*2 exact spots checked.*trail is saved/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/3 suggested areas visited.*2 exact spots checked.*trail is saved/i)).toBeInTheDocument()
     const preview = screen.getByRole('list', { name: 'Next places to check for Keys' })
     expect(within(preview).getAllByRole('listitem')).toHaveLength(3)
     expect(within(preview).getByText('The car drop zones')).toBeInTheDocument()

@@ -93,8 +93,10 @@ export interface ActiveSearch {
   itemLabel: string
   answers: Record<string, string>
   stops: SearchStop[]
+  widenReady?: boolean
   currentIndex: number
   checkedSpots: Record<string, string[]>
+  skippedStops?: string[]
   startedAt: string
   lastUpdatedAt: string
 }

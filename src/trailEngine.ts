@@ -167,6 +167,11 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
   if (itemId === 'medicine' && ['urgent', 'unsure'].includes(answers.itemDetail)) orderedIds.push('safety-help')
   if (itemId === 'money' && ['card', 'both'].includes(answers.itemDetail)) orderedIds.push('card-safety')
 
+  // An actionable item detail should not disappear behind six general guesses.
+  const actionableDetail = (itemId === 'phone' && ['ring', 'dead'].includes(answers.itemDetail))
+    || (itemId === 'wallet' && answers.itemDetail === 'phone')
+  if (actionableDetail) orderedIds.push(...(CLUE_PROMOTIONS.itemDetail[answers.itemDetail] ?? []))
+
   for (const questionId of ['lastPlace', 'lastAction', 'itemDetail']) {
     const value = answers[questionId]
     if (value) orderedIds.push(...(CLUE_PROMOTIONS[questionId]?.[value] ?? []))
@@ -202,12 +207,24 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
   const home = savedHomeStop(savedItems, itemId, itemLabel)
   const learnedLocation = historyStop(history, itemId, itemLabel)
   const sameAsHome = home && learnedLocation && normalized(home.spots[0]) === normalized(learnedLocation.spots[0])
+  const candidates = [...(learnedArea ? [learnedArea] : []), ...remainingStops]
+  const immediate = actionableDetail ? candidates.filter((stop) => orderedIds[0] === stop.id) : []
+  const currentPlaceKnown = Boolean(answers.lastPlace && answers.lastPlace !== 'unsure')
+  const currentIds = (CLUE_PROMOTIONS.lastPlace[answers.lastPlace] ?? [])
+    .concat(CLUE_PROMOTIONS.lastAction[answers.lastAction] ?? [])
+  const currentStops = currentPlaceKnown
+    ? candidates.filter((stop) => currentIds.includes(stop.id) && !immediate.some((first) => first.id === stop.id)).slice(0, 2)
+    : []
   const prioritizedStops = [
-    ...(home ? [home] : []),
+    ...immediate,
+    ...(answers.lastPlace === 'home' && home ? [home] : []),
+    ...currentStops,
+    ...(answers.lastPlace !== 'home' && home ? [home] : []),
     ...(!sameAsHome && learnedLocation ? [learnedLocation] : []),
     ...(learnedArea ? [learnedArea] : []),
     ...remainingStops,
-  ].slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+  ].filter((stop, index, stops) => stops.findIndex((candidate) => candidate.id === stop.id) === index)
+    .slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
 
   return compactTrail([
     ...safetyStops,

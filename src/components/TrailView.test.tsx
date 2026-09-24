@@ -30,6 +30,8 @@ function renderTrail(onNext = vi.fn(), activeSearch = search) {
   render(<TrailView
     search={activeSearch}
     settings={settings}
+    offerReset={false}
+    onDismissReset={() => undefined}
     onBack={() => undefined}
     onToggleSpot={() => undefined}
     onNext={onNext}
@@ -61,12 +63,12 @@ describe('TrailView', () => {
     vi.useFakeTimers()
     const onNext = renderTrail()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nothing here · next place' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this place' }))
     expect(onNext).not.toHaveBeenCalled()
     expect(document.querySelector('.stop-card')).toHaveClass('is-departing')
 
     act(() => vi.advanceTimersByTime(190))
-    expect(onNext).toHaveBeenCalledOnce()
+    expect(onNext).toHaveBeenCalledWith(true)
   })
 
   it('finishes the focused pass without exposing the full route at once', () => {
@@ -87,7 +89,7 @@ describe('TrailView', () => {
 
     expect(screen.getByText('Place 3 of 3')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuenow', '3')
-    expect(screen.getByRole('button', { name: 'Focused pass complete' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Continue to wider search' })).toBeInTheDocument()
     expect(screen.queryByText('Place 3 of 6')).not.toBeInTheDocument()
   })
 })

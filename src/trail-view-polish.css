@@ -477,6 +477,13 @@
     font-size: .68rem;
     font-weight: 760;
   }
+
+  .trail-pause-offer { display: flex; max-width: 31rem; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px auto 0; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); }
+  .trail-pause-offer span { display: grid; flex: 1 1 100%; gap: 2px; }
+  .trail-pause-offer strong { font-size: .82rem; }
+  .trail-pause-offer small { color: var(--ink-soft); font-size: .71rem; }
+  .trail-pause-offer button { min-height: 40px; padding: 0 13px; border-radius: 11px; color: var(--evergreen); background: var(--sage); font-size: .76rem; font-weight: 800; }
+  .trail-pause-offer button:last-child { color: var(--ink-soft); background: var(--paper); }
 }
 
 @layer utilities {

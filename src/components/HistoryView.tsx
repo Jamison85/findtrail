@@ -9,6 +9,9 @@ interface HistoryViewProps {
   history: FoundEntry[]
   initialEntryId: string | null
   onStart: (itemId: ItemId, label?: string) => void
+  onHome: () => void
+  onUpdateEntry: (id: string, location: string) => void
+  onRemoveEntry: (id: string) => void
 }
 
 function formatDuration(seconds: number): string {
@@ -29,8 +32,10 @@ function dateLabel(value: string): string {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
 }
 
-export function HistoryView({ history, initialEntryId, onStart }: HistoryViewProps) {
+export function HistoryView({ history, initialEntryId, onStart, onHome, onUpdateEntry, onRemoveEntry }: HistoryViewProps) {
   const [expandedId, setExpandedId] = useState<string | null>(initialEntryId)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftLocation, setDraftLocation] = useState('')
   const patterns = useMemo(() => {
     const latestByItem = new Map<string, FoundEntry>()
     history.forEach((entry) => {
@@ -72,7 +77,7 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
           <span aria-hidden="true"><Icon name="trail" size={31} /></span>
           <h2>No found places yet</h2>
           <p>Complete one search and FindTrail will remember where the item turned up—without sending that information anywhere.</p>
-          <small>Your first useful pattern will appear here.</small>
+          <button className="button button--primary" onClick={onHome}>Start your first trail</button>
         </div>
       ) : (
         <>
@@ -119,6 +124,11 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
                     {expanded && (
                       <div id={detailId} className="history-entry__detail">
                         <div className="history-entry__location"><span>Exact place</span><strong>{entry.foundLocation}</strong></div>
+                        {editingId === entry.id && <form className="history-edit" onSubmit={(event) => { event.preventDefault(); if (draftLocation.trim()) { onUpdateEntry(entry.id, draftLocation); setEditingId(null) } }}>
+                          <label htmlFor={`history-location-${entry.id}`}>Correct this place</label>
+                          <input id={`history-location-${entry.id}`} value={draftLocation} maxLength={80} onChange={(event) => setDraftLocation(event.target.value)} autoFocus />
+                          <div><button className="button button--primary" disabled={!draftLocation.trim()}>Save correction</button><button type="button" className="text-button" onClick={() => setEditingId(null)}>Cancel</button></div>
+                        </form>}
                         <dl>
                           <div><dt>Places visited</dt><dd>{entry.stopsChecked}</dd></div>
                           <div><dt>Search time</dt><dd>{formatDuration(entry.durationSeconds)}</dd></div>
@@ -127,6 +137,10 @@ export function HistoryView({ history, initialEntryId, onStart }: HistoryViewPro
                         <button className="button button--secondary" onClick={() => onStart(entry.itemId, entry.itemLabel)}>
                           <Icon name="trail" size={17} />Find {entry.itemLabel.toLocaleLowerCase()} again
                         </button>
+                        <div className="history-entry__actions">
+                          <button className="text-button" onClick={() => { setDraftLocation(entry.foundLocation); setEditingId(entry.id) }}>Correct place</button>
+                          <button className="text-button text-button--muted" onClick={() => onRemoveEntry(entry.id)}>Remove this find</button>
+                        </div>
                       </div>
                     )}
                   </article>

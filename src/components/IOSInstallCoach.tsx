@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { trapDialogFocus } from '../modalFocus'
 
 const STORAGE_KEY = 'findtrail:ios-install-coach-seen-v1'
 const SHOW_DELAY_MS = 900
@@ -39,6 +40,20 @@ function hasSeenCoach(): boolean {
 
 export function IOSInstallCoach({ enabled = true, requestKey = 0 }: { enabled?: boolean; requestKey?: number }) {
   const [visible, setVisible] = useState(false)
+  const closeButton = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!visible) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const background = document.querySelectorAll<HTMLElement>('.app-content, .bottom-nav')
+    const prior = Array.from(background, (element) => [element, element.inert] as const)
+    background.forEach((element) => { element.inert = true })
+    closeButton.current?.focus({ preventScroll: true })
+    return () => {
+      prior.forEach(([element, wasInert]) => { element.inert = wasInert })
+      previousFocus?.focus({ preventScroll: true })
+    }
+  }, [visible])
 
   useEffect(() => {
     if (!enabled || !canShowIOSInstallInstructions()) return
@@ -63,8 +78,8 @@ export function IOSInstallCoach({ enabled = true, requestKey = 0 }: { enabled?: 
 
   return (
     <div className="install-coach__scrim">
-      <section className="install-coach" role="dialog" aria-modal="true" aria-labelledby="install-coach-title" aria-describedby="install-coach-copy">
-        <button className="install-coach__close" type="button" onClick={() => setVisible(false)} aria-label="Dismiss Home Screen instructions">×</button>
+      <section className="install-coach" role="dialog" aria-modal="true" aria-labelledby="install-coach-title" aria-describedby="install-coach-copy" onKeyDown={(event) => { if (event.key === 'Escape') setVisible(false); else trapDialogFocus(event) }}>
+        <button ref={closeButton} className="install-coach__close" type="button" onClick={() => setVisible(false)} aria-label="Dismiss Home Screen instructions">×</button>
 
         <div className="install-coach__mark" aria-hidden="true">
           <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" />

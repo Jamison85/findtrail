@@ -24,8 +24,10 @@ const search: ActiveSearch = {
 const baseProps = {
   search,
   saveAsHome: false,
+  foundInCurrentArea: false,
   pinCustomItem: false,
   onChange: vi.fn(),
+  onFoundInCurrentArea: vi.fn(),
   onSaveAsHome: vi.fn(),
   onPinCustomItem: vi.fn(),
   onSave: vi.fn(),
@@ -37,7 +39,8 @@ describe('FoundView', () => {
     render(<FoundView {...baseProps} value="" />)
 
     expect(screen.getByRole('heading', { name: 'There it is.' })).toBeInTheDocument()
-    expect(screen.getByText('This find already teaches the trail.')).toBeInTheDocument()
+    expect(screen.getByText('Was it in the area you just searched?')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Somewhere else' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Save this found place' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Entry table or hook' }))
@@ -54,6 +57,8 @@ describe('FoundView', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for keys/i }))
     expect(baseProps.onSaveAsHome).toHaveBeenCalledWith(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, this area' }))
+    expect(baseProps.onFoundInCurrentArea).toHaveBeenCalledWith(true)
   })
 
   it('explains exactly what was remembered after saving', () => {

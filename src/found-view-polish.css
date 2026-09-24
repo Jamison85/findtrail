@@ -264,6 +264,13 @@
   .found-learning strong { color: var(--ink); font-size: .72rem; line-height: 1.25; }
   .found-learning small { color: var(--ink-soft); font-size: .61rem; line-height: 1.32; }
 
+  .found-area-choice { display: grid; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--sage); text-align: left; }
+  .found-area-choice strong { font-size: .8rem; }
+  .found-area-choice p { color: var(--ink-soft); font-size: .72rem; line-height: 1.35; }
+  .found-area-choice > div { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .found-area-choice button { min-height: 43px; padding: 7px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--white); font-size: .72rem; font-weight: 750; }
+  .found-area-choice button[aria-pressed="true"] { border-color: var(--evergreen); color: var(--white); background: var(--evergreen); }
+
   .found-memory-options {
     width: 100%;
     margin-bottom: 10px;

@@ -22,7 +22,7 @@ async function precacheAppShell() {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(precacheAppShell().then(() => self.skipWaiting()))
+  event.waitUntil(precacheAppShell())
 })
 
 self.addEventListener('message', (event) => {

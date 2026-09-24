@@ -75,7 +75,9 @@ function validActiveSearch(value: unknown): ActiveSearch | null {
   if (typeof value.id !== 'string' || !isItemId(value.itemId) || typeof value.itemLabel !== 'string' || !isStringRecord(value.answers)) return null
   if (!Number.isInteger(value.currentIndex) || !isFiniteNonNegative(value.currentIndex) || value.currentIndex >= Math.max(1, value.stops.length)) return null
   if (!isStringArrayRecord(value.checkedSpots) || !isDateString(value.startedAt) || !isDateString(value.lastUpdatedAt)) return null
-  return { ...(value as unknown as ActiveSearch), version: 3 }
+  if (value.skippedStops !== undefined && (!Array.isArray(value.skippedStops) || !value.skippedStops.every((stop) => typeof stop === 'string'))) return null
+  if (value.widenReady !== undefined && typeof value.widenReady !== 'boolean') return null
+  return { ...(value as unknown as ActiveSearch), version: 3, skippedStops: (value.skippedStops as string[] | undefined) ?? [] }
 }
 
 function validSavedItems(value: unknown): SavedItem[] {
@@ -157,8 +159,10 @@ export function createActiveSearch(itemId: ActiveSearch['itemId'], itemLabel: st
     itemLabel,
     answers: {},
     stops: [],
+    widenReady: false,
     currentIndex: 0,
     checkedSpots: {},
+    skippedStops: [],
     startedAt: now,
     lastUpdatedAt: now,
   }

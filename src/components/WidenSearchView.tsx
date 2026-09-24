@@ -15,8 +15,9 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
   const focusedStops = getFocusedStops(search.stops)
   const widerStops = getWiderStops(search.stops)
   const checkedSpotCount = focusedStops.reduce((total, stop) => total + (search.checkedSpots[stop.id]?.length ?? 0), 0)
-  const placeLabel = `${focusedStops.length} strongest ${focusedStops.length === 1 ? 'place' : 'places'} visited`
-  const spotLabel = checkedSpotCount > 0 ? `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked` : 'Progress saved'
+  const skippedCount = focusedStops.filter((stop) => search.skippedStops?.includes(stop.id)).length
+  const placeLabel = `${focusedStops.length} suggested ${focusedStops.length === 1 ? 'area' : 'areas'} visited`
+  const spotLabel = `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked${skippedCount ? ` · ${skippedCount} skipped` : ''}`
 
   return (
     <section className="view widen-view" aria-labelledby="view-heading">
@@ -34,7 +35,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
         <div>
           <span className="eyebrow">Focused pass complete</span>
           <h1 id="view-heading" tabIndex={-1}>Pause before going wider.</h1>
-          <p>You checked the places most strongly supported by your clues. The next pass stays deliberate instead of turning into a whole-house tornado.</p>
+          <p>You visited the first suggested areas. Any spots you skipped are still open. The next pass stays one place at a time.</p>
         </div>
       </div>
 
