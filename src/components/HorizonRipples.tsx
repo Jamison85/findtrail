@@ -186,6 +186,38 @@ export function HorizonRipples({ reducedMotion, playing, restartKey }: HorizonRi
         }
       }
 
+      // A narrow glint follows each refracted front. The lake is dark enough
+      // that refraction alone disappears under the scene's legibility veil.
+      if (rippleActive) {
+        context.save()
+        context.beginPath()
+        context.rect(0, horizon, width, height - horizon)
+        context.clip()
+
+        wavefronts.forEach((wave) => {
+          const spread = Math.min(1, wave.radius / maxRippleRadius)
+          const radiusX = 12 + (spread * width * .86)
+          const radiusY = radiusX * ovalScale
+          const opacity = wave.strength * rippleFade * (1 - spread * .28)
+          const glint = context.createLinearGradient(centerX - radiusX, 0, centerX + radiusX, 0)
+          glint.addColorStop(0, 'rgba(246, 206, 153, 0)')
+          glint.addColorStop(.24, `rgba(246, 206, 153, ${opacity * .24})`)
+          glint.addColorStop(.5, `rgba(255, 226, 183, ${opacity * .42})`)
+          glint.addColorStop(.76, `rgba(246, 206, 153, ${opacity * .24})`)
+          glint.addColorStop(1, 'rgba(246, 206, 153, 0)')
+
+          context.beginPath()
+          context.ellipse(centerX, contactY, radiusX, radiusY, 0, 0, Math.PI)
+          context.lineWidth = 5
+          context.strokeStyle = `rgba(242, 190, 125, ${opacity * .08})`
+          context.stroke()
+          context.lineWidth = 1.5
+          context.strokeStyle = glint
+          context.stroke()
+        })
+
+        context.restore()
+      }
     }
 
     function tick(now: number) {

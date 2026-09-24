@@ -92,7 +92,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <div className="calm-copy">
           <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> 30-second reset</span>
           <h1 id="view-heading" tabIndex={-1}>The search can wait one breath.</h1>
-          <p>Breathe in as the feather rises and out as it drifts down. Tap Begin whenever you are ready.</p>
+          <p>Breathe in as the feather rises and out as it drifts down.{!playing && ' Tap Begin whenever you are ready.'}</p>
         </div>
 
         <div className="calm-breath-stage">
