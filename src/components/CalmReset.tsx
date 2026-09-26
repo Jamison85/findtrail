@@ -78,7 +78,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
   return (
     <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} playing={playing} restartKey={0} />
+      <HorizonRipples reducedMotion={reducedMotion} startedAt={startedAt} />
       <div className="calm-view__veil" aria-hidden="true" />
 
       <header className="calm-topbar">
@@ -119,7 +119,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <div className="calm-breath-card">
           <span className="sr-only" aria-live="polite">{playing ? phase : 'Begin when you are ready.'}</span>
           {playing && <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
-            <span style={{ width: `${Math.min(100, (elapsed / TOTAL_SECONDS) * 100)}%` }} />
+            <span style={{ transform: `scaleX(${Math.min(1, elapsed / TOTAL_SECONDS)})` }} />
           </div>}
         </div>
 
