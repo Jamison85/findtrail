@@ -27,13 +27,18 @@
   }
 
   .horizon-ripples__water {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    mask-image: linear-gradient(to bottom, transparent 48%, #000 58%, #000 86%, transparent 94%);
-    transition: opacity .5s ease;
+    /* Enlarge the one clean ripple; the other impact points remain outside this feathered area. */
+    mask-image: radial-gradient(ellipse 26% 7% at 60% 64%, #000 0%, #000 47%, transparent 100%);
+    transform-origin: 60% 64%;
+    transform: scale(1.8) translateX(-5%);
+    transition: opacity .2s ease;
   }
 
   .horizon-ripples__water.is-active { opacity: 1; }

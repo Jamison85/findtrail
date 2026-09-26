@@ -7,9 +7,12 @@ interface HorizonRipplesProps {
 
 const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const WATER_VIDEO = `${import.meta.env.BASE_URL}findtrail-reset-water.mp4`
-// The wave appears about 1.5 seconds into the clip. It meets the feather as
-// the feather settles onto the lake during the exhale.
-const VIDEO_START_SECONDS = 5.6
+// The upper, clean impact starts around .8s into the footage. Align that one
+// ripple with the feather settling at 7.2s, 17.2s and 27.2s.
+const CYCLE_SECONDS = 10
+const VIDEO_START_SECONDS = 7.1
+const VIDEO_SOURCE_OFFSET = 0.7
+const VIDEO_END_SECONDS = 9.95
 const RESET_SECONDS = 30
 
 export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps) {
@@ -20,50 +23,45 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
     const video = videoRef.current
     if (!video || reducedMotion || startedAt === null) {
       video?.pause()
+      setActive(false)
       return
     }
 
-    let startTimer = 0
-    let stopTimer = 0
     let cancelled = false
 
     function syncPlayback() {
-      if (!video || cancelled || document.hidden) return
-      window.clearTimeout(startTimer)
+      if (!video || cancelled) return
       const elapsed = (performance.now() - startedAt!) / 1000
-      if (elapsed >= RESET_SECONDS) {
+      const withinCycle = elapsed % CYCLE_SECONDS
+      if (document.hidden || elapsed >= RESET_SECONDS || withinCycle < VIDEO_START_SECONDS || withinCycle >= VIDEO_END_SECONDS) {
         setActive(false)
         video.pause()
         return
       }
-      if (elapsed < VIDEO_START_SECONDS) {
-        startTimer = window.setTimeout(syncPlayback, (VIDEO_START_SECONDS - elapsed) * 1000)
-        return
-      }
 
       if (Number.isFinite(video.duration) && video.duration > 0) {
-        const time = (elapsed - VIDEO_START_SECONDS) % video.duration
+        const time = withinCycle - VIDEO_START_SECONDS + VIDEO_SOURCE_OFFSET
         if (Math.abs(video.currentTime - time) > 0.35) video.currentTime = time
       }
-      void video.play().then(() => {
-        if (!cancelled) setActive(true)
-      }).catch(() => setActive(false))
+      if (video.paused) {
+        void video.play().then(() => {
+          if (!cancelled) setActive(true)
+        }).catch(() => setActive(false))
+      }
     }
 
     function onVisibilityChange() {
-      if (document.hidden) video?.pause()
-      else syncPlayback()
+      syncPlayback()
     }
 
+    const timer = window.setInterval(syncPlayback, 100)
     document.addEventListener('visibilitychange', onVisibilityChange)
     video.addEventListener('loadedmetadata', syncPlayback)
     syncPlayback()
-    stopTimer = window.setTimeout(syncPlayback, Math.max(0, RESET_SECONDS * 1000 - (performance.now() - startedAt)))
 
     return () => {
       cancelled = true
-      window.clearTimeout(startTimer)
-      window.clearTimeout(stopTimer)
+      window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       video.removeEventListener('loadedmetadata', syncPlayback)
       video.pause()
@@ -78,7 +76,6 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
         src={WATER_VIDEO}
         muted
         playsInline
-        loop
         preload="auto"
         disablePictureInPicture
         aria-hidden="true"
