@@ -26,23 +26,19 @@
     background-size: cover;
   }
 
-  .horizon-ripples__water-window {
+  .horizon-ripples__water {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-    mask-image: linear-gradient(to bottom, transparent 53%, #000 61%, #000 77%, transparent 86%);
-  }
-
-  .horizon-ripples__water {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    /* The source has other impact points above and below this one. */
-    mask-image: radial-gradient(ellipse 55% 18% at 68% 75%, #000 0%, #000 48%, transparent 88%);
-    transform: translate(-18%, -10%);
-    transition: opacity .25s ease;
+    /* Enlarge the one clean ripple; the other impact points remain outside this feathered area. */
+    mask-image: radial-gradient(ellipse 26% 7% at 60% 64%, #000 0%, #000 47%, transparent 100%);
+    transform-origin: 60% 64%;
+    transform: scale(1.8) translateX(-5%);
+    transition: opacity .2s ease;
   }
 
   .horizon-ripples__water.is-active { opacity: 1; }

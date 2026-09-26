@@ -7,12 +7,12 @@ interface HorizonRipplesProps {
 
 const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const WATER_VIDEO = `${import.meta.env.BASE_URL}findtrail-reset-water.mp4`
-// The chosen impact starts expanding around .5s in the source footage.
-// Align it with the feather settling at 7.2s, 17.2s and 27.2s.
+// The upper, clean impact starts around .8s into the footage. Align that one
+// ripple with the feather settling at 7.2s, 17.2s and 27.2s.
 const CYCLE_SECONDS = 10
-const VIDEO_START_SECONDS = 7.05
-const VIDEO_SOURCE_OFFSET = 0.35
-const VIDEO_END_SECONDS = 9.25
+const VIDEO_START_SECONDS = 7.1
+const VIDEO_SOURCE_OFFSET = 0.7
+const VIDEO_END_SECONDS = 9.95
 const RESET_SECONDS = 30
 
 export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps) {
@@ -70,18 +70,16 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
 
   return (
     <div className="horizon-ripples" style={{ backgroundImage: `url(${WATER_IMAGE})` }} aria-hidden="true">
-      {!reducedMotion && <div className="horizon-ripples__water-window">
-        <video
-          ref={videoRef}
-          className={`horizon-ripples__water${active ? ' is-active' : ''}`}
-          src={WATER_VIDEO}
-          muted
-          playsInline
-          preload="auto"
-          disablePictureInPicture
-          aria-hidden="true"
-        />
-      </div>}
+      {!reducedMotion && <video
+        ref={videoRef}
+        className={`horizon-ripples__water${active ? ' is-active' : ''}`}
+        src={WATER_VIDEO}
+        muted
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        aria-hidden="true"
+      />}
     </div>
   )
 }
