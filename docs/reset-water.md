@@ -39,7 +39,8 @@ holding gently, and 6 seconds out. The feather reaches the water at 11.2, 23.2,
 and 35.2 seconds, leaving only 0.8 seconds at the bottom of each breath.
 Each landing plays this same single-impact clip once.
 
-Begin establishes the shared clock. Water waits for the first landing. Media
+Begin starts the reset. Water follows the feather's CSS animation start time,
+so a delayed visual start cannot reveal the first ring before contact. Media
 playback catches up after loading or a hidden tab; it ends after the final
 wave settles. Reduced motion retains the still lake. The service worker
 precaches the asset and responds to media byte ranges for offline playback.

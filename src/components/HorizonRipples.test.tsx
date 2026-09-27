@@ -39,11 +39,39 @@ describe('reset water playback', () => {
     const request = vi.fn()
     vi.stubGlobal('requestAnimationFrame', request)
     const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
-    const { rerender, container } = render(<HorizonRipples reducedMotion={false} startedAt={null} />)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
+    const { rerender, container, unmount } = render(<HorizonRipples reducedMotion={false} startedAt={null} />)
     expect(request).not.toHaveBeenCalled()
     rerender(<HorizonRipples reducedMotion startedAt={0} />)
     expect(request).not.toHaveBeenCalled()
     expect(play).not.toHaveBeenCalled()
     expect(container.querySelector('video')).toHaveAttribute('preload', 'none')
+    unmount()
+  })
+
+  it('waits for the feather animation when its visual start lags behind Begin', () => {
+    let frame: FrameRequestCallback = () => undefined
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1 }))
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
+    const { container, unmount } = render(<div>
+      <div className="calm-feather-anchor" />
+      <HorizonRipples reducedMotion={false} startedAt={0} />
+    </div>)
+    const feather = container.querySelector<HTMLElement>('.calm-feather-anchor')!
+    const video = container.querySelector('video')!
+    Object.defineProperty(video, 'readyState', { value: 4 })
+    feather.getAnimations = vi.fn(() => [{ animationName: 'calm-feather-lift', startTime: 1_000 } as CSSAnimation])
+
+    frame(11_200)
+    expect(play).not.toHaveBeenCalled()
+    expect(video.style.opacity).toBe('0')
+    frame(12_200)
+    expect(play).toHaveBeenCalledOnce()
+    expect(video.currentTime).toBe(0)
+    expect(video.style.opacity).toBe('1')
+    unmount()
   })
 })

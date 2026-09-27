@@ -34,8 +34,9 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
   }, [])
 
   useEffect(() => {
+    const scene = sceneRef.current
     const video = videoRef.current
-    if (!video) return
+    if (!scene || !video) return
     video.muted = true
     video.style.opacity = '0'
     if (reducedMotion || startedAt === null) return
@@ -45,10 +46,25 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
     let lastCheck = 0
     let playPending = false
     let cancelled = false
+    let feather: HTMLElement | null = null
+    let lift: Animation | null = null
 
     const sync = (now: number) => {
       if (cancelled) return
-      const elapsed = (now - startedAt) / 1000
+      feather ??= scene.parentElement?.querySelector<HTMLElement>('.calm-feather-anchor') ?? null
+      let clockStart = startedAt
+      if (feather && typeof feather.getAnimations === 'function') {
+        // The feather's CSS animation can begin after the click that sets
+        // startedAt. Use its actual timeline so the water never leads the tip.
+        lift ??= feather.getAnimations().find(animation =>
+          'animationName' in animation && String(animation.animationName).startsWith('calm-feather-lift')) ?? null
+        if (!lift || typeof lift.startTime !== 'number') {
+          frame = requestAnimationFrame(sync)
+          return
+        }
+        clockStart = lift.startTime
+      }
+      const elapsed = (now - clockStart) / 1000
       if (elapsed >= LAST_WAVE_END) {
         video.pause()
         video.style.opacity = '0'
