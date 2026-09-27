@@ -36,6 +36,8 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
     let lastFrame = 0
     let lastImpactCycle = -1
     let impactAt = Number.NEGATIVE_INFINITY
+    let stillPixels: ImageData | null = null
+    let framePixels: ImageData | null = null
     const sceneStartedAt = performance.now()
 
     function paintStill() {
@@ -66,6 +68,8 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
 
       stillContext.clearRect(0, 0, width, height)
       stillContext.drawImage(source, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height)
+      stillPixels = stillContext.getImageData(0, 0, width, height)
+      framePixels = context.createImageData(width, height)
       context.clearRect(0, 0, width, height)
       context.drawImage(still, 0, 0)
       waterReady = true
@@ -77,9 +81,7 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
 
       const width = canvas.width
       const height = canvas.height
-      const horizon = height * .486
       const contactY = height * .625
-      const seconds = (now - sceneStartedAt) / 1000
       const age = (now - impactAt) / 1000
       const rippleTime = Math.min(1, Math.max(0, age / RIPPLE_SECONDS))
       const rippleActive = age >= 0 && age <= RIPPLE_SECONDS && !reducedMotion
@@ -89,94 +91,63 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
       // The same single water wave, allowed to travel beyond both screen edges.
       const rippleRadius = (1 - Math.pow(1 - rippleTime, 1.36)) * width * .72
       const ovalScale = .23 + (rippleTime * .025)
-      const contactFade = Math.max(0, 1 - (age / .55))
       const centerX = width * .5
-      const protectedHorizonY = horizon + Math.max(24, height * .032)
-      const fullRippleY = horizon + Math.max(66, height * .078)
 
-      context.clearRect(0, 0, width, height)
-      context.drawImage(still, 0, 0)
-      if (reducedMotion) return
+      if (!rippleActive || !stillPixels || !framePixels || rippleFade <= 0) {
+        context.drawImage(still, 0, 0)
+        return
+      }
 
-      const tileWidth = Math.max(10, Math.round(width / 40))
-      const tileHeight = 4
+      // Refract the lake at the canvas's native pixel resolution. The narrow
+      // warm crest and adjacent shadow are sampled from the water itself, so
+      // the disturbance reads as one wave rather than an outlined ellipse.
+      const pixels = stillPixels.data
+      const frame = framePixels.data
+      frame.set(pixels)
+      const reach = rippleRadius + 38
+      const top = Math.max(Math.ceil(height * .535), Math.floor(contactY - reach * ovalScale))
+      const bottom = Math.min(height - 1, Math.ceil(contactY + reach * ovalScale))
+      const left = Math.max(0, Math.floor(centerX - reach))
+      const right = Math.min(width - 1, Math.ceil(centerX + reach))
 
-      for (let y = Math.floor(horizon); y < height; y += tileHeight) {
-        const depth = Math.max(0, (y - horizon) / (height - horizon))
-        const horizonGuard = Math.min(1, Math.max(0, (y - horizon) / 22))
-        const strength = Math.pow(depth, .72) * horizonGuard
+      for (let y = top; y <= bottom; y++) {
+        const dy = (y - contactY) / ovalScale
+        for (let x = left; x <= right; x++) {
+          const dx = x - centerX
+          const distance = Math.hypot(dx, dy)
+          const angle = Math.atan2(dy, dx)
+          const bend = Math.sin(angle * 3.2 + age * .13) * 3.5 + Math.sin(angle * 7.1 - age * .1) * 1.3
+          const fromCrest = distance - rippleRadius - bend
+          if (Math.abs(fromCrest) > 38) continue
 
-        for (let x = 0; x < width; x += tileWidth) {
-          const sampleX = x + (tileWidth * .5)
-          const sampleY = y + (tileHeight * .5)
-          let shiftX = strength * (
-            (Math.sin((sampleY * .071) + (seconds * 1.05)) * 2.1)
-            + (Math.sin((sampleX * .031) - (sampleY * .018) - (seconds * .72)) * 1.35)
-          )
-          let shiftY = strength * (
-            (Math.sin((sampleX * .047) + (sampleY * .014) + (seconds * .66)) * 1.45)
-            + (Math.sin((sampleY * .113) - (seconds * .48)) * .75)
-          )
-
-          if (rippleActive) {
-            const dx = sampleX - centerX
-            const screenDy = sampleY - contactY
-            const ovalDy = screenDy / ovalScale
-            const distance = Math.sqrt((dx * dx) + (ovalDy * ovalDy))
-            const fromRing = distance - rippleRadius
-            const packet = Math.exp(-(fromRing * fromRing) / (2 * 32 * 32))
-            const rings = Math.sin(fromRing * .17) * packet
-            const perspectiveWeight = screenDy >= 0 ? 1 : .72
-            const guardProgress = Math.min(1, Math.max(0, (sampleY - protectedHorizonY) / Math.max(1, fullRippleY - protectedHorizonY)))
-            const rippleGuard = guardProgress * guardProgress * (3 - (2 * guardProgress))
-            const pulse = rings * rippleFade * perspectiveWeight * rippleGuard * 18
-            const length = Math.max(1, distance)
-
-            shiftX += (dx / length) * pulse
-            shiftY += (ovalDy / length) * pulse * .18
-
-            const dimple = Math.exp(-(distance * distance) / (2 * 12 * 12))
-            shiftY += dimple * contactFade * rippleGuard * 4
+          const crest = Math.exp(-(fromCrest * fromCrest) / (2 * 10 * 10))
+          const trough = Math.exp(-((fromCrest - 17) ** 2) / (2 * 12 * 12))
+          const wave = (fromCrest / 24) * Math.exp(-(fromCrest * fromCrest) / (2 * 18 * 18))
+          const displacement = wave * rippleFade * 13
+          const sampleX = Math.max(0, Math.min(width - 1.001, x - dx / Math.max(1, distance) * displacement))
+          const sampleY = Math.max(0, Math.min(height - 1.001, y - dy / Math.max(1, distance) * displacement * ovalScale * .45))
+          const sx = Math.floor(sampleX)
+          const sy = Math.floor(sampleY)
+          const fx = sampleX - sx
+          const fy = sampleY - sy
+          const a = (sy * width + sx) * 4
+          const b = a + 4
+          const c = a + width * 4
+          const d = c + 4
+          const index = (y * width + x) * 4
+          const variation = .8 + Math.sin(angle * 13 + age * .35) * .13 + Math.sin(angle * 29 - age * .2) * .07
+          const light = Math.max(0, crest * .2 - trough * .07) * rippleFade * variation
+          const shade = Math.max(0, trough * .075 - crest * .035) * rippleFade
+          for (let channel = 0; channel < 3; channel++) {
+            const upper = pixels[a + channel] * (1 - fx) + pixels[b + channel] * fx
+            const lower = pixels[c + channel] * (1 - fx) + pixels[d + channel] * fx
+            const sampled = upper * (1 - fy) + lower * fy
+            const warmth = channel === 0 ? 234 : channel === 1 ? 204 : 159
+            frame[index + channel] = sampled * (1 - light - shade) + warmth * light
           }
-
-          const sourceX = Math.max(0, Math.min(width - tileWidth, x + shiftX))
-          const sourceY = Math.max(horizon, Math.min(height - tileHeight, y + shiftY))
-          const drawWidth = Math.min(tileWidth + 1, width - x, width - sourceX)
-          const drawHeight = Math.min(tileHeight + 1, height - y, height - sourceY)
-
-          context.drawImage(still, sourceX, sourceY, drawWidth, drawHeight, x, y, drawWidth, drawHeight)
         }
       }
-
-      // A single soft crest makes the refracted water readable on the dark lake.
-      // Follow the same wavefront as the image distortion, with small natural bends.
-      if (rippleActive && rippleRadius > 8) {
-        context.save()
-        context.beginPath()
-        context.rect(0, protectedHorizonY, width, height - protectedHorizonY)
-        context.clip()
-
-        const glint = context.createLinearGradient(centerX - rippleRadius, 0, centerX + rippleRadius, 0)
-        glint.addColorStop(0, `rgba(226, 214, 186, ${rippleFade * .12})`)
-        glint.addColorStop(.5, `rgba(238, 221, 190, ${rippleFade * .25})`)
-        glint.addColorStop(1, `rgba(226, 214, 186, ${rippleFade * .12})`)
-        context.beginPath()
-        for (let angle = 0; angle <= Math.PI * 2 + .04; angle += .04) {
-          const bend = Math.sin(angle * 3.2 + seconds * .12) * 4 + Math.sin(angle * 7.1 - seconds * .08) * 1.7
-          const radius = rippleRadius + bend
-          const x = centerX + Math.cos(angle) * radius
-          const y = contactY + Math.sin(angle) * radius * ovalScale
-          if (angle === 0) context.moveTo(x, y)
-          else context.lineTo(x, y)
-        }
-        context.closePath()
-        context.lineWidth = 5
-        context.strokeStyle = glint
-        context.shadowColor = `rgba(232, 211, 176, ${rippleFade * .16})`
-        context.shadowBlur = 9
-        context.stroke()
-        context.restore()
-      }
+      context.putImageData(framePixels, 0, 0)
     }
 
     function tick(now: number) {
