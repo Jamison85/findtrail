@@ -74,20 +74,28 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
         lastCheck = now
         if (document.hidden || elapsed < CONTACT_SECONDS) {
           if (!video.paused) video.pause()
-        } else if (video.readyState >= 2) {
+          video.style.opacity = '0'
+        } else {
           const cycle = Math.min(RESET_CYCLES - 1, Math.floor((elapsed - CONTACT_SECONDS) / CYCLE_SECONDS))
           const age = elapsed - CONTACT_SECONDS - cycle * CYCLE_SECONDS
-          if (cycle !== lastCycle || Math.abs(video.currentTime - age) > .35) {
-            video.currentTime = age
-            lastCycle = cycle
-          }
-          video.style.opacity = '1'
-          if (video.paused && !playPending) {
-            playPending = true
-            void video.play().catch(() => {
-              // A blocked media policy retains the original quiet lake.
-              video.style.opacity = '0'
-            }).finally(() => { playPending = false })
+          // The clip lasts ten seconds, but landings are twelve seconds apart.
+          // Never replay an ended clip in the still-water gap before the next touch.
+          if (age >= WATER_VIDEO_SECONDS || (cycle === lastCycle && video.ended)) {
+            if (!video.paused) video.pause()
+            video.style.opacity = '0'
+          } else if (video.readyState >= 2) {
+            if (cycle !== lastCycle || Math.abs(video.currentTime - age) > .35) {
+              video.currentTime = age
+              lastCycle = cycle
+            }
+            video.style.opacity = '1'
+            if (video.paused && !playPending) {
+              playPending = true
+              void video.play().catch(() => {
+                // A blocked media policy retains the original quiet lake.
+                video.style.opacity = '0'
+              }).finally(() => { playPending = false })
+            }
           }
         }
       }

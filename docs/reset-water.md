@@ -44,3 +44,5 @@ so a delayed visual start cannot reveal the first ring before contact. Media
 playback catches up after loading or a hidden tab; it ends after the final
 wave settles. Reduced motion retains the still lake. The service worker
 precaches the asset and responds to media byte ranges for offline playback.
+The ten-second clip is hidden and paused in the two-second gap before each
+next landing, preventing the browser from restarting an ended video early.
