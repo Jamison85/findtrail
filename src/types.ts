@@ -97,6 +97,7 @@ export interface ActiveSearch {
   currentIndex: number
   checkedSpots: Record<string, string[]>
   skippedStops?: string[]
+  reviewingSkippedFrom?: 'widen' | 'end'
   startedAt: string
   lastUpdatedAt: string
 }

@@ -40,8 +40,8 @@ describe('FoundView', () => {
     render(<FoundView {...baseProps} value="" />)
 
     expect(screen.getByRole('heading', { name: 'There it is.' })).toBeInTheDocument()
-    expect(screen.getByText('Did “The landing zone” help you find it?')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Remember more for next time')).toBeInTheDocument()
+    expect(screen.getByText('Remember more for next time').closest('details')).not.toHaveAttribute('open')
     expect(screen.getByRole('button', { name: 'Save this found place' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Entry table or hook' }))
@@ -56,6 +56,8 @@ describe('FoundView', () => {
     expect(screen.getByRole('button', { name: 'Entry table or hook' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Save this found place' })).toBeEnabled()
 
+    fireEvent.click(screen.getByText('Remember more for next time'))
+    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for keys/i }))
     expect(baseProps.onSaveAsHome).toHaveBeenCalledWith(true)
     fireEvent.click(screen.getByRole('button', { name: 'Yes, this step' }))

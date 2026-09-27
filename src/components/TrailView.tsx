@@ -38,7 +38,11 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const progress = (stage.current / stage.total) * 100
   const focusedPassComplete = isFocusedPassComplete(search.stops, search.currentIndex)
   const widerPassComplete = isWiderPassComplete(search.stops, search.currentIndex)
-  const nextLabel = isLastStop
+  const reviewDestination = search.reviewingSkippedFrom
+  const returnLabel = reviewDestination === 'widen' ? 'Return to wider search' : 'Return to next moves'
+  const nextLabel = reviewDestination
+    ? checked.length ? returnLabel : 'Keep this place skipped'
+    : isLastStop
     ? 'Still missing · next steps'
     : focusedPassComplete
       ? 'Continue to wider search'
@@ -138,7 +142,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   return (
     <section className={`view trail-view trail-view--${stop.kind ?? 'standard'}`} aria-labelledby="view-heading">
       <header className="topbar trail-topbar">
-        <button className="icon-button" onClick={onBack} aria-label="Return home"><Icon name="back" /></button>
+        <button className="icon-button" onClick={onBack} aria-label={reviewDestination ? `Back to ${reviewDestination === 'widen' ? 'wider search' : 'next moves'}` : 'Return home'}><Icon name="back" /></button>
         <div className="trail-identity">
           <span className="trail-identity__item"><Icon name={search.itemId} size={15} />{search.itemLabel}</span>
           <strong>{stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total}`}</strong>
@@ -148,7 +152,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
 
       <div className="trail-route">
         <div className="trail-route__meta">
-          <span>{stage.label}</span>
+          <span>{reviewDestination ? 'Checking a skipped place' : stage.label}</span>
           <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} checked` : 'No spots checked yet'}</strong>
         </div>
         <div className="trail-progress" role="progressbar" aria-label={`${stage.label} progress`} aria-valuemin={1} aria-valuemax={stage.total} aria-valuenow={stage.current} aria-valuetext={stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total} in the ${stage.label.toLocaleLowerCase()}`}>

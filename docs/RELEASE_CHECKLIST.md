@@ -29,13 +29,15 @@
 - [x] Settings separates guidance, appearance, saved homes, backup, and destructive controls
 - [x] iPhone Home Screen instructions remain available from Settings after the first-use coach
 - [x] Calm reset resumes the correct screen
-- [x] Ambient horizon reset completes three truthful 10-second cycles
+- [x] Ambient horizon reset completes three 12-second cycles with a gentle hold
 - [x] Reset has no sound control or audio path
 - [x] Feather-contact ripple is clearly visible without overpowering the reset, and reduced motion receives a still horizon
 - [x] Update notices wait until a root screen and never shrink the reset
 - [x] Clue selections settle before advancing and skip delay with reduced motion
 - [x] Last checked exact spot carries into the found-place screen
 - [x] Final trail stop opens a clear item-specific recovery plan
+- [x] Skipped places remain separate from visited counts and reopen directly from either checkpoint, including after app restart
+- [x] Found place saves with one required detail; optional learning choices stay available without delaying Save
 - [x] Speech features fail gracefully when browser support is absent
 - [x] Offline app shell opens after one successful online visit
 

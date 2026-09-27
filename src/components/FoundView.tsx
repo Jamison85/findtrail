@@ -127,33 +127,36 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
           <small>A useful detail helps: “blue bowl,” not just “kitchen.”</small>
         </label>
 
-        {currentStepTitle && (
-          <div className="found-area-choice" role="group" aria-label={`Did “${currentStepTitle}” help you find it?`}>
-            <strong>Did “{currentStepTitle}” help you find it?</strong>
-            <div>
-              <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this step</button>
-              <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>No, found another way</button>
+        <details className="found-optional">
+          <summary><span>Remember more for next time <small>Optional</small></span><Icon name="forward" size={17} /></summary>
+          {currentStepTitle && (
+            <div className="found-area-choice" role="group" aria-label={`Did “${currentStepTitle}” help you find it?`}>
+              <strong>Did “{currentStepTitle}” help you find it?</strong>
+              <div>
+                <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this step</button>
+                <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>No, found another way</button>
+              </div>
+              <p>A yes helps put this step earlier next time. Your exact place is saved either way.</p>
             </div>
-            <p>A yes helps put this step earlier next time. Your exact place is saved either way.</p>
-          </div>
-        )}
-
-        <div className="found-memory-options">
-          <FoundToggle
-            label={`Make this the home spot for ${search.itemLabel}`}
-            detail="FindTrail will check here before learned guesses."
-            checked={saveAsHome}
-            onChange={onSaveAsHome}
-          />
-          {search.itemId === 'other' && saveAsHome && (
-            <FoundToggle
-              label={`Pin ${search.itemLabel} on Home`}
-              detail="Start this search again with one tap."
-              checked={pinCustomItem}
-              onChange={onPinCustomItem}
-            />
           )}
-        </div>
+
+          <div className="found-memory-options">
+            <FoundToggle
+              label={`Make this the home spot for ${search.itemLabel}`}
+              detail="FindTrail will check here before learned guesses."
+              checked={saveAsHome}
+              onChange={onSaveAsHome}
+            />
+            {search.itemId === 'other' && saveAsHome && (
+              <FoundToggle
+                label={`Pin ${search.itemLabel} on Home`}
+                detail="Start this search again with one tap."
+                checked={pinCustomItem}
+                onChange={onPinCustomItem}
+              />
+            )}
+          </div>
+        </details>
 
         <button className="button button--primary button--wide found-save" onClick={onSave} disabled={!ready}>
           <Icon name="check" size={19} />Save this found place

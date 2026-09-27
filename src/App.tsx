@@ -15,8 +15,9 @@ import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { WidenSearchView } from './components/WidenSearchView'
 import { ITEMS, ITEM_BY_ID, STOPS } from './data'
-import { buildTrail, compactActiveSearch, getWiderStartIndex, isFocusedPassComplete } from './trailEngine'
+import { buildTrail, compactActiveSearch, getFocusedStops, getWiderStartIndex, isFocusedPassComplete } from './trailEngine'
 import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
+import { skippedPlaces, visitedAreaCount } from './searchProgress'
 import { trapDialogFocus } from './modalFocus'
 import type { ActiveSearch, ClueOption, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
@@ -192,13 +193,13 @@ export default function App() {
   function saveClueAnswer(value: string) {
     const answers = answersThroughCurrentClue(value)
     if (!answers) return
-    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false, reviewingSkippedFrom: undefined }))
   }
 
   function answerClue(value: string) {
     const answers = answersThroughCurrentClue(value)
     if (!answers || !activeItem || clueIndex >= activeItem.questions.length - 1) return
-    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
+    updateActive((current) => ({ ...current, answers, stops: [], currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false, reviewingSkippedFrom: undefined }))
     setClueIndex((current) => current + 1)
   }
 
@@ -207,14 +208,14 @@ export default function App() {
     const answers = answersThroughCurrentClue(value)
     if (!answers) return
     const stops = buildTrail(active.itemId, active.itemLabel, answers, data.history, data.savedItems)
-    updateActive((current) => ({ ...current, answers, stops, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false }))
+    updateActive((current) => ({ ...current, answers, stops, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false, reviewingSkippedFrom: undefined }))
     setScreen('trail')
   }
 
   function resumeSearch() {
     if (!active) return
     if (active.stops.length) {
-      setScreen(active.widenReady ? 'widen' : 'trail')
+      setScreen(active.reviewingSkippedFrom ? 'trail' : active.widenReady ? 'widen' : 'trail')
       return
     }
     const questions = ITEM_BY_ID[active.itemId].questions
@@ -229,31 +230,66 @@ export default function App() {
     updateActive((current) => {
       const existing = current.checkedSpots[stopId] ?? []
       const next = existing.includes(spot) ? existing.filter((value) => value !== spot) : [...existing, spot]
-      return { ...current, checkedSpots: { ...current.checkedSpots, [stopId]: next } }
+      return {
+        ...current,
+        checkedSpots: { ...current.checkedSpots, [stopId]: next },
+        skippedStops: next.length ? (current.skippedStops ?? []).filter((id) => id !== stopId) : current.skippedStops,
+      }
     })
+  }
+
+  function markStopProgress(current: ActiveSearch, skipped: boolean): ActiveSearch {
+    const stop = current.stops[current.currentIndex]
+    if (!stop || stop.kind === 'safety' || stop.kind === 'final') return current
+    const skippedIds = new Set(current.skippedStops ?? [])
+    if (skipped) skippedIds.add(stop.id)
+    else skippedIds.delete(stop.id)
+    return { ...current, skippedStops: [...skippedIds] }
+  }
+
+  function returnFromSkippedPlace() {
+    if (!active?.reviewingSkippedFrom) return
+    const destination = active.reviewingSkippedFrom
+    const checkpointId = destination === 'widen'
+      ? getFocusedStops(active.stops).at(-1)?.id
+      : active.stops.find((stop) => stop.kind === 'final')?.id ?? active.stops.at(-1)?.id
+    const checkpointIndex = Math.max(0, active.stops.findIndex((stop) => stop.id === checkpointId))
+    updateActive((current) => ({
+      ...markStopProgress(current, (current.checkedSpots[current.stops[current.currentIndex]?.id]?.length ?? 0) === 0),
+      currentIndex: checkpointIndex,
+      widenReady: destination === 'widen',
+      reviewingSkippedFrom: undefined,
+    }))
+    setScreen(destination)
+  }
+
+  function reviewSkippedPlace(stopId: string, from: 'widen' | 'end') {
+    if (!active || !skippedPlaces(active).some((stop) => stop.id === stopId)) return
+    const index = active.stops.findIndex((stop) => stop.id === stopId)
+    if (index < 0) return
+    updateActive((current) => ({ ...current, currentIndex: index, reviewingSkippedFrom: from }))
+    setScreen('trail')
   }
 
   function nextStop(skipped = false) {
     if (!active) return
     setPauseOffer(false)
-    const markProgress = (current: ActiveSearch) => ({
-      ...current,
-      skippedStops: skipped && !current.skippedStops?.includes(current.stops[current.currentIndex]?.id)
-        ? [...(current.skippedStops ?? []), current.stops[current.currentIndex].id]
-        : current.skippedStops ?? [],
-    })
+    if (active.reviewingSkippedFrom) {
+      returnFromSkippedPlace()
+      return
+    }
     if (isFocusedPassComplete(active.stops, active.currentIndex)) {
-      updateActive((current) => ({ ...markProgress(current), widenReady: true }))
+      updateActive((current) => ({ ...markStopProgress(current, skipped), widenReady: true }))
       setScreen('widen')
       return
     }
     if (active.currentIndex >= active.stops.length - 1) {
-      updateActive(markProgress)
+      updateActive((current) => markStopProgress(current, skipped))
       setScreen('end')
       return
     }
     const nextIndex = active.currentIndex + 1
-    updateActive((current) => ({ ...markProgress(current), currentIndex: nextIndex }))
+    updateActive((current) => ({ ...markStopProgress(current, skipped), currentIndex: nextIndex }))
     if (data.settings.calmPause && nextIndex > 0 && nextIndex % 3 === 0) setPauseOffer(true)
   }
 
@@ -264,7 +300,7 @@ export default function App() {
       setScreen('trail')
       return
     }
-    updateActive((current) => ({ ...current, currentIndex: nextIndex, widenReady: false }))
+    updateActive((current) => ({ ...current, currentIndex: nextIndex, widenReady: false, reviewingSkippedFrom: undefined }))
     if (data.settings.calmPause) setPauseOffer(true)
     setScreen('trail')
   }
@@ -291,7 +327,7 @@ export default function App() {
       foundLocation: foundLocation.trim(),
       foundAt: now.toISOString(),
       answers: active.answers,
-      stopsChecked: active.stops.slice(0, active.currentIndex + 1).filter((stop) => stop.kind !== 'safety').length,
+      stopsChecked: visitedAreaCount(active, active.stops, foundReturnScreen === 'trail' ? active.stops[active.currentIndex]?.id : undefined),
       durationSeconds,
       foundStopId: foundReturnScreen === 'trail' && foundInCurrentArea ? active.stops[active.currentIndex]?.id : undefined,
       foundSpot: foundLocation.trim(),
@@ -444,14 +480,14 @@ export default function App() {
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
-        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setPauseOffer(false); setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
-        {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
+        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setPauseOffer(false); setReturnScreen('trail'); setScreen('calm') }} onEditClues={() => { setClueIndex(0); setScreen('clues') }} />}
+        {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
         {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen(foundReturnScreen)} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
         {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
         {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
-        {screen === 'end' && active && <StillMissingView search={active} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false })); setScreen('trail') }} onHome={() => setScreen('home')} />}
+        {screen === 'end' && active && <StillMissingView search={active} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={() => { updateActive((current) => ({ ...current, currentIndex: 0, checkedSpots: {}, skippedStops: [], widenReady: false, reviewingSkippedFrom: undefined })); setScreen('trail') }} onHome={() => setScreen('home')} />}
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
     </div>

@@ -77,6 +77,7 @@ function validActiveSearch(value: unknown): ActiveSearch | null {
   if (!isStringArrayRecord(value.checkedSpots) || !isDateString(value.startedAt) || !isDateString(value.lastUpdatedAt)) return null
   if (value.skippedStops !== undefined && (!Array.isArray(value.skippedStops) || !value.skippedStops.every((stop) => typeof stop === 'string'))) return null
   if (value.widenReady !== undefined && typeof value.widenReady !== 'boolean') return null
+  if (value.reviewingSkippedFrom !== undefined && value.reviewingSkippedFrom !== 'widen' && value.reviewingSkippedFrom !== 'end') return null
   return { ...(value as unknown as ActiveSearch), version: 3, skippedStops: (value.skippedStops as string[] | undefined) ?? [] }
 }
 

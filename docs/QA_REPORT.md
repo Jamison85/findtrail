@@ -1,6 +1,6 @@
 # FindTrail 2.12 QA report
 
-Run date: 2026-09-22
+Run date: 2026-09-27
 
 ## Automated release checks
 
@@ -35,6 +35,8 @@ Run date: 2026-09-22
 | Recovery ending | Pass: the final stop becomes a calm, ordered, item-specific next-moves plan |
 | Recovery safety priority | Pass: urgent medicine and financial protection remain ahead of reset and repeat actions |
 | Recovery exits | Pass: reset, repeat, late find, and save-and-leave keep their existing behavior |
+| Skipped-place recovery | Pass: focused and final checkpoints count only places with checked spots, reopen skipped places directly, and return to the same checkpoint after a reload |
+| Found capture pace | Pass: exact place remains the only required detail; area learning and saved-home choices are available in a collapsed optional section |
 | Ambient reset regression | Pass: three timed breaths, progress semantics, skip, and trail return remain functional |
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, strengthened contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
@@ -54,7 +56,7 @@ Run date: 2026-09-22
 - 200% text enlargement reflows without horizontal overflow or lost controls.
 - Keyboard entry reaches the skip link first, then exposes visible focus on controls.
 - Reduced-motion preference replaces the moving horizon with a still composition and suppresses the Home guide.
-- The reset uses three honest 10-second cycles: 4 seconds in and 6 seconds out.
+- The reset uses three 12-second cycles: 4 seconds in, a 2-second hold, and 6 seconds out.
 - The reset has no sound control or audio path.
 - The restored reset returns to the exact active trail stop and respects reduced motion.
 - The Home search guide uses brief, non-looping motion and does not replay after returning Home in the same session.

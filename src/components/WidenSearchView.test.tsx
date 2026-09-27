@@ -20,17 +20,20 @@ const search: ActiveSearch = {
   ],
   currentIndex: 2,
   checkedSpots: { 'drop-zone': ['Entry table'], pockets: ['Current pants'] },
+  skippedStops: ['counters'],
   startedAt: '2026-09-22T12:00:00.000Z',
   lastUpdatedAt: '2026-09-22T12:00:00.000Z',
 }
 
 describe('WidenSearchView', () => {
   it('previews only the next three places and keeps every exit explicit', () => {
-    const actions = { onWiden: vi.fn(), onFound: vi.fn(), onReset: vi.fn(), onHome: vi.fn() }
+    const actions = { onWiden: vi.fn(), onReviewSkipped: vi.fn(), onFound: vi.fn(), onReset: vi.fn(), onHome: vi.fn() }
     render(<WidenSearchView search={search} {...actions} />)
 
     expect(screen.getByRole('heading', { name: 'Pause before going wider.' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/3 suggested areas visited.*2 exact spots checked.*trail is saved/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/2 suggested areas visited.*2 exact spots checked.*1 skipped.*trail is saved/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Flat surfaces' }))
+    expect(actions.onReviewSkipped).toHaveBeenCalledWith('counters')
     const preview = screen.getByRole('list', { name: 'Next places to check for Keys' })
     expect(within(preview).getAllByRole('listitem')).toHaveLength(3)
     expect(within(preview).getByText('The car drop zones')).toBeInTheDocument()

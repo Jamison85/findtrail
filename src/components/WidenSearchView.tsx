@@ -1,22 +1,27 @@
 import { getFocusedStops, getWiderStops } from '../trailEngine'
+import { skippedPlaces, visitedAreaCount } from '../searchProgress'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
+import { SkippedPlaces } from './SkippedPlaces'
 
 interface WidenSearchViewProps {
   search: ActiveSearch
   onWiden: () => void
+  onReviewSkipped: (stopId: string) => void
   onFound: () => void
   onReset: () => void
   onHome: () => void
 }
 
-export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: WidenSearchViewProps) {
+export function WidenSearchView({ search, onWiden, onReviewSkipped, onFound, onReset, onHome }: WidenSearchViewProps) {
   const focusedStops = getFocusedStops(search.stops)
   const widerStops = getWiderStops(search.stops)
   const checkedSpotCount = focusedStops.reduce((total, stop) => total + (search.checkedSpots[stop.id]?.length ?? 0), 0)
-  const skippedCount = focusedStops.filter((stop) => search.skippedStops?.includes(stop.id)).length
-  const placeLabel = `${focusedStops.length} suggested ${focusedStops.length === 1 ? 'area' : 'areas'} visited`
+  const openPlaces = skippedPlaces(search, focusedStops)
+  const skippedCount = openPlaces.length
+  const visitedCount = visitedAreaCount(search, focusedStops)
+  const placeLabel = `${visitedCount} suggested ${visitedCount === 1 ? 'area' : 'areas'} visited`
   const spotLabel = `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked${skippedCount ? ` · ${skippedCount} skipped` : ''}`
 
   return (
@@ -35,7 +40,7 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
         <div>
           <span className="eyebrow">Focused pass complete</span>
           <h1 id="view-heading" tabIndex={-1}>Pause before going wider.</h1>
-          <p>You visited the first suggested areas. Any spots you skipped are still open. The next pass stays one place at a time.</p>
+          <p>You reached the end of the first suggested areas. Places you skipped are still open. The next pass stays one place at a time.</p>
         </div>
       </div>
 
@@ -43,6 +48,8 @@ export function WidenSearchView({ search, onWiden, onFound, onReset, onHome }: W
         <span><Icon name="trail" size={18} /></span>
         <p><strong>{placeLabel}</strong><small>{spotLabel} · trail saved</small></p>
       </div>
+
+      <SkippedPlaces places={openPlaces} onReview={onReviewSkipped} />
 
       <section className="widen-panel" aria-labelledby="widen-heading">
         <header>

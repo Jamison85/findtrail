@@ -1,0 +1,40 @@
+@layer screens {
+  .skipped-places {
+    max-width: 31rem;
+    margin: 12px auto;
+    padding: 14px;
+    border: 1px solid rgba(23, 58, 52, .11);
+    border-radius: 20px;
+    background: rgba(255, 253, 249, .76);
+  }
+
+  .skipped-places h2 {
+    margin-bottom: 2px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.13rem;
+    font-weight: 600;
+  }
+
+  .skipped-places p { color: var(--ink-soft); font-size: .69rem; line-height: 1.4; }
+  .skipped-places__list { display: grid; gap: 6px; margin-top: 10px; }
+
+  .skipped-places__list button {
+    display: flex;
+    min-height: 43px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--evergreen);
+    background: var(--white);
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 750;
+  }
+
+  .skipped-places__list button:focus-visible { outline: 3px solid var(--clay); outline-offset: 2px; }
+  .skipped-places__list button:active { transform: translateY(1px); }
+  .skipped-places__list button svg { flex: 0 0 auto; }
+}

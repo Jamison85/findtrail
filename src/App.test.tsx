@@ -108,6 +108,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Entry tray' } })
+    fireEvent.click(screen.getByText('Remember more for next time'))
     fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for work badge/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
     fireEvent.click(screen.getByRole('button', { name: 'Find another item' }))
@@ -210,7 +211,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Blue bowl' } })
-    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Remember more for next time').closest('details')).not.toHaveAttribute('open')
     fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
     expect(saved.history[0].foundLocation).toBe('Blue bowl')
@@ -305,6 +306,46 @@ describe('FindTrail app', () => {
     expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
   })
 
+  it('returns to skipped places without repeating the route and keeps that return after reload', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3, settings: { ...DEFAULT_SETTINGS, motion: 'reduced' }, history: [], savedItems: [],
+      activeSearch: {
+        version: 3, id: 'skipped-review', itemId: 'keys', itemLabel: 'Keys', answers: {},
+        stops: [
+          { id: 'entry', title: 'The landing zone', instruction: 'Check here.', spots: ['Entry hook'] },
+          { id: 'pockets', title: 'Current pockets', instruction: 'Check here.', spots: ['Pants'] },
+          { id: 'counter', title: 'Flat surfaces', instruction: 'Check here.', spots: ['Counter'] },
+          { id: 'car', title: 'The car drop zones', instruction: 'Check here.', spots: ['Console'] },
+          { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check here.', spots: ['Likeliest place'], kind: 'final' },
+        ],
+        currentIndex: 2, widenReady: true, checkedSpots: { entry: ['Entry hook'] },
+        skippedStops: ['pockets', 'counter'],
+        startedAt: '2026-09-22T12:00:00.000Z', lastUpdatedAt: '2026-09-22T12:05:00.000Z',
+      },
+    }))
+
+    const app = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    expect(screen.getByLabelText(/1 suggested area visited.*2 skipped/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Current pockets' }))
+    expect(screen.getByRole('heading', { name: 'Current pockets' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Keep this place skipped' })).toBeInTheDocument()
+
+    app.unmount()
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    expect(screen.getByRole('heading', { name: 'Current pockets' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Pants' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Return to wider search' }))
+
+    expect(screen.getByLabelText(/2 suggested areas visited.*1 skipped/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Current pockets' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Flat surfaces' })).toBeInTheDocument()
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+    expect(saved.activeSearch.skippedStops).toEqual(['counter'])
+    expect(saved.activeSearch.reviewingSkippedFrom).toBeUndefined()
+  })
+
   it('resumes an unfinished third place before offering the wider pass', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3, settings: { ...DEFAULT_SETTINGS, motion: 'reduced' }, history: [], savedItems: [],
@@ -385,7 +426,41 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Still missing · next steps' }))
     expect(screen.getByRole('heading', { name: 'Do one next move' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /breathing reset/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Trail explored.*1 area visited.*0 exact spots checked.*1 area skipped/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Suggested route complete.*0 areas visited.*0 exact spots checked.*0 areas skipped/i)).toBeInTheDocument()
+  })
+
+  it('lets the final recovery screen reopen a skipped area and records only places checked', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3, settings: { ...DEFAULT_SETTINGS, motion: 'reduced' }, history: [], savedItems: [],
+      activeSearch: {
+        version: 3, id: 'end-skipped', itemId: 'keys', itemLabel: 'Keys', answers: {},
+        stops: [
+          { id: 'entry', title: 'The landing zone', instruction: 'Check here.', spots: ['Entry hook'] },
+          { id: 'pockets', title: 'Current pockets', instruction: 'Check here.', spots: ['Pants'] },
+          { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check here.', spots: ['Likeliest place'], kind: 'final' },
+        ],
+        currentIndex: 2, checkedSpots: { entry: ['Entry hook'] }, skippedStops: ['pockets'],
+        startedAt: '2026-09-22T12:00:00.000Z', lastUpdatedAt: '2026-09-22T12:05:00.000Z',
+      },
+    }))
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Still missing · next steps' }))
+    expect(screen.getByLabelText(/1 area visited.*1 exact spot checked.*1 area skipped/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Current pockets' }))
+    expect(screen.getByRole('heading', { name: 'Current pockets' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Pants' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Return to next moves' }))
+    expect(screen.getByLabelText(/2 areas visited.*2 exact spots checked.*0 areas skipped/i)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Places left open' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'I found it after all' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Exact place' }), { target: { value: 'Under the mail' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
+    expect(screen.getByText('Places visited').nextElementSibling).toHaveTextContent('2')
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).history[0].stopsChecked).toBe(2)
   })
 
   it('announces an installed-app update and applies it on request', async () => {
