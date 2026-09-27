@@ -50,7 +50,7 @@ describe('StillMissingView', () => {
   it('connects every recovery exit to its existing behavior', () => {
     const actions = renderView()
 
-    fireEvent.click(screen.getByRole('button', { name: '30-second reset' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Breathing reset' }))
     fireEvent.click(screen.getByRole('button', { name: 'Repeat trail' }))
     fireEvent.click(screen.getByRole('button', { name: 'I found it after all' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save and leave' }))

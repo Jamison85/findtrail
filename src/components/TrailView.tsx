@@ -188,7 +188,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
         </aside>
       </article>
 
-      {offerReset && <div className="trail-pause-offer" role="status"><span><strong>Want a 30-second reset?</strong><small>Your place is saved.</small></span><button onClick={onCalm}>Take reset</button><button onClick={onDismissReset}>Not now</button></div>}
+      {offerReset && <div className="trail-pause-offer" role="status"><span><strong>Want a breathing reset?</strong><small>Your place is saved.</small></span><button onClick={onCalm}>Take reset</button><button onClick={onDismissReset}>Not now</button></div>}
 
       <div className="trail-utilities" aria-label="Search assistance">
         <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>

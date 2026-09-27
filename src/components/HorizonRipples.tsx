@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { CONTACT_SECONDS, CYCLE_SECONDS, RESET_CYCLES } from './resetTiming'
 
 interface HorizonRipplesProps {
   reducedMotion: boolean
@@ -7,9 +8,8 @@ interface HorizonRipplesProps {
 
 const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const WATER_VIDEO = `${import.meta.env.BASE_URL}findtrail-water-impact.mp4`
-const CONTACT_SECONDS = 7.2
-const CYCLE_SECONDS = 10
-const LAST_WAVE_END = CONTACT_SECONDS + CYCLE_SECONDS * 3
+const WATER_VIDEO_SECONDS = 10
+const LAST_WAVE_END = CONTACT_SECONDS + CYCLE_SECONDS * (RESET_CYCLES - 1) + WATER_VIDEO_SECONDS
 
 export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps) {
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -59,7 +59,7 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
         if (document.hidden || elapsed < CONTACT_SECONDS) {
           if (!video.paused) video.pause()
         } else if (video.readyState >= 2) {
-          const cycle = Math.min(2, Math.floor((elapsed - CONTACT_SECONDS) / CYCLE_SECONDS))
+          const cycle = Math.min(RESET_CYCLES - 1, Math.floor((elapsed - CONTACT_SECONDS) / CYCLE_SECONDS))
           const age = elapsed - CONTACT_SECONDS - cycle * CYCLE_SECONDS
           if (cycle !== lastCycle || Math.abs(video.currentTime - age) > .35) {
             video.currentTime = age

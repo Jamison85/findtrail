@@ -34,7 +34,9 @@ and [NVIDIA, Effective Water Simulation from Physical Models](https://developer.
 The impact is at `(50%, 64%)` of the uncropped video. A ResizeObserver maps
 that point through the same cover crop as the poster and video. The feather's
 visible tip is at `(54.3%, 93.4%)` of its transparent image; all its transforms
-pivot around that point. It returns there at 7.2, 17.2, and 27.2 seconds.
+pivot around that point. The three 12-second breaths use 4 seconds in, 2 seconds
+holding gently, and 6 seconds out. The feather reaches the water at 11.2, 23.2,
+and 35.2 seconds, leaving only 0.8 seconds at the bottom of each breath.
 Each landing plays this same single-impact clip once.
 
 Begin establishes the shared clock. Water waits for the first landing. Media
