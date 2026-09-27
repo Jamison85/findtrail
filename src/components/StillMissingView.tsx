@@ -1,12 +1,15 @@
 import { ITEM_BY_ID } from '../data'
 import { getRecoveryActions } from '../recovery'
+import { skippedPlaces, visitedAreaCount } from '../searchProgress'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
+import { SkippedPlaces } from './SkippedPlaces'
 
 interface StillMissingViewProps {
   search: ActiveSearch
   onFound: () => void
+  onReviewSkipped: (stopId: string) => void
   onReset: () => void
   onRestart: () => void
   onHome: () => void
@@ -45,20 +48,21 @@ function recoveryIntro(search: ActiveSearch): RecoveryIntro {
 
   return {
     title: 'Pause the search loop.',
-    detail: `You visited the suggested areas for ${search.itemLabel.toLocaleLowerCase()}. Pick one next move and give it time to work.`,
+    detail: `You reached the end of the suggested route for ${search.itemLabel.toLocaleLowerCase()}. Pick one next move and give it time to work.`,
     priorityLabel: 'Start here',
   }
 }
 
-export function StillMissingView({ search, onFound, onReset, onRestart, onHome }: StillMissingViewProps) {
+export function StillMissingView({ search, onReviewSkipped, onFound, onReset, onRestart, onHome }: StillMissingViewProps) {
   const actions = getRecoveryActions(search)
   const intro = recoveryIntro(search)
   const checkedSpotCount = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
   const item = ITEM_BY_ID[search.itemId]
-  const visitedCount = search.stops.filter((stop) => stop.kind !== 'safety').length
+  const visitedCount = visitedAreaCount(search)
   const placeCount = `${visitedCount} ${visitedCount === 1 ? 'area' : 'areas'}`
   const spotCount = `${checkedSpotCount} exact ${checkedSpotCount === 1 ? 'spot' : 'spots'} checked`
-  const skippedCount = search.skippedStops?.length ?? 0
+  const openPlaces = skippedPlaces(search)
+  const skippedCount = openPlaces.length
 
   return (
     <section className={`view end-view end-view--${search.itemId}`} aria-labelledby="view-heading">
@@ -79,9 +83,9 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
         </div>
       </div>
 
-      <div className="recovery-status" role="status" aria-label={`Trail explored. ${placeCount} visited. ${spotCount}. ${skippedCount} ${skippedCount === 1 ? 'area' : 'areas'} skipped. Trail saved automatically.`}>
+      <div className="recovery-status" role="status" aria-label={`Suggested route complete. ${placeCount} visited. ${spotCount}. ${skippedCount} ${skippedCount === 1 ? 'area' : 'areas'} skipped. Trail saved automatically.`}>
         <span className="recovery-status__mark"><Icon name="check" size={17} /></span>
-        <span><strong>Trail explored</strong><small>{placeCount} visited · {spotCount}{skippedCount ? ` · ${skippedCount} skipped` : ''}</small></span>
+        <span><strong>Suggested route complete</strong><small>{placeCount} visited · {spotCount}{skippedCount ? ` · ${skippedCount} skipped` : ''}</small></span>
         <small className="recovery-status__saved">Saved</small>
       </div>
 
@@ -103,6 +107,8 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
           ))}
         </ol>
       </section>
+
+      <SkippedPlaces places={openPlaces} onReview={onReviewSkipped} />
 
       <section className="recovery-choice" aria-labelledby="recovery-choice-heading">
         <div className="recovery-choice__copy">

@@ -18,6 +18,7 @@ function finishedSearch(itemId: ActiveSearch['itemId'] = 'keys'): ActiveSearch {
 
 function renderView(search = finishedSearch()) {
   const actions = {
+    onReviewSkipped: vi.fn(),
     onFound: vi.fn(),
     onReset: vi.fn(),
     onRestart: vi.fn(),
@@ -32,7 +33,7 @@ describe('StillMissingView', () => {
     renderView()
 
     expect(screen.getByRole('heading', { name: 'Pause the search loop.' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Trail explored.*2 areas visited.*3 exact spots checked/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Suggested route complete.*2 areas visited.*3 exact spots checked/i)).toBeInTheDocument()
     const plan = screen.getByRole('list', { name: 'Next actions for Keys' })
     expect(within(plan).getAllByRole('listitem')).toHaveLength(3)
     expect(within(plan).getByText('Start here')).toBeInTheDocument()
@@ -45,6 +46,15 @@ describe('StillMissingView', () => {
     expect(screen.getByRole('heading', { name: 'Handle the dose first.' })).toBeInTheDocument()
     expect(screen.getByText('Safety first')).toBeInTheDocument()
     expect(screen.getByText(/Do not wait on another search/i)).toBeInTheDocument()
+  })
+
+  it('counts checked areas separately from skipped ones and offers a direct return', () => {
+    const search = { ...finishedSearch(), checkedSpots: { entry: ['Entry hook'] }, skippedStops: ['pockets'] }
+    const actions = renderView(search)
+
+    expect(screen.getByLabelText(/Suggested route complete.*1 area visited.*1 exact spot checked.*1 area skipped/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Current pockets' }))
+    expect(actions.onReviewSkipped).toHaveBeenCalledWith('pockets')
   })
 
   it('connects every recovery exit to its existing behavior', () => {
