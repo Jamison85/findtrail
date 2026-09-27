@@ -110,7 +110,7 @@ export function StillMissingView({ search, onFound, onReset, onRestart, onHome }
           <p>Reset your attention first, or repeat the same trail.</p>
         </div>
         <div className="recovery-choice__primary">
-          <button className="button button--primary" onClick={onReset}><FeatherMark className="reset-action-feather" /><span>30-second reset</span></button>
+          <button className="button button--primary" onClick={onReset}><FeatherMark className="reset-action-feather" /><span>Breathing reset</span></button>
           <button className="button button--secondary" onClick={onRestart}><Icon name="refresh" size={18} /><span>Repeat trail</span></button>
         </div>
         <div className="recovery-choice__quiet">

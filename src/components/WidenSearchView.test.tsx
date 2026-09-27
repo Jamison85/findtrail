@@ -37,7 +37,7 @@ describe('WidenSearchView', () => {
     expect(within(preview).queryByText('Slow final sweep')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Search these 3 places' }))
-    fireEvent.click(screen.getByRole('button', { name: '30-second reset' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Breathing reset' }))
     fireEvent.click(screen.getByRole('button', { name: 'I found it after all' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save and leave' }))
 

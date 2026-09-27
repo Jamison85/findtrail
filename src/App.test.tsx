@@ -139,11 +139,11 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Breathe in as the feather rises and out as it drifts down. Tap Begin whenever you are ready.')).toBeInTheDocument()
+    expect(screen.getByText('Breathe in as it rises, pause gently at the top, and out as it falls. Tap Begin whenever you are ready.')).toBeInTheDocument()
     expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
     expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /begin 30-second reset/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /begin 30-second reset/i }))
+    expect(screen.getByRole('button', { name: /begin breathing reset/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /begin breathing reset/i }))
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
     expect(screen.getByRole('button', { name: /return to my trail/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
@@ -172,7 +172,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /begin 30-second reset/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /begin breathing reset/i })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
@@ -301,7 +301,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'The car drop zones' })).toBeInTheDocument()
     expect(screen.getByText('Place 1 of 3')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Wider pass progress' })).toHaveAttribute('aria-valuenow', '1')
-    expect(screen.getByText('Want a 30-second reset?')).toBeInTheDocument()
+    expect(screen.getByText('Want a breathing reset?')).toBeInTheDocument()
     expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
   })
 
@@ -384,7 +384,7 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
     fireEvent.click(screen.getByRole('button', { name: 'Still missing · next steps' }))
     expect(screen.getByRole('heading', { name: 'Do one next move' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /30-second reset/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /breathing reset/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/Trail explored.*1 area visited.*0 exact spots checked.*1 area skipped/i)).toBeInTheDocument()
   })
 

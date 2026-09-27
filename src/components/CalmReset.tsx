@@ -4,12 +4,11 @@ import { HorizonRipples } from './HorizonRipples'
 import { Icon } from './Icon'
 import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
+import { CYCLE_SECONDS, HOLD_SECONDS, INHALE_SECONDS, TOTAL_SECONDS } from './resetTiming'
 
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
-const TOTAL_SECONDS = 30
-const CYCLE_SECONDS = 10
 
-type ResetPhase = 'Breathe in' | 'Breathe out'
+type ResetPhase = 'Breathe in' | 'Hold gently' | 'Breathe out'
 
 function useReducedMotion(motion: Settings['motion']) {
   const [systemReduced, setSystemReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
@@ -25,8 +24,15 @@ function useReducedMotion(motion: Settings['motion']) {
   return motion === 'reduced' || (motion === 'system' && systemReduced)
 }
 
-function phaseFor(elapsed: number): ResetPhase {
-  return (elapsed % CYCLE_SECONDS) < 4 ? 'Breathe in' : 'Breathe out'
+function phaseFor(elapsed: number): { label: ResetPhase; secondsLeft: number } {
+  const withinCycle = elapsed % CYCLE_SECONDS
+  if (withinCycle < INHALE_SECONDS) {
+    return { label: 'Breathe in', secondsLeft: Math.ceil(INHALE_SECONDS - withinCycle) }
+  }
+  if (withinCycle < INHALE_SECONDS + HOLD_SECONDS) {
+    return { label: 'Hold gently', secondsLeft: Math.ceil(INHALE_SECONDS + HOLD_SECONDS - withinCycle) }
+  }
+  return { label: 'Breathe out', secondsLeft: Math.ceil(CYCLE_SECONDS - withinCycle) }
 }
 
 export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => void; hasSearch: boolean; motion: Settings['motion'] }) {
@@ -38,20 +44,18 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
   const complete = remaining === 0
-  const withinCycle = elapsed % CYCLE_SECONDS
-  const phase = !playing ? 'Follow the feather' : complete ? 'Reset complete' : phaseFor(elapsed)
-  const phaseSeconds = complete
-    ? 0
-    : withinCycle < 4
-      ? Math.max(1, Math.ceil(4 - withinCycle))
-      : Math.max(1, Math.ceil(CYCLE_SECONDS - withinCycle))
+  const breath = phaseFor(elapsed)
+  const phase = !playing ? 'Follow the feather' : complete ? 'Reset complete' : breath.label
+  const phaseSeconds = complete ? 0 : breath.secondsLeft
   const guidance = !playing
-    ? 'Breathe in as it rises, out as it falls.'
+    ? 'In, pause, and out at your pace.'
     : complete
     ? 'Notice what feels quieter now.'
     : phase === 'Breathe in'
       ? 'Rise with the feather'
-      : 'Drift down with it'
+      : phase === 'Hold gently'
+        ? 'Rest at the top'
+        : 'Drift down with it'
 
   useEffect(() => {
     if (startedAt === null) return
@@ -90,9 +94,9 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
       <div className="calm-view__content">
         <div className="calm-copy">
-          <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> 30-second reset</span>
+          <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> Breathing reset</span>
           <h1 id="view-heading" tabIndex={-1}>The search can wait one breath.</h1>
-          <p>Breathe in as the feather rises and out as it drifts down.{!playing && ' Tap Begin whenever you are ready.'}</p>
+          <p>Breathe in as it rises, pause gently at the top, and out as it falls.{!playing && ' Tap Begin whenever you are ready.'}</p>
         </div>
 
         <div className="calm-breath-stage">
@@ -125,7 +129,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
         <button className="calm-resume" onClick={playing ? onResume : beginReset}>
           <span className="calm-resume__feather"><FeatherMark /></span>
-          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : 'Begin 30-second reset'}</span>
+          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : 'Begin breathing reset'}</span>
           <i aria-hidden="true"><Icon name="forward" size={16} /></i>
         </button>
 
