@@ -26,6 +26,15 @@
     background-size: cover;
   }
 
+  .horizon-ripples__water {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .calm-view__veil {
     position: absolute;
     z-index: 1;
@@ -251,12 +260,12 @@
 
   .calm-feather-anchor {
     position: absolute;
-    top: 65%;
+    top: var(--water-touch-y, 64%);
     left: 50%;
     width: clamp(88px, 26vw, 112px);
     aspect-ratio: 2 / 3;
-    transform: translate(-50%, -96%);
-    transform-origin: 50% 88%;
+    transform: translate(-54.3%, -93.4%);
+    transform-origin: 54.3% 93.4%;
     perspective: 280px;
     transform-style: preserve-3d;
     filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .22));
@@ -267,7 +276,7 @@
   .calm-feather-drift {
     width: 100%;
     height: 100%;
-    transform-origin: 50% 88%;
+    transform-origin: 54.3% 93.4%;
     transform-style: preserve-3d;
     will-change: transform;
     animation: calm-feather-drift 30s ease-in-out both;
@@ -278,7 +287,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    transform-origin: 50% 68%;
+    transform-origin: 54.3% 93.4%;
     transform-style: preserve-3d;
     backface-visibility: visible;
     will-change: transform;
@@ -412,46 +421,46 @@
 
   @keyframes calm-feather-lift {
     0% {
-      transform: translate(-50%, -96%);
+      transform: translate(-54.3%, -93.4%);
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
     40% {
-      transform: translate(-50%, calc(-96% - 91px));
+      transform: translate(-54.3%, calc(-93.4% - 91px));
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
     72% {
-      transform: translate(-50%, -96%);
+      transform: translate(-54.3%, -93.4%);
       animation-timing-function: ease-out;
     }
-    100% { transform: translate(-50%, -96%); }
+    100% { transform: translate(-54.3%, -93.4%); }
   }
 
   @keyframes calm-feather-lift-reduced {
     0% {
-      transform: translate(-50%, -96%);
+      transform: translate(-54.3%, -93.4%);
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
     40% {
-      transform: translate(-50%, calc(-96% - 52px));
+      transform: translate(-54.3%, calc(-93.4% - 52px));
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
     72% {
-      transform: translate(-50%, -96%);
+      transform: translate(-54.3%, -93.4%);
       animation-timing-function: ease-out;
     }
-    100% { transform: translate(-50%, -96%); }
+    100% { transform: translate(-54.3%, -93.4%); }
   }
 
   @keyframes calm-feather-drift {
     0% { transform: translateX(0) rotate(0deg); }
     13.33% { transform: translateX(-11px) rotate(-7deg); }
-    26% { transform: translateX(4px) rotate(3deg); }
+    24% { transform: translateX(0) rotate(3deg); }
     33.33% { transform: translateX(0) rotate(0deg); }
     46.66% { transform: translateX(12px) rotate(8deg); }
-    59% { transform: translateX(-5px) rotate(-3deg); }
+    57.33% { transform: translateX(0) rotate(-3deg); }
     66.66% { transform: translateX(0) rotate(0deg); }
     80% { transform: translateX(-9px) rotate(-6deg); }
-    92.5% { transform: translateX(5px) rotate(3deg); }
+    90.66% { transform: translateX(0) rotate(3deg); }
     100% { transform: translateX(0) rotate(0deg); }
   }
 

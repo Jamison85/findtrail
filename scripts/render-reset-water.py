@@ -101,8 +101,8 @@ def main():
     p.add_argument('--preview', action='store_true')
     p.add_argument('--amplitude', type=float, default=.010)
     p.add_argument('--output', type=Path, default=ROOT / 'public/findtrail-water-impact.mp4')
-    p.add_argument('--width', type=int, default=540)
-    p.add_argument('--height', type=int, default=960)
+    p.add_argument('--width', type=int, default=1080)
+    p.add_argument('--height', type=int, default=1920)
     args = p.parse_args()
     lake = Lake(args.width, args.height, args.amplitude)
     if args.preview:
