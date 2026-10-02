@@ -271,13 +271,14 @@
     filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .22));
     will-change: transform;
     --feather-rise: clamp(108px, 16dvh, 132px);
+    --feather-sway: clamp(24px, 8vw, 42px);
     animation: calm-feather-lift 12s 3 both;
   }
 
   .calm-feather-drift {
     width: 100%;
     height: 100%;
-    transform-origin: 54.3% 93.4%;
+    transform-origin: 50% 50%;
     transform-style: preserve-3d;
     will-change: transform;
     animation: calm-feather-drift 36s ease-in-out both;
@@ -288,7 +289,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    transform-origin: 54.3% 93.4%;
+    transform-origin: 50% 50%;
     transform-style: preserve-3d;
     backface-visibility: visible;
     will-change: transform;
@@ -420,20 +421,30 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* Lift stays on the breath clock; the nested tracks drift and tumble
+     around the feather's center. All three tracks meet at the same tip
+     position at 12, 24, and 36 seconds, where the water playback starts. */
   @keyframes calm-feather-lift {
     0% {
       transform: translate(-54.3%, -93.4%);
-      animation-timing-function: cubic-bezier(.65, 0, .35, 1);
+      animation-timing-function: cubic-bezier(.32, .05, .38, 1);
     }
-    33.333% {
-      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise)));
+    18% {
+      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .68));
+      animation-timing-function: ease-out;
     }
+    33.333333% { transform: translate(-54.3%, calc(-93.4% - var(--feather-rise))); }
+    42% { transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .97)); }
     50% {
       transform: translate(-54.3%, calc(-93.4% - var(--feather-rise)));
-      animation-timing-function: cubic-bezier(.65, 0, .35, 1);
+      animation-timing-function: cubic-bezier(.42, 0, .58, 1);
     }
-    93.333% {
-      transform: translate(-54.3%, -93.4%);
+    70% {
+      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .62));
+      animation-timing-function: cubic-bezier(.35, 0, .65, 1);
+    }
+    87% {
+      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .18));
       animation-timing-function: ease-out;
     }
     100% { transform: translate(-54.3%, -93.4%); }
@@ -444,56 +455,64 @@
       transform: translate(-54.3%, -93.4%);
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
-    33.333% {
-      transform: translate(-54.3%, calc(-93.4% - 52px));
-    }
-    50% {
+    33.333333%, 50% {
       transform: translate(-54.3%, calc(-93.4% - 52px));
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
-    }
-    93.333% {
-      transform: translate(-54.3%, -93.4%);
-      animation-timing-function: ease-out;
     }
     100% { transform: translate(-54.3%, -93.4%); }
   }
 
   @keyframes calm-feather-drift {
     0% { transform: translateX(0) rotate(0deg); }
-    11.111% { transform: translateX(-11px) rotate(-7deg); }
-    16.667% { transform: translateX(-9px) rotate(-5deg); }
-    31.111% { transform: translateX(0) rotate(3deg); }
-    33.33% { transform: translateX(0) rotate(0deg); }
-    44.444% { transform: translateX(12px) rotate(8deg); }
-    50% { transform: translateX(10px) rotate(6deg); }
-    64.444% { transform: translateX(0) rotate(-3deg); }
-    66.66% { transform: translateX(0) rotate(0deg); }
-    77.778% { transform: translateX(-9px) rotate(-6deg); }
-    83.333% { transform: translateX(-8px) rotate(-5deg); }
-    97.778% { transform: translateX(0) rotate(3deg); }
-    100% { transform: translateX(0) rotate(0deg); }
+    4% { transform: translateX(calc(var(--feather-sway) * -.55)) rotate(-24deg); }
+    9% { transform: translateX(calc(var(--feather-sway) * -1)) rotate(12deg); }
+    13% { transform: translateX(calc(var(--feather-sway) * -.62)) rotate(43deg); }
+    16.666667% { transform: translateX(calc(var(--feather-sway) * -.35)) rotate(55deg); }
+    21% { transform: translateX(calc(var(--feather-sway) * .65)) rotate(138deg); }
+    25% { transform: translateX(var(--feather-sway)) rotate(238deg); }
+    29% { transform: translateX(calc(var(--feather-sway) * .38)) rotate(330deg); }
+    33.333333% { transform: translateX(0) rotate(360deg); }
+    38% { transform: translateX(calc(var(--feather-sway) * .6)) rotate(389deg); }
+    43% { transform: translateX(var(--feather-sway)) rotate(350deg); }
+    47% { transform: translateX(calc(var(--feather-sway) * .45)) rotate(333deg); }
+    50% { transform: translateX(calc(var(--feather-sway) * .25)) rotate(341deg); }
+    55% { transform: translateX(calc(var(--feather-sway) * -.7)) rotate(435deg); }
+    59% { transform: translateX(calc(var(--feather-sway) * -.9)) rotate(564deg); }
+    63% { transform: translateX(calc(var(--feather-sway) * -.3)) rotate(681deg); }
+    66.666667% { transform: translateX(0) rotate(720deg); }
+    71% { transform: translateX(calc(var(--feather-sway) * -.45)) rotate(699deg); }
+    76% { transform: translateX(calc(var(--feather-sway) * -.85)) rotate(737deg); }
+    80% { transform: translateX(calc(var(--feather-sway) * -.3)) rotate(771deg); }
+    83.333333% { transform: translateX(calc(var(--feather-sway) * -.15)) rotate(757deg); }
+    88% { transform: translateX(calc(var(--feather-sway) * .7)) rotate(839deg); }
+    93% { transform: translateX(calc(var(--feather-sway) * .55)) rotate(971deg); }
+    97% { transform: translateX(calc(var(--feather-sway) * .12)) rotate(1067deg); }
+    100% { transform: translateX(0) rotate(1080deg); }
   }
 
   @keyframes calm-feather-turn {
-    0% { transform: rotateY(0deg) rotateX(0deg) skewX(0deg); }
-    5.556% { transform: rotateY(18deg) rotateX(2deg) skewX(-1deg); }
-    11.111% { transform: rotateY(47deg) rotateX(-3deg) skewX(1.5deg); }
-    16.667% { transform: rotateY(38deg) rotateX(-2deg) skewX(1deg); }
-    23.611% { transform: rotateY(-22deg) rotateX(3deg) skewX(-1.5deg); }
-    31.111% { transform: rotateY(9deg) rotateX(1deg) skewX(.5deg); }
-    33.33% { transform: rotateY(0deg) rotateX(0deg) skewX(0deg); }
-    38.889% { transform: rotateY(-20deg) rotateX(-2deg) skewX(1deg); }
-    44.444% { transform: rotateY(-52deg) rotateX(3deg) skewX(-1.7deg); }
-    50% { transform: rotateY(-38deg) rotateX(2deg) skewX(-1deg); }
-    56.944% { transform: rotateY(25deg) rotateX(-3deg) skewX(1.4deg); }
-    64.444% { transform: rotateY(-10deg) rotateX(-1deg) skewX(-.5deg); }
-    66.66% { transform: rotateY(0deg) rotateX(0deg) skewX(0deg); }
-    72.222% { transform: rotateY(16deg) rotateX(2deg) skewX(-1deg); }
-    77.778% { transform: rotateY(43deg) rotateX(-3deg) skewX(1.5deg); }
-    83.333% { transform: rotateY(32deg) rotateX(-2deg) skewX(1deg); }
-    90.278% { transform: rotateY(-19deg) rotateX(3deg) skewX(-1.3deg); }
-    97.778% { transform: rotateY(8deg) rotateX(1deg) skewX(.5deg); }
-    100% { transform: rotateY(0deg) rotateX(0deg) skewX(0deg); }
+    0% { transform: rotateY(0deg) rotateX(0deg); }
+    5% { transform: rotateY(52deg) rotateX(-16deg); }
+    11.111111% { transform: rotateY(142deg) rotateX(26deg); }
+    16.666667% { transform: rotateY(178deg) rotateX(42deg); }
+    21% { transform: rotateY(223deg) rotateX(148deg); }
+    26% { transform: rotateY(308deg) rotateX(295deg); }
+    30% { transform: rotateY(353deg) rotateX(351deg); }
+    33.333333% { transform: rotateY(360deg) rotateX(360deg); }
+    39% { transform: rotateY(295deg) rotateX(383deg); }
+    44.444444% { transform: rotateY(212deg) rotateX(335deg); }
+    50% { transform: rotateY(196deg) rotateX(347deg); }
+    56% { transform: rotateY(340deg) rotateX(392deg); }
+    61% { transform: rotateY(578deg) rotateX(374deg); }
+    65% { transform: rotateY(711deg) rotateX(362deg); }
+    66.666667% { transform: rotateY(720deg) rotateX(360deg); }
+    72% { transform: rotateY(781deg) rotateX(343deg); }
+    77.777778% { transform: rotateY(891deg) rotateX(395deg); }
+    83.333333% { transform: rotateY(910deg) rotateX(418deg); }
+    89% { transform: rotateY(1018deg) rotateX(535deg); }
+    94% { transform: rotateY(1066deg) rotateX(680deg); }
+    98% { transform: rotateY(1079deg) rotateX(718deg); }
+    100% { transform: rotateY(1080deg) rotateX(720deg); }
   }
 }
 
@@ -570,3 +589,4 @@
     .calm-resume { transition: none; }
   }
 }
+
