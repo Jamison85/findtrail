@@ -5,6 +5,7 @@ export const CYCLE_SECONDS = INHALE_SECONDS + HOLD_SECONDS + EXHALE_SECONDS
 export const RESET_CYCLES = 3
 export const TOTAL_SECONDS = CYCLE_SECONDS * RESET_CYCLES
 
-// The feather touches the water near the end of the exhale, then softly
-// settles for its final 0.8 seconds before the next breath begins.
-export const CONTACT_SECONDS = CYCLE_SECONDS - .8
+// Contact happens exactly as the exhale countdown ends. The feather and
+// impact video share this boundary for all three breaths.
+export const CONTACT_SECONDS = CYCLE_SECONDS
+
