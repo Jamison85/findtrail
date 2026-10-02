@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { buildTrail, compactActiveSearch, getFocusedStops, getFoundSuggestions, getTrailStage, getWiderStops, isFocusedPassComplete, mostLikelyLocation, mostSuccessfulStop } from './trailEngine'
+import { buildTrail, compactActiveSearch, freshPlaces, getFocusedStops, getFoundSuggestions, getTrailStage, getWiderStops, isFocusedPassComplete, mostLikelyLocation, mostSuccessfulStop, rebuildSearch, startFreshPass } from './trailEngine'
+import { createActiveSearch, parseBackup, serializeBackup, DEFAULT_SETTINGS } from './storage'
+import { allSearchStops, skippedPlaces, visitedAreaCount } from './searchProgress'
 import type { FoundEntry, SavedItem } from './types'
 
 const history: FoundEntry[] = [
@@ -14,6 +16,54 @@ const savedHome: SavedItem = {
 }
 
 describe('buildTrail', () => {
+  it('preserves checked spots and skipped areas across changed clues and backup restore', () => {
+    const search = { ...createActiveSearch('keys', 'Keys'), stops: buildTrail('keys', 'Keys', {}, []), checkedSpots: { pockets: ['Current pants'], car: ['Driver-seat gap'] }, skippedStops: ['bags'] }
+    const rebuilt = rebuildSearch(search, { itemDetail: 'house', lastPlace: 'work', lastAction: 'changed' }, [], [])
+    expect(rebuilt.checkedSpots).toEqual(search.checkedSpots)
+    expect(rebuilt.skippedStops).toEqual(['bags'])
+    expect(rebuilt.id).toBe(search.id)
+    expect(rebuilt.startedAt).toBe(search.startedAt)
+    expect(rebuilt.stops[rebuilt.currentIndex].id).toBe('work')
+    const backup = parseBackup(serializeBackup({ version: 3, history: [], savedItems: [], settings: DEFAULT_SETTINGS, activeSearch: rebuilt }))
+    expect(backup.ok && backup.data.activeSearch?.checkedSpots).toEqual(search.checkedSpots)
+    expect(visitedAreaCount(rebuilt)).toBe(2)
+  })
+
+  it('offers new areas once, retains skipped places, and stops when alternatives run out', () => {
+    let search = { ...createActiveSearch('keys', 'Keys'), stops: buildTrail('keys', 'Keys', {}, []), checkedSpots: { pockets: ['Current pants'] }, skippedStops: ['car'] }
+    const offered = new Set(search.stops.map((stop) => stop.id))
+    expect(freshPlaces(search, [], []).length).toBeGreaterThan(0)
+    for (let pass = 0; pass < 10 && freshPlaces(search, [], []).length; pass++) {
+      search = startFreshPass(search, [], []) as typeof search
+      for (const stop of search.stops.filter((stop) => stop.kind !== 'final')) {
+        expect(offered.has(stop.id)).toBe(false)
+        offered.add(stop.id)
+      }
+    }
+    expect(freshPlaces(search, [], [])).toEqual([])
+    expect(search.checkedSpots.pockets).toEqual(['Current pants'])
+    expect(skippedPlaces(search).map((stop) => stop.id)).toContain('car')
+    expect(allSearchStops(search).map((stop) => stop.id)).toContain('pockets')
+    expect(startFreshPass(search, [], [])).toBe(search)
+  })
+
+  it('honors exclusions before filling passes and never removes safety guidance', () => {
+    const excluded = ['car', 'pockets', 'card-safety']
+    const trail = buildTrail('money', 'Card', { itemDetail: 'card', lastPlace: 'car' }, [], [], excluded)
+    expect(trail[0].id).toBe('card-safety')
+    expect(trail.map((stop) => stop.id)).not.toContain('car')
+    expect(trail.map((stop) => stop.id)).not.toContain('pockets')
+    const search = { ...createActiveSearch('money', 'Card'), answers: { itemDetail: 'card' }, excludedStopIds: excluded, stops: trail }
+    expect(freshPlaces(search, [], []).every((stop) => !excluded.includes(stop.id))).toBe(true)
+    expect(buildTrail('keys', 'Keys', { itemDetail: 'ring' }, []).map((stop) => stop.id)).not.toContain('ring-phone')
+  })
+
+  it('starts newly urgent medicine at safety guidance even after reaching a final sweep', () => {
+    const stops = buildTrail('medicine', 'Medicine', { itemDetail: 'routine' }, [])
+    const search = { ...createActiveSearch('medicine', 'Medicine'), stops, currentIndex: stops.length - 1 }
+    const rebuilt = rebuildSearch(search, { itemDetail: 'urgent' }, [], [])
+    expect(rebuilt.stops[rebuilt.currentIndex].id).toBe('safety-help')
+  })
   it('uses situational clues before the generic item route', () => {
     const trail = buildTrail('keys', 'Keys', { itemDetail: 'car', lastPlace: 'home', lastAction: 'arrived' }, [])
     expect(trail[0].id).toBe('drop-zone')

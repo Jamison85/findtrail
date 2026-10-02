@@ -1,5 +1,6 @@
 import { CLUE_PROMOTIONS, ITEM_BY_ID, STOPS } from './data'
 import { itemIdentity } from './storage'
+import { allSearchStops } from './searchProgress'
 import type { ActiveSearch, FoundEntry, ItemId, SavedItem, SearchStop } from './types'
 
 export const FOCUSED_PASS_SIZE = 3
@@ -28,6 +29,7 @@ export function compactTrail(stops: SearchStop[]): SearchStop[] {
 }
 
 export function compactActiveSearch(search: ActiveSearch): ActiveSearch {
+  if (search.reviewingSkippedFrom) return search
   const stops = compactTrail(search.stops)
   if (stops.length === search.stops.length && stops.every((stop, index) => stop.id === search.stops[index]?.id)) return search
   const currentId = search.stops[search.currentIndex]?.id
@@ -160,7 +162,7 @@ function savedHomeStop(savedItems: SavedItem[], itemId: ItemId, itemLabel: strin
   }
 }
 
-export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[] = []): SearchStop[] {
+export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[] = [], excludedStopIds: string[] = [], fullRoute = false): SearchStop[] {
   const item = ITEM_BY_ID[itemId]
   const orderedIds: string[] = []
 
@@ -174,7 +176,7 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
 
   for (const questionId of ['lastPlace', 'lastAction', 'itemDetail']) {
     const value = answers[questionId]
-    if (value) orderedIds.push(...(CLUE_PROMOTIONS[questionId]?.[value] ?? []))
+    if (value && !(questionId === 'itemDetail' && itemId === 'keys' && value === 'ring')) orderedIds.push(...(CLUE_PROMOTIONS[questionId]?.[value] ?? []))
   }
 
   orderedIds.push(...item.baseStops)
@@ -223,14 +225,45 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
     ...(!sameAsHome && learnedLocation ? [learnedLocation] : []),
     ...(learnedArea ? [learnedArea] : []),
     ...remainingStops,
-  ].filter((stop, index, stops) => stops.findIndex((candidate) => candidate.id === stop.id) === index)
-    .slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+  ].filter((stop, index, stops) => !excludedStopIds.includes(stop.id) && stops.findIndex((candidate) => candidate.id === stop.id) === index)
 
-  return compactTrail([
+  const route = [
     ...safetyStops,
     ...prioritizedStops,
     ...(finalStop ? [finalStop] : []),
-  ])
+  ]
+  return fullRoute ? route : compactTrail(route)
+}
+
+export function rebuildSearch(search: ActiveSearch, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[]): ActiveSearch {
+  const stops = buildTrail(search.itemId, search.itemLabel, answers, history, savedItems, search.excludedStopIds)
+  const incomplete = (stop: SearchStop) => stop.kind === 'final' || stop.spots.some((spot) => !search.checkedSpots[stop.id]?.includes(spot))
+  const nextIndex = stops.findIndex(incomplete)
+  return {
+    ...search, answers, stops,
+    previousStops: allSearchStops(search),
+    currentIndex: Math.max(0, nextIndex),
+    widenReady: false, reviewingSkippedFrom: undefined, resumeScreen: 'trail',
+  }
+}
+
+export function freshPlaces(search: ActiveSearch, history: FoundEntry[], savedItems: SavedItem[]): SearchStop[] {
+  const offered = new Set(allSearchStops(search).map((stop) => stop.id))
+  return buildTrail(search.itemId, search.itemLabel, search.answers, history, savedItems, search.excludedStopIds, true)
+    .filter((stop) => stop.kind !== 'safety' && stop.kind !== 'final' && !offered.has(stop.id))
+    .slice(0, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+}
+
+export function startFreshPass(search: ActiveSearch, history: FoundEntry[], savedItems: SavedItem[]): ActiveSearch {
+  const places = freshPlaces(search, history, savedItems)
+  if (!places.length) return search
+  return {
+    ...search,
+    previousStops: allSearchStops(search),
+    stops: [...places, { ...STOPS['slow-sweep'], spots: [...STOPS['slow-sweep'].spots] }],
+    currentIndex: 0, widenReady: false, reviewingSkippedFrom: undefined, resumeScreen: 'trail',
+    checkedSpots: { ...search.checkedSpots, 'slow-sweep': [] },
+  }
 }
 
 export function getFoundSuggestions(itemId: ItemId, stop: SearchStop | undefined): string[] {

@@ -5,6 +5,7 @@ import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
 import { SkippedPlaces } from './SkippedPlaces'
+import { DeviceFinderLinks } from './DeviceFinderLinks'
 
 interface StillMissingViewProps {
   search: ActiveSearch
@@ -13,6 +14,9 @@ interface StillMissingViewProps {
   onReset: () => void
   onRestart: () => void
   onHome: () => void
+  freshPlaceCount?: number
+  onFreshPlaces?: () => void
+  onEditClues?: () => void
 }
 
 interface RecoveryIntro {
@@ -30,7 +34,7 @@ function recoveryIntro(search: ActiveSearch): RecoveryIntro {
     }
   }
 
-  if (search.itemId === 'wallet' || search.itemId === 'money') {
+  if (search.itemId === 'wallet' || (search.itemId === 'money' && search.answers.itemDetail !== 'cash')) {
     return {
       title: 'Protect it before another search.',
       detail: 'You finished a useful pass. Secure anything at risk, then choose one deliberate next move.',
@@ -53,7 +57,7 @@ function recoveryIntro(search: ActiveSearch): RecoveryIntro {
   }
 }
 
-export function StillMissingView({ search, onReviewSkipped, onFound, onReset, onRestart, onHome }: StillMissingViewProps) {
+export function StillMissingView({ search, onReviewSkipped, onFound, onReset, onRestart, onHome, freshPlaceCount = 0, onFreshPlaces, onEditClues }: StillMissingViewProps) {
   const actions = getRecoveryActions(search)
   const intro = recoveryIntro(search)
   const checkedSpotCount = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
@@ -102,6 +106,7 @@ export function StillMissingView({ search, onReviewSkipped, onFound, onReset, on
                 {index === 0 && <small>{intro.priorityLabel}</small>}
                 <strong>{action.title}</strong>
                 <p>{action.detail}</p>
+                {index === 0 && search.itemId === 'phone' && <DeviceFinderLinks />}
               </div>
             </li>
           ))}
@@ -113,12 +118,15 @@ export function StillMissingView({ search, onReviewSkipped, onFound, onReset, on
       <section className="recovery-choice" aria-labelledby="recovery-choice-heading">
         <div className="recovery-choice__copy">
           <h2 id="recovery-choice-heading">Ready for another pass?</h2>
-          <p>Reset your attention first, or repeat the same trail.</p>
+          <p>{freshPlaceCount ? `${freshPlaceCount} other ${freshPlaceCount === 1 ? 'place is' : 'places are'} ready. Your checked spots stay saved.` : 'No new suggested places remain. Try a new clue, review skipped places, or take a break.'}</p>
         </div>
         <div className="recovery-choice__primary">
+          {freshPlaceCount > 0 && onFreshPlaces && <button className="button button--primary" onClick={onFreshPlaces}>Try new places</button>}
+          {onEditClues && <button className="button button--secondary" onClick={onEditClues}>Update clues</button>}
           <button className="button button--primary" onClick={onReset}><FeatherMark className="reset-action-feather" /><span>Breathing reset</span></button>
           <button className="button button--secondary" onClick={onRestart}><Icon name="refresh" size={18} /><span>Repeat trail</span></button>
         </div>
+        <p className="recovery-repeat-note">Repeat trail starts this route’s checklist over.</p>
         <div className="recovery-choice__quiet">
           <button className="text-button" onClick={onFound}><Icon name="spark" size={16} />I found it after all</button>
           <button className="text-button text-button--muted" onClick={onHome}>Save and leave</button>
