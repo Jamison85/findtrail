@@ -11,10 +11,27 @@ async function buildTrailFromDoorway() {
 
 describe('FindTrail app', () => {
   beforeEach(() => {
+    window.history.replaceState({}, '', '/')
     localStorage.clear()
     localStorage.setItem(ONBOARDING_STORAGE_KEY, '1')
     sessionStorage.clear()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+
+  it('keeps browser navigation and the Reset shortcut URL in sync', async () => {
+    window.history.replaceState({}, '', '/?screen=calm')
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    await waitFor(() => expect(window.location.search).toBe(''))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    await waitFor(() => expect(window.history.state.findtrailScreen).toBe('settings'))
+    act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { findtrailScreen: 'home' } })))
+    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
   })
 
 
@@ -23,7 +40,7 @@ describe('FindTrail app', () => {
     localStorage.removeItem(ONBOARDING_STORAGE_KEY)
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toHaveFocus()
     expect(screen.queryByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))

@@ -1,12 +1,12 @@
-const VERSION = 'findtrail-v2.12.3-physical-water-2026-09-27'
+const VERSION = 'findtrail-v2.12.4-final-polish-2026-10-02'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
 const scoped = (path) => `${BASE_PATH}${path}` || '/'
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/social-preview.png', '/home-memory-trail.webp', '/findtrail-natural-feather-v2.webp', '/findtrail-reset-lake.webp', '/findtrail-water-impact.mp4'].map(scoped)
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/home-memory-trail.webp', '/findtrail-natural-feather-v2.webp', '/findtrail-reset-lake.webp', '/findtrail-water-impact.mp4'].map(scoped)
 
 async function waterVideoResponse(request) {
-  const cached = await caches.match(request.url)
+  const cached = await caches.match(request.url, { ignoreVary: true })
   if (!cached) return fetch(request)
   const range = request.headers.get('range')
   if (!range) return cached
@@ -56,7 +56,7 @@ self.addEventListener('message', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.keys().then((keys) => Promise.all(keys.filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map((key) => caches.delete(key)))),
+      caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('findtrail-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map((key) => caches.delete(key)))),
       self.clients.claim(),
     ]),
   )
@@ -77,13 +77,13 @@ self.addEventListener('fetch', (event) => {
           if (response.ok) await (await caches.open(RUNTIME_CACHE)).put(event.request, response.clone())
           return response
         })
-        .catch(async () => (await caches.match(event.request)) || (await caches.match(scoped('/index.html'))) || Response.error()),
+        .catch(async () => (await caches.match(event.request, { ignoreVary: true })) || (await caches.match(scoped('/index.html'), { ignoreVary: true })) || Response.error()),
     )
     return
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then(async (response) => {
+    caches.match(event.request, { ignoreVary: true }).then((cached) => cached || fetch(event.request).then(async (response) => {
       if (response.ok && ['script', 'style', 'image', 'font'].includes(event.request.destination)) {
         await (await caches.open(RUNTIME_CACHE)).put(event.request, response.clone())
       }

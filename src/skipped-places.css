@@ -20,7 +20,7 @@
 
   .skipped-places__list button {
     display: flex;
-    min-height: 43px;
+    min-height: 44px;
     align-items: center;
     justify-content: space-between;
     gap: 12px;

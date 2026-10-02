@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
 import { Icon } from './Icon'
+import { trapDialogFocus } from '../modalFocus'
 
 export const ONBOARDING_STORAGE_KEY = 'findtrail:onboarding-complete-v1'
 
@@ -86,13 +87,17 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const current = steps[step]
   const finalStep = step === steps.length - 1
 
+  useEffect(() => {
+    document.getElementById('onboarding-title')?.focus({ preventScroll: true })
+  }, [step])
+
   function finish() {
     rememberOnboarding()
     onComplete()
   }
 
   return (
-    <section className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <section className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" onKeyDown={trapDialogFocus}>
       <header className="onboarding__topbar">
         <div className="onboarding__brand">
           <BrandMark className="onboarding__brand-mark" />
@@ -136,7 +141,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
 
         <div className="onboarding__copy">
           <span className="eyebrow">{current.eyebrow}</span>
-          <h1 id="onboarding-title">{current.title}</h1>
+          <h1 id="onboarding-title" tabIndex={-1}>{current.title}</h1>
           <p>{current.copy}</p>
         </div>
       </div>

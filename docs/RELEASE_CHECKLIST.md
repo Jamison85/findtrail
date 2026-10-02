@@ -47,10 +47,10 @@
 - [x] FindTrail 2.12 search journey at 412 × 915 Galaxy-class viewport
 - [x] FindTrail 2.12 search journey at 430 × 932 iPhone-class viewport
 - [x] FindTrail 2.12 search journey at 768 × 1024 tablet viewport
-- [ ] FindTrail 2.12 ambient reset at 360 × 800 Android viewport
-- [ ] FindTrail 2.12 ambient reset at 412 × 915 Galaxy-class viewport
-- [ ] FindTrail 2.12 ambient reset at 430 × 932 iPhone-class viewport
-- [ ] FindTrail 2.12 ambient reset at 768 × 1024 tablet viewport
+- [x] FindTrail 2.12 ambient reset at 360 × 800 Android viewport
+- [x] FindTrail 2.12 ambient reset at 412 × 915 Galaxy-class viewport
+- [x] FindTrail 2.12 ambient reset at 430 × 932 iPhone-class viewport
+- [x] FindTrail 2.12 ambient reset at 768 × 1024 tablet viewport
 - [x] Keyboard-only navigation
 - [x] Visible focus states and logical focus order
 - [x] 200% text zoom without lost controls
