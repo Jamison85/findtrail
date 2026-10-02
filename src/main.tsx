@@ -13,6 +13,7 @@ import './history-settings-polish.css'
 import './install-coach.css'
 import './onboarding.css'
 import './launch-splash.css'
+import './search-assistance.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

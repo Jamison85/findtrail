@@ -97,6 +97,9 @@ export interface ActiveSearch {
   currentIndex: number
   checkedSpots: Record<string, string[]>
   skippedStops?: string[]
+  excludedStopIds?: string[]
+  previousStops?: SearchStop[]
+  resumeScreen?: 'clues' | 'trail' | 'end'
   reviewingSkippedFrom?: 'widen' | 'end'
   startedAt: string
   lastUpdatedAt: string

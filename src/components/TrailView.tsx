@@ -4,6 +4,7 @@ import { getTrailStage, isFocusedPassComplete, isWiderPassComplete } from '../tr
 import type { ActiveSearch, Settings } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
+import { DeviceFinderLinks } from './DeviceFinderLinks'
 
 interface TrailViewProps {
   search: ActiveSearch
@@ -16,9 +17,11 @@ interface TrailViewProps {
   onFound: () => void
   onCalm: () => void
   onEditClues: () => void
+  onExcludePlace?: () => void
+  onAlreadyChecked?: () => void
 }
 
-export function TrailView({ search, settings, offerReset, onDismissReset, onBack, onToggleSpot, onNext, onFound, onCalm, onEditClues }: TrailViewProps) {
+export function TrailView({ search, settings, offerReset, onDismissReset, onBack, onToggleSpot, onNext, onFound, onCalm, onEditClues, onExcludePlace, onAlreadyChecked }: TrailViewProps) {
   const stop = search.stops[search.currentIndex]
   const checked = search.checkedSpots[stop.id] ?? []
   const totalChecked = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
@@ -34,7 +37,9 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const headingRef = useRef<HTMLHeadingElement>(null)
   const voiceSupported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition)
   const spokenText = useMemo(() => `${stop.title}. ${stop.instruction}. Check ${stop.spots.join(', ')}.`, [stop])
-  const stage = getTrailStage(search.stops, search.currentIndex)
+  const stage = search.reviewingSkippedFrom
+    ? { name: 'focused' as const, label: 'Skipped place', current: 1, total: 1 }
+    : getTrailStage(search.stops, search.currentIndex)
   const progress = (stage.current / stage.total) * 100
   const focusedPassComplete = isFocusedPassComplete(search.stops, search.currentIndex)
   const widerPassComplete = isWiderPassComplete(search.stops, search.currentIndex)
@@ -185,6 +190,11 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
         </div>
         <p className="sr-only" aria-live="polite">{checked.length} of {stop.spots.length} spots checked in this area.</p>
         {areaChecked && <p className="area-complete"><Icon name="check" size={16} />This area is fully checked. Move on when you’re ready.</p>}
+        {(search.itemId === 'phone' || stop.id === 'attached-phone') && <DeviceFinderLinks />}
+        {stop.kind !== 'safety' && stop.kind !== 'final' && <div className="place-shortcuts" aria-label="Adjust this search place">
+          {onAlreadyChecked && !areaChecked && <button className="text-button" onClick={onAlreadyChecked} disabled={departing}>Already checked this whole area</button>}
+          {onExcludePlace && <button className="text-button" onClick={onExcludePlace} disabled={departing}>This place doesn’t apply</button>}
+        </div>}
 
         <aside className="side-quest-note">
           <span className="side-quest-note__icon"><Icon name="calm" size={18} /></span>

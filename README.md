@@ -4,6 +4,15 @@ FindTrail is a calm, local-first progressive web app for finding misplaced items
 
 Version 2.12 finishes the first-run and search-polish pass. New users get a short three-step onboarding before Home loads, iPhone users keep reusable Home Screen install guidance, Reset uses the natural feather consistently, learned History shortcuts prioritize repeated useful locations, and update notices wait for a root screen instead of interrupting an active search. The production Home, clue flow, focused and wider trails, Found learning, Still Missing recovery, feather-and-water breathing reset, local voice, backup and restore, offline shell, and local-first privacy model remain intact.
 
+## Search improvements
+
+- Changing clues preserves checked spots, skipped places, and search identity, including through reloads and backups.
+- After an unsuccessful route, **Try new places** offers a short pass through alternatives outside earlier routes. Earlier skipped areas remain available to review.
+- Recovery advice distinguishes cash from cards, dead phones from phones that can ring, and house/work keys from car keys.
+- Phone searches link to Apple Find My and Google Find Hub in separate tabs.
+- **Places to leave out** lets users exclude and re-include areas for the current search. **Already checked this whole area** records an area in one tap. Safety guidance remains available.
+- Repeating a trail deliberately resets that route's checklist; it preserves checks from earlier routes.
+
 ## Product principles
 
 - One decision or search area at a time

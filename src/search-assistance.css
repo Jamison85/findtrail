@@ -1,0 +1,75 @@
+.place-options {
+  margin-block: 0.75rem;
+  color: var(--ink);
+}
+
+.place-options summary {
+  min-height: 44px;
+  padding-block: 0.75rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.place-options p,
+.device-finder p,
+.recovery-repeat-note {
+  margin-block: 0.5rem;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.place-options__list,
+.device-finder__links,
+.place-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.place-options__list .button {
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+}
+
+.place-options__list .button[aria-pressed="true"] {
+  border-color: var(--evergreen);
+  background: var(--sage);
+}
+
+.place-options__list small {
+  flex-shrink: 0;
+}
+
+.device-finder {
+  margin-block: 1rem;
+}
+
+.device-finder .button {
+  flex: 1 1 10rem;
+  min-height: 44px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.place-shortcuts {
+  margin-block: 0.75rem;
+}
+
+.place-shortcuts .text-button {
+  min-height: 44px;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.recovery-choice__primary {
+  flex-wrap: wrap;
+}
+
+.place-options summary:focus-visible,
+.device-finder a:focus-visible {
+  outline: 3px solid var(--evergreen);
+  outline-offset: 3px;
+}
