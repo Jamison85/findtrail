@@ -59,7 +59,7 @@ describe('reset water playback', () => {
     unmount()
   })
 
-  it('waits for the feather animation when its visual start lags behind Begin', () => {
+  it('uses the shared Begin clock without waiting for a separate CSS animation', () => {
     let frame: FrameRequestCallback = () => undefined
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1 }))
     vi.stubGlobal('cancelAnimationFrame', vi.fn())
@@ -68,7 +68,7 @@ describe('reset water playback', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
     const { container, unmount } = render(<div>
       <div className="calm-feather-anchor" />
-      <HorizonRipples reducedMotion={false} startedAt={0} />
+      <HorizonRipples reducedMotion={false} startedAt={1_000} />
     </div>)
     const feather = container.querySelector<HTMLElement>('.calm-feather-anchor')!
     const video = container.querySelector('video')!
@@ -82,7 +82,7 @@ describe('reset water playback', () => {
     expect(play).toHaveBeenCalledOnce()
     expect(video.currentTime).toBe(0)
     expect(video.style.opacity).toBe('1')
+    expect(feather.getAnimations).not.toHaveBeenCalled()
     unmount()
   })
 })
-

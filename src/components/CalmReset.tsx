@@ -5,6 +5,7 @@ import { Icon } from './Icon'
 import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
 import { CYCLE_SECONDS, HOLD_SECONDS, INHALE_SECONDS, TOTAL_SECONDS } from './resetTiming'
+import { featherPose } from './featherFlight'
 
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
 
@@ -40,6 +41,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const reducedMotion = useReducedMotion(motion)
   const timerRef = useRef<number | null>(null)
+  const flightRef = useRef<HTMLDivElement>(null)
   const playing = startedAt !== null
 
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
@@ -74,6 +76,24 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       timerRef.current = null
     }
   }, [startedAt])
+
+  useEffect(() => {
+    const flight = flightRef.current
+    if (!flight) return
+    let frame = 0
+    const draw = (now: number) => {
+      const seconds = startedAt === null ? 0 : Math.max(0, (now - startedAt) / 1000)
+      const pose = featherPose(seconds, reducedMotion)
+      flight.style.setProperty('--flight-height', String(pose.height))
+      flight.style.setProperty('--flight-offset', String(pose.offset))
+      flight.style.setProperty('--flight-roll', `${pose.roll}deg`)
+      flight.style.setProperty('--flight-yaw', `${pose.yaw}deg`)
+      flight.style.setProperty('--flight-pitch', `${pose.pitch}deg`)
+      if (startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
+    }
+    draw(performance.now())
+    return () => cancelAnimationFrame(frame)
+  }, [startedAt, reducedMotion])
 
   function beginReset() {
     setElapsed(0)
@@ -111,7 +131,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         </div>
       </div>
 
-      <div className={`calm-flight${reducedMotion ? ' is-reduced-motion' : ''}${!playing ? ' is-waiting' : ''}`} aria-hidden="true">
+      <div ref={flightRef} className={`calm-flight${reducedMotion ? ' is-reduced-motion' : ''}${!playing ? ' is-waiting' : ''}`} aria-hidden="true">
         <div className="calm-feather-anchor">
           <div className="calm-feather-drift">
             <img className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />

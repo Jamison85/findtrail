@@ -264,7 +264,7 @@
     left: 50%;
     width: clamp(88px, 26vw, 112px);
     aspect-ratio: 2 / 3;
-    transform: translate(-54.3%, -93.4%);
+    transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * var(--flight-height, 0)));
     transform-origin: 54.3% 93.4%;
     perspective: 280px;
     transform-style: preserve-3d;
@@ -272,7 +272,7 @@
     will-change: transform;
     --feather-rise: clamp(108px, 16dvh, 132px);
     --feather-sway: clamp(12px, 4vw, 22px);
-    animation: calm-feather-lift 12s 3 both;
+
   }
 
   .calm-feather-drift {
@@ -281,7 +281,7 @@
     transform-origin: 50% 50%;
     transform-style: preserve-3d;
     will-change: transform;
-    animation: calm-feather-drift 36s ease-in-out both;
+    transform: translateX(calc(var(--feather-sway) * var(--flight-offset, 0))) rotate(var(--flight-roll, 0deg));
   }
 
   .calm-feather {
@@ -293,7 +293,7 @@
     transform-style: preserve-3d;
     backface-visibility: visible;
     will-change: transform;
-    animation: calm-feather-turn 36s ease-in-out both;
+    transform: rotateY(var(--flight-yaw, 0deg)) rotateX(var(--flight-pitch, 0deg));
   }
 
   .calm-instrument {
@@ -421,105 +421,14 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Lift stays on the breath clock; the nested tracks drift and tumble
-     around the feather's center. All three tracks meet at the same tip
-     position at 12, 24, and 36 seconds, where the water playback starts. */
-  @keyframes calm-feather-lift {
-    0% {
-      transform: translate(-54.3%, -93.4%);
-      animation-timing-function: cubic-bezier(.32, .05, .38, 1);
-    }
-    18% {
-      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .68));
-      animation-timing-function: ease-out;
-    }
-    33.333333% { transform: translate(-54.3%, calc(-93.4% - var(--feather-rise))); }
-    42% { transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .97)); }
-    50% {
-      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise)));
-      animation-timing-function: cubic-bezier(.42, 0, .58, 1);
-    }
-    70% {
-      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .62));
-      animation-timing-function: cubic-bezier(.35, 0, .65, 1);
-    }
-    87% {
-      transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * .18));
-      animation-timing-function: ease-out;
-    }
-    100% { transform: translate(-54.3%, -93.4%); }
-  }
 
-  @keyframes calm-feather-lift-reduced {
-    0% {
-      transform: translate(-54.3%, -93.4%);
-      animation-timing-function: cubic-bezier(.65, 0, .35, 1);
-    }
-    33.333333%, 50% {
-      transform: translate(-54.3%, calc(-93.4% - 52px));
-      animation-timing-function: cubic-bezier(.65, 0, .35, 1);
-    }
-    100% { transform: translate(-54.3%, -93.4%); }
-  }
-
-  /* A light breeze: small banks rather than a full spin on every breath.
-     One slow yaw turn and one slow somersault occur on separate breaths. */
-  @keyframes calm-feather-drift {
-    0% { transform: translateX(0) rotate(0deg); }
-    5.555556% { transform: translateX(calc(var(--feather-sway) * -.5)) rotate(-8deg); }
-    11.111111% { transform: translateX(calc(var(--feather-sway) * -.85)) rotate(-13deg); }
-    16.666667% { transform: translateX(calc(var(--feather-sway) * -.7)) rotate(-9deg); }
-    23% { transform: translateX(calc(var(--feather-sway) * .35)) rotate(12deg); }
-    28% { transform: translateX(calc(var(--feather-sway) * .5)) rotate(9deg); }
-    33.333333% { transform: translateX(0) rotate(0deg); }
-    38.888889% { transform: translateX(calc(var(--feather-sway) * .5)) rotate(9deg); }
-    44.444444% { transform: translateX(calc(var(--feather-sway) * .9)) rotate(15deg); }
-    50% { transform: translateX(calc(var(--feather-sway) * .75)) rotate(11deg); }
-    56% { transform: translateX(calc(var(--feather-sway) * -.3)) rotate(-12deg); }
-    61% { transform: translateX(calc(var(--feather-sway) * -.45)) rotate(-8deg); }
-    66.666667% { transform: translateX(0) rotate(0deg); }
-    72.222222% { transform: translateX(calc(var(--feather-sway) * -.4)) rotate(-7deg); }
-    77.777778% { transform: translateX(calc(var(--feather-sway) * -.7)) rotate(-12deg); }
-    83.333333% { transform: translateX(calc(var(--feather-sway) * -.55)) rotate(-8deg); }
-    89% { transform: translateX(calc(var(--feather-sway) * .25)) rotate(10deg); }
-    94% { transform: translateX(calc(var(--feather-sway) * .35)) rotate(6deg); }
-    100% { transform: translateX(0) rotate(0deg); }
-  }
-
-  @keyframes calm-feather-turn {
-    0% { transform: rotateY(0deg) rotateX(0deg); }
-    5.555556% { transform: rotateY(18deg) rotateX(-4deg); }
-    11.111111% { transform: rotateY(34deg) rotateX(6deg); }
-    16.666667% { transform: rotateY(28deg) rotateX(8deg); }
-    23% { transform: rotateY(-22deg) rotateX(-6deg); }
-    28% { transform: rotateY(-12deg) rotateX(-3deg); }
-    33.333333% { transform: rotateY(0deg) rotateX(0deg); }
-    41.666667% { transform: rotateY(90deg) rotateX(5deg); }
-    50% { transform: rotateY(180deg) rotateX(8deg); }
-    58.333333% { transform: rotateY(270deg) rotateX(-5deg); }
-    66.666667% { transform: rotateY(360deg) rotateX(0deg); }
-    72.222222% { transform: rotateY(374deg) rotateX(60deg); }
-    77.777778% { transform: rotateY(386deg) rotateX(120deg); }
-    83.333333% { transform: rotateY(378deg) rotateX(180deg); }
-    88.888889% { transform: rotateY(350deg) rotateX(240deg); }
-    94.444444% { transform: rotateY(352deg) rotateX(300deg); }
-    100% { transform: rotateY(360deg) rotateX(360deg); }
-  }
 }
 
 @layer utilities {
   .calm-flight.is-reduced-motion .calm-feather-anchor {
-    animation-name: calm-feather-lift-reduced;
+    --feather-rise: 52px;
   }
 
-  .calm-flight.is-reduced-motion .calm-feather-drift,
-  .calm-flight.is-reduced-motion .calm-feather {
-    animation: none;
-  }
-
-  .calm-flight.is-waiting .calm-feather-anchor,
-  .calm-flight.is-waiting .calm-feather-drift,
-  .calm-flight.is-waiting .calm-feather { animation: none; }
 
   @media (max-height: 760px) {
     .calm-view { padding-top: max(11px, env(safe-area-inset-top)); }
