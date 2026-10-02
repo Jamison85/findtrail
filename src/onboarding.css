@@ -91,11 +91,11 @@
   border-radius: 20px;
   color: var(--ink-soft);
   background: rgba(247, 241, 231, .7);
-  font-size: .74rem;
+  font-size: var(--text-caption);
 }
 
 .onboarding-item svg {
-  color: var(--clay);
+  color: var(--clay-text);
 }
 
 .onboarding-item.is-selected {
@@ -129,8 +129,8 @@
 
 .onboarding-clues__question small,
 .onboarding-trail article > small {
-  color: var(--clay);
-  font-size: .65rem;
+  color: var(--clay-text);
+  font-size: var(--text-caption);
   font-weight: 850;
   letter-spacing: .11em;
   text-transform: uppercase;
@@ -205,7 +205,7 @@
 .onboarding-trail__route .is-current {
   width: 13px;
   height: 13px;
-  border-color: var(--clay);
+  border-color: var(--clay-text);
   background: #fff4ef;
   box-shadow: 0 0 0 5px rgba(200, 107, 83, .13);
 }
@@ -235,7 +235,7 @@
   border-radius: 12px;
   color: var(--evergreen);
   background: var(--sage);
-  font-size: .72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -252,7 +252,7 @@
   color: var(--evergreen);
   background: var(--paper);
   box-shadow: var(--shadow-sm);
-  font-size: .68rem;
+  font-size: var(--text-caption);
 }
 
 .onboarding-feather svg {
@@ -298,7 +298,7 @@
   justify-content: center;
   gap: 6px;
   color: var(--ink-soft);
-  font-size: .67rem;
+  font-size: var(--text-caption);
   font-weight: 720;
 }
 
@@ -372,3 +372,4 @@
     transition: none;
   }
 }
+
