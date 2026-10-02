@@ -31,8 +31,8 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border: 1px solid rgba(23, 58, 52, 0.12);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.48);
@@ -177,3 +177,4 @@
     animation: none;
   }
 }
+

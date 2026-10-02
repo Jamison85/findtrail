@@ -15,7 +15,7 @@
     font-weight: 600;
   }
 
-  .skipped-places p { color: var(--ink-soft); font-size: .69rem; line-height: 1.4; }
+  .skipped-places p { color: var(--ink-soft); font-size: var(--text-caption); line-height: 1.4; }
   .skipped-places__list { display: grid; gap: 6px; margin-top: 10px; }
 
   .skipped-places__list button {
@@ -38,3 +38,4 @@
   .skipped-places__list button:active { transform: translateY(1px); }
   .skipped-places__list button svg { flex: 0 0 auto; }
 }
+

@@ -38,7 +38,7 @@
   .widen-identity > div { min-width: 0; }
   .widen-identity small,
   .widen-identity strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .widen-identity small { color: var(--ink-soft); font-size: .61rem; }
+  .widen-identity small { color: var(--ink-soft); font-size: var(--text-caption); }
   .widen-identity strong { font-size: .81rem; }
 
   .widen-hero {
@@ -64,7 +64,7 @@
   .widen-hero h1 {
     margin: 5px 0 7px;
     font-size: clamp(1.8rem, 8vw, 2.45rem);
-    line-height: .98;
+    line-height: 1.06;
   }
 
   .widen-hero p { max-width: 28rem; font-size: .82rem; }
@@ -95,7 +95,7 @@
   .widen-status strong,
   .widen-status small { display: block; }
   .widen-status strong { color: var(--ink); font-size: .78rem; }
-  .widen-status small { color: var(--ink-soft); font-size: .67rem; }
+  .widen-status small { color: var(--ink-soft); font-size: var(--text-caption); }
 
   .widen-panel {
     max-width: 31rem;
@@ -130,8 +130,8 @@
   .widen-panel header small {
     display: block;
     margin-bottom: 1px;
-    color: var(--clay);
-    font-size: .61rem;
+    color: var(--clay-text);
+    font-size: var(--text-caption);
     font-weight: 850;
     letter-spacing: .09em;
     text-transform: uppercase;
@@ -166,9 +166,9 @@
     height: 28px;
     place-items: center;
     border-radius: 9px;
-    color: var(--clay);
+    color: var(--clay-text);
     background: var(--clay-soft);
-    font-size: .67rem;
+    font-size: var(--text-caption);
     font-weight: 900;
   }
 
@@ -183,7 +183,7 @@
   }
 
   .widen-choices .button { grid-column: 1 / -1; }
-  .widen-choices .text-button { min-width: 0; font-size: .73rem; }
+  .widen-choices .text-button { min-width: 0; font-size: var(--text-caption); }
 }
 
 @media (max-width: 359px), (max-height: 720px) {
@@ -192,7 +192,7 @@
   .widen-hero { grid-template-columns: 40px minmax(0, 1fr); gap: 11px; margin-bottom: 11px; }
   .widen-hero__mark { width: 40px; height: 40px; border-radius: 13px; }
   .widen-hero h1 { font-size: 1.65rem; }
-  .widen-hero p { font-size: .74rem; line-height: 1.42; }
+  .widen-hero p { font-size: var(--text-caption); line-height: 1.42; }
   .widen-status { margin-bottom: 9px; padding-block: 7px; }
   .widen-panel { padding: 14px; border-radius: 21px; }
   .widen-panel > p { margin-bottom: 8px; }
@@ -204,3 +204,4 @@
 @media (prefers-reduced-motion: reduce) {
   .widen-view { animation: none; }
 }
+
