@@ -36,3 +36,48 @@ describe('offline reset video', () => {
     expect(response.headers.get('Content-Range')).toBe('bytes */10')
   })
 })
+
+describe('service worker cache cleanup', () => {
+  it('keeps caches that belong to other apps on the same origin', async () => {
+    const handlers: Record<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void> = {}
+    const remove = vi.fn(async () => true)
+    const claim = vi.fn(async () => undefined)
+    const self = {
+      registration: { scope: 'https://example.com/findtrail/' },
+      location: { origin: 'https://example.com' },
+      clients: { claim },
+      addEventListener: (name: string, callback: typeof handlers[string]) => { handlers[name] = callback },
+    }
+    const caches = {
+      keys: async () => ['findtrail-v2.11-static', 'another-app-cache'],
+      delete: remove,
+    }
+    new Function('self', 'caches', 'fetch', source)(self, caches, vi.fn())
+
+    let activation: Promise<unknown> | undefined
+    handlers.activate({ waitUntil: (work) => { activation = work } })
+    await activation
+
+    expect(remove).toHaveBeenCalledWith('findtrail-v2.11-static')
+    expect(remove).not.toHaveBeenCalledWith('another-app-cache')
+    expect(claim).toHaveBeenCalledOnce()
+  })
+
+  it('matches cached assets across harmless host Vary headers', async () => {
+    const handlers: Record<string, (event: { request: Request; respondWith: (work: Promise<Response>) => void }) => void> = {}
+    const match = vi.fn(async () => new Response('cached asset'))
+    const self = {
+      registration: { scope: 'https://example.com/findtrail/' },
+      location: { origin: 'https://example.com' },
+      addEventListener: (name: string, callback: typeof handlers[string]) => { handlers[name] = callback },
+    }
+    new Function('self', 'caches', 'fetch', source)(self, { match }, vi.fn())
+
+    const request = new Request('https://example.com/findtrail/assets/app.js')
+    let response: Promise<Response> | undefined
+    handlers.fetch({ request, respondWith: (work) => { response = work } })
+
+    expect(await response).toHaveProperty('status', 200)
+    expect(match).toHaveBeenCalledWith(request, { ignoreVary: true })
+  })
+})

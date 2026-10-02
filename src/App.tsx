@@ -26,6 +26,29 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
+const NAVIGATION_STATE_KEY = 'findtrailScreen'
+const SCREENS = new Set<Screen>(['home', 'clues', 'trail', 'widen', 'found', 'complete', 'history', 'calm', 'settings', 'end'])
+
+function navigationScreen(state: unknown): Screen | null {
+  if (!state || typeof state !== 'object') return null
+  const value = (state as Record<string, unknown>)[NAVIGATION_STATE_KEY]
+  return typeof value === 'string' && SCREENS.has(value as Screen) ? value as Screen : null
+}
+
+function navigationUrl(screen: Screen): URL {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('start')
+  if (screen === 'calm') url.searchParams.set('screen', 'calm')
+  else url.searchParams.delete('screen')
+  return url
+}
+
+function navigationState(screen: Screen): Record<string, unknown> {
+  const current = window.history.state
+  const state = current && typeof current === 'object' ? current as Record<string, unknown> : {}
+  return { ...state, [NAVIGATION_STATE_KEY]: screen }
+}
+
 function stamp(search: ActiveSearch): ActiveSearch {
   return { ...search, lastUpdatedAt: new Date().toISOString() }
 }
@@ -83,6 +106,58 @@ export default function App() {
   const optionalPlaces = active ? buildTrail(active.itemId, active.itemLabel, active.answers, data.history, data.savedItems, [], true)
     .filter((stop) => stop.kind !== 'safety' && stop.kind !== 'final') : []
   const launchReducedMotion = shouldReduceMotion(data.settings)
+  const navigationReady = useRef(false)
+  const screenFromHistory = useRef(false)
+  const screenRef = useRef(screen)
+  const activeRef = useRef(active)
+  const foundSummaryRef = useRef(foundSummary)
+  screenRef.current = screen
+  activeRef.current = active
+  foundSummaryRef.current = foundSummary
+
+  useEffect(() => {
+    const handleHistoryNavigation = (event: PopStateEvent) => {
+      const requested = navigationScreen(event.state) ?? 'home'
+      const currentActive = activeRef.current
+      const available = requested === 'complete'
+        ? Boolean(foundSummaryRef.current)
+        : requested === 'trail'
+          ? Boolean(currentActive?.stops[currentActive.currentIndex])
+          : ['clues', 'widen', 'found', 'end'].includes(requested)
+            ? Boolean(currentActive)
+            : true
+      const next = available ? requested : 'home'
+
+      if (next === screenRef.current) {
+        window.history.replaceState(navigationState(next), '', navigationUrl(next))
+        return
+      }
+
+      screenFromHistory.current = true
+      setScreen(next)
+    }
+
+    window.addEventListener('popstate', handleHistoryNavigation)
+    return () => window.removeEventListener('popstate', handleHistoryNavigation)
+  }, [])
+
+  useEffect(() => {
+    const fromHistory = screenFromHistory.current
+    screenFromHistory.current = false
+    const state = navigationState(screen)
+    const url = navigationUrl(screen)
+
+    if (!navigationReady.current || fromHistory) {
+      window.history.replaceState(state, '', url)
+      navigationReady.current = true
+      return
+    }
+
+    // React Strict Mode replays effects in development. Do not create a
+    // duplicate entry when the current entry already represents this screen.
+    if (navigationScreen(window.history.state) === screen) return
+    window.history.pushState(state, '', url)
+  }, [screen])
 
   useEffect(() => {
     setStorageError(!saveData(data))
@@ -98,6 +173,14 @@ export default function App() {
       experience?.removeAttribute('inert')
     }
   }, [launching, launchReducedMotion])
+
+  useEffect(() => {
+    if (launching) return
+    const timer = window.setTimeout(() => {
+      document.getElementById(onboardingOpen ? 'onboarding-title' : 'view-heading')?.focus({ preventScroll: true })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [launching, onboardingOpen])
 
   useEffect(() => {
     const onlineHandler = () => setOnline(true)
@@ -530,7 +613,7 @@ export default function App() {
   ) : (
     <div className="app-shell">
       <a className="skip-link" href="#app-content">Skip to content</a>
-      <IOSInstallCoach requestKey={iosInstallHelpRequest} />
+      <IOSInstallCoach enabled={!launching} requestKey={iosInstallHelpRequest} />
       {!online && <div className="offline-banner" role="status">Offline mode · your saved trail still works</div>}
       {updateWorker && rootScreen && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
       {storageError && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}

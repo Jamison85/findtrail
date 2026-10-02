@@ -1,22 +1,24 @@
 # FindTrail 2.12 QA report
 
-Run date: 2026-09-27
+Run date: 2026-10-02
 
 ## Automated release checks
 
 | Check | Result |
 | --- | --- |
 | TypeScript typecheck | Pass |
-| Vitest unit and component tests | Pass: current unit and component suite |
+| Vitest unit and component tests | Pass: 102 tests across 17 files |
 | Vite production build | Pass |
 | Production dependency audit | 0 vulnerabilities |
-| Home artwork optimization | Pass: 1536 × 1024 WebP, 132 KB |
+| Home artwork optimization | Pass: 1536 × 1024 WebP, 177 KB |
 | First-run onboarding | Pass: onboarding renders before Home, completion is remembered, and an empty auto-saved record does not strand a half-finished first run |
-| iPhone install guidance | Pass: one-time instructions defer until after onboarding and can be reopened later from Settings |
+| iPhone install guidance | Pass: one-time instructions defer until startup and onboarding are clear, receive focus, and can be reopened later from Settings |
 | Reset icon language | Pass: all actions that launch the reset use the same natural feather mark |
 | Find-another handoff | Pass: the success action returns to and focuses the Home item picker instead of duplicating Back home |
 | Offline shell inclusion | Pass: versioned artwork is pre-cached |
-| Home motion regression | Pass: plays once per session and settles |
+| Offline host compatibility | Pass: cached assets ignore harmless `Vary` differences, media byte ranges work offline, and cache cleanup leaves other apps on the origin intact |
+| Browser navigation | Pass: Back and Forward restore FindTrail screens; leaving the Reset shortcut clears its query before reload |
+| Home artwork regression | Pass: the photographic hero stays still and does not imply search checkpoints |
 | Item handoff regression | Pass: selected tile settles before the first clue appears |
 | Clue journey regression | Pass: answers settle before advancing and reduced motion skips the delay |
 | Active Trail hierarchy | Pass: destination, instruction, exact spots, progress, assistance, and actions are explicit |
@@ -41,11 +43,11 @@ Run date: 2026-09-27
 | Reset rendering | Pass: still-lake artwork, natural feather motion, living water, strengthened contact ripple, and reduced-motion fallback |
 | Reset audio | Pass: sound controls and audio generation are absent |
 | Focused-screen notices | Pass: update-ready notices wait for Home, History, or Settings instead of interrupting an active search or reset |
-| Hosted GitHub Actions | Pass: PR #30 Production checks |
+| Local production checks | Pass: typecheck, tests, build, dependency audit, rendered browser QA, and production PWA offline launch |
 
 ## Browser and resilience checks
 
-- The Home layout uses a fixed no-scroll composition at standard text sizes and deliberately restores scrolling for large-text accessibility mode.
+- The Home layout uses a fixed no-scroll composition at standard phone sizes and deliberately restores scrolling for large text and short landscape viewports.
 - Custom-item entry opens in a focused modal sheet instead of increasing the Home page height.
 - The latest-found card opens the exact expandable history entry; first use has a purposeful empty state.
 - History separates learned places from chronological search records and limits the shortcut area to three useful item patterns.
@@ -55,12 +57,12 @@ Run date: 2026-09-27
 - Clue, trail, found, settings, ambient reset, pinned-item home, saved-home trail, and item-specific ending retain responsive max-width and overflow safeguards.
 - 200% text enlargement reflows without horizontal overflow or lost controls.
 - Keyboard entry reaches the skip link first, then exposes visible focus on controls.
-- Reduced-motion preference replaces the moving horizon with a still composition and suppresses the Home guide.
+- Reduced-motion preference replaces the moving horizon with a still composition and removes nonessential transition movement.
 - The reset uses three 12-second cycles: 4 seconds in, a 2-second hold, and 6 seconds out.
 - The reset has no sound control or audio path.
 - The restored reset returns to the exact active trail stop and respects reduced motion.
-- The Home search guide uses brief, non-looping motion and does not replay after returning Home in the same session.
-- Item tiles use a tightened shadow and sage icon well while handing the selection into the first clue.
+- The Home artwork remains still so it supports orientation without implying extra search steps.
+- Item tiles use plain clay line icons without a second filled square inside each card, while preserving selection feedback.
 - Clue choices use a compact two-column route at standard text size and return to a single column for large-text mode.
 - Active-stop headings receive focus as each new search area appears.
 - Active stops keep the next destination, exact-spot checklist, read-aloud help, hands-free mode, reset, success, and next-place actions within one coherent hierarchy.
@@ -78,7 +80,7 @@ Run date: 2026-09-27
 - Custom items can be pinned and relaunched from Home.
 - Backups round-trip and malformed nested backup data is rejected.
 - App shell reloads successfully with the browser forced offline after one online visit.
-- Social sharing artwork is exactly 1200 × 630; install screenshots are exactly 412 × 915.
+- Social sharing artwork is exactly 1200 × 630 and uses the current “A clear path” line; install screenshots are exactly 412 × 915 and show the current Home and Trail.
 
 ## Still required before final production approval
 

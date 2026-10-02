@@ -101,7 +101,7 @@ export function SettingsView({ data, canInstall, iosInstallHelpAvailable, backup
         <div className="backup-actions">
           <button className="button button--secondary" onClick={onExport}><Icon name="download" size={18} />Export backup</button>
           <button className="button button--secondary" onClick={() => fileInput.current?.click()}><Icon name="upload" size={18} />Restore backup</button>
-          <input ref={fileInput} className="sr-only" type="file" accept="application/json,.json" aria-label="Choose FindTrail backup file" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onRestore(file); event.target.value = '' }} />
+          <input ref={fileInput} className="sr-only" type="file" accept="application/json,.json" aria-label="Choose FindTrail backup file" tabIndex={-1} onChange={(event) => { const file = event.target.files?.[0]; if (file) void onRestore(file); event.target.value = '' }} />
         </div>
         {backupStatus && (
           <p className={`backup-status is-${backupStatus.kind}`} role={backupStatus.kind === 'error' ? 'alert' : 'status'}>

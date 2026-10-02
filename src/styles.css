@@ -42,8 +42,8 @@
 }
 
 @layer base {
-  html { min-width: 320px; min-height: 100%; background: #d8e2dc; }
-  body { min-width: 320px; min-height: 100dvh; color: var(--ink); background: radial-gradient(circle at 18% 0%, #edf2ed 0, transparent 32rem), #d8e2dc; }
+  html { min-width: 320px; min-height: 100%; background: #fdf8f1; }
+  body { min-width: 320px; min-height: 100dvh; color: var(--ink); background: #fdf8f1; }
   body, button, input, select { -webkit-font-smoothing: antialiased; }
   button, select { cursor: pointer; }
   button:disabled { cursor: not-allowed; opacity: .48; }
@@ -61,17 +61,22 @@
   .app-shell { position: relative; min-height: 100dvh; max-width: 540px; margin: 0 auto; overflow: clip; background: var(--paper); box-shadow: 0 0 80px rgba(23, 58, 52, .16); }
   .app-content { min-height: 100dvh; }
   .app-content--with-nav { padding-bottom: var(--nav-height); }
-  .view { min-height: 100dvh; padding: max(18px, env(safe-area-inset-top)) var(--page-pad) 38px; animation: view-enter .24s ease both; }
-  .skip-link { position: fixed; z-index: 100; top: 8px; left: 50%; transform: translate(-50%, -180%); padding: 10px 16px; border-radius: 99px; color: white; background: var(--evergreen); }
+  .view { min-height: 100dvh; padding: max(18px, env(safe-area-inset-top)) var(--page-pad) 38px; animation: view-enter .24s ease; }
+  .skip-link { display: inline-flex; position: fixed; z-index: 100; top: 8px; left: 50%; min-height: 44px; align-items: center; transform: translate(-50%, -180%); padding: 10px 16px; border-radius: 99px; color: white; background: var(--evergreen); }
   .skip-link:focus { transform: translate(-50%, 0); }
   .offline-banner, .storage-banner { position: sticky; z-index: 20; top: 0; width: 100%; padding: 9px var(--page-pad); color: var(--evergreen); background: var(--gold); text-align: center; font-size: .76rem; font-weight: 800; }
   .storage-banner { display: flex; gap: 8px; align-items: center; justify-content: center; color: white; background: var(--danger); }
-  .storage-banner button { padding: 3px; color: inherit; background: transparent; }
+  .storage-banner button { min-height: 44px; padding: 0 6px; color: inherit; background: transparent; }
   .update-banner { display: grid; position: sticky; z-index: 21; top: 0; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px var(--page-pad); color: white; background: var(--evergreen); box-shadow: var(--shadow-sm); }
   .update-banner span { display: grid; gap: 1px; }
   .update-banner small { color: #d8e4de; font-size: var(--text-caption); }
   .update-banner button { min-height: 44px; padding: 0 10px; border-radius: 11px; color: var(--evergreen); background: var(--paper); font-size: var(--text-caption); font-weight: 850; }
   .update-banner button:last-child { display: grid; width: 44px; padding: 0; place-items: center; color: white; background: transparent; }
+
+  @media (min-width: 720px) {
+    html { background: #d8e2dc; }
+    body { background: radial-gradient(circle at 18% 0%, #edf2ed 0, transparent 32rem), #d8e2dc; }
+  }
 }
 
 @layer components {
@@ -306,7 +311,7 @@
     42% { box-shadow: 0 0 0 4px rgba(200, 107, 83, .18), 0 16px 36px rgba(23, 58, 52, .14); }
   }
 
-  @keyframes view-enter { from { opacity: .01; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes view-enter { from { opacity: .01; } to { opacity: 1; } }
   @keyframes stop-enter { from { opacity: .01; transform: translateX(7px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes sheet-arrive { from { opacity: .01; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
   @media (hover: hover) and (pointer: fine) {
@@ -396,7 +401,8 @@
   :root[data-text-size="large"] .calm-view { height: auto; min-height: 100dvh; overflow-y: auto; }
   :root[data-text-size="large"] .calm-view__content { padding-block: 24px; }
   @media (min-width: 720px) {
-    .app-shell { margin-block: 18px; min-height: calc(100dvh - 36px); border-radius: 34px; }
+    .launch-experience { padding-block: 18px; }
+    .app-shell { margin-block: 0; min-height: calc(100dvh - 36px); border-radius: 34px; }
     .app-content, .view { min-height: calc(100dvh - 36px); }
     .home-view { height: calc(100dvh - 36px - var(--nav-height)); min-height: calc(100dvh - 36px - var(--nav-height)); }
     .calm-view { height: calc(100dvh - 36px); min-height: calc(100dvh - 36px); border-radius: 34px; }
