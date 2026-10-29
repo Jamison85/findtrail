@@ -78,4 +78,27 @@ describe('reset water playback', () => {
     expect(feather.getAnimations).not.toHaveBeenCalled()
     unmount()
   })
+
+  it('resumes an interrupted impact at its clock age without replaying the initial splash', () => {
+    let frame: FrameRequestCallback = () => undefined
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1 }))
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
+    const { container, rerender, unmount } = render(<HorizonRipples reducedMotion={false} startedAt={0} />)
+    const video = container.querySelector('video')!
+    Object.defineProperty(video, 'readyState', { value: 4 })
+    frame(12_300)
+    expect(video.currentTime).toBeCloseTo(.3)
+    expect(play).toHaveBeenCalledOnce()
+    rerender(<HorizonRipples reducedMotion={false} startedAt={null} />)
+    expect(video.style.opacity).toBe('0')
+    rerender(<HorizonRipples reducedMotion={false} startedAt={100_000 - 14_000} />)
+    frame(100_000)
+    expect(video.currentTime).toBeCloseTo(2)
+    expect(video.style.opacity).toBe('1')
+    expect(play).toHaveBeenCalledTimes(2) // media resumes the same impact
+    unmount()
+  })
 })
