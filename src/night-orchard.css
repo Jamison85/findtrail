@@ -67,8 +67,8 @@
 }
 
 @layer components {
-  .button--primary { color: var(--ink); background: var(--evergreen); }
-  .button--primary:hover { background: #426B69; }
+  .button--primary { color: #1F1C26; background: #D96D56; }
+  .button--primary:hover { background: #E38B74; }
   .button--found { color: var(--paper); background: var(--clay); }
   .icon-button { background: var(--white); }
   .text-button { color: #E9A6AE; }
@@ -113,4 +113,20 @@
   .voice-tool.is-listening { color: var(--paper); }
   :focus-visible { outline-color: #E9A6AE; }
   .found-area-choice button[aria-pressed="true"] { color: var(--ink); }
+}
+
+/* Primary controls take the warm coral from the approved concept.
+   Ink-on-coral exceeds 4.5:1 contrast; preserve deep teal for quiet surfaces. */
+@layer utilities {
+  .button--primary,
+  .trail-action-dock .button--primary {
+    color: #1F1C26;
+    background: #D96D56;
+    box-shadow: 0 10px 26px rgba(217, 109, 86, .22);
+  }
+  .button--primary:hover:not(:disabled),
+  .trail-action-dock .button--primary:hover:not(:disabled) {
+    color: #1F1C26;
+    background: #E38B74;
+  }
 }
