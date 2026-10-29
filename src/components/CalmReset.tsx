@@ -5,7 +5,7 @@ import { Icon } from './Icon'
 import { BrandMark } from './BrandMark'
 import { FeatherMark } from './FeatherMark'
 import { CYCLE_SECONDS, HOLD_SECONDS, INHALE_SECONDS, TOTAL_SECONDS } from './resetTiming'
-import { featherPose } from './featherFlight'
+import { featherPlacement, featherPose } from './featherFlight'
 
 const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
 
@@ -43,6 +43,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   const reducedMotion = useReducedMotion(motion)
   const timerRef = useRef<number | null>(null)
   const flightRef = useRef<HTMLDivElement>(null)
+  const featherRef = useRef<HTMLImageElement>(null)
   const playing = startedAt !== null
 
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
@@ -94,20 +95,38 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
   useEffect(() => {
     const flight = flightRef.current
-    if (!flight) return
+    const feather = featherRef.current
+    if (!flight || !feather) return
     let frame = 0
+    let width = feather.offsetWidth
+    let height = feather.offsetHeight
+    let sceneHeight = flight.clientHeight
     const draw = (now: number) => {
       const seconds = startedAt === null ? paused ? elapsed : 0 : Math.max(0, (now - startedAt) / 1000)
       const pose = featherPose(seconds, reducedMotion)
-      flight.style.setProperty('--flight-height', String(pose.height))
-      flight.style.setProperty('--flight-offset', String(pose.offset))
-      flight.style.setProperty('--flight-roll', `${pose.roll}deg`)
-      flight.style.setProperty('--flight-yaw', `${pose.yaw}deg`)
-      flight.style.setProperty('--flight-pitch', `${pose.pitch}deg`)
+      const placement = featherPlacement(pose, width, height, sceneHeight)
+      flight.style.setProperty('--flight-x', `${placement.x}px`)
+      flight.style.setProperty('--flight-y', `${placement.y}px`)
+      feather.style.transform = `translate(-52%, -54%) rotate(${pose.roll}deg) skewX(${pose.bend}deg) scale(${Math.cos(pose.yaw * Math.PI / 180)}, ${Math.cos(pose.pitch * Math.PI / 180)})`
       if (!reducedMotion && startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
     }
+    const resize = () => {
+      width = feather.offsetWidth
+      height = feather.offsetHeight
+      sceneHeight = flight.clientHeight
+      cancelAnimationFrame(frame)
+      draw(performance.now())
+    }
     draw(performance.now())
-    return () => cancelAnimationFrame(frame)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize)
+    observer?.observe(flight)
+    observer?.observe(feather)
+    window.addEventListener('resize', resize)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      window.removeEventListener('resize', resize)
+    }
   }, [startedAt, reducedMotion, paused, paused ? elapsed : 0])
 
   function beginReset() {
@@ -149,9 +168,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
 
       <div ref={flightRef} className={`calm-flight${reducedMotion ? ' is-reduced-motion' : ''}${!playing ? ' is-waiting' : ''}`} aria-hidden="true">
         <div className="calm-feather-anchor">
-          <div className="calm-feather-drift">
-            <img className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />
-          </div>
+          <img ref={featherRef} className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />
         </div>
       </div>
 

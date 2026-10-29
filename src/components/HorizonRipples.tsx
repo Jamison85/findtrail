@@ -67,7 +67,7 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
             if (!video.paused) video.pause()
             video.style.opacity = '0'
           } else if (video.readyState >= 2) {
-            if (Math.abs(video.currentTime - age) > .35) {
+            if (Math.abs(video.currentTime - age) > .12) {
               video.currentTime = age
             }
             video.style.opacity = '1'
@@ -87,7 +87,7 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
     return () => {
       cancelled = true
       cancelAnimationFrame(frame)
-      video.pause()
+      if (!video.paused) video.pause()
       video.style.opacity = '0'
     }
   }, [reducedMotion, startedAt])

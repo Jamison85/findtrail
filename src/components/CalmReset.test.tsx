@@ -5,6 +5,7 @@ import { CalmReset } from './CalmReset'
 describe('CalmReset', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 
@@ -78,5 +79,38 @@ describe('CalmReset', () => {
     now = 101_000
     act(() => vi.advanceTimersByTime(100))
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '6')
+  })
+
+  it('freezes the airborne pose while hidden and resumes from that same pose', () => {
+    vi.useFakeTimers()
+    let now = 0
+    let frame: FrameRequestCallback = () => undefined
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1 }))
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    let hidden = false
+    vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
+    render(<CalmReset hasSearch={false} motion="full" onResume={() => undefined} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Begin breathing reset' }))
+    now = 5_100
+    act(() => { frame(now); vi.advanceTimersByTime(100) })
+    const anchor = document.querySelector<HTMLElement>('.calm-feather-anchor')!
+    const feather = document.querySelector<HTMLElement>('.calm-feather')!
+    const position = anchor.parentElement!.style.getPropertyValue('--flight-y')
+    const orientation = feather.style.transform
+    hidden = true
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    now = 100_000
+    act(() => vi.advanceTimersByTime(1_000))
+    expect(anchor.parentElement!.style.getPropertyValue('--flight-y')).toBe(position)
+    expect(feather.style.transform).toBe(orientation)
+    hidden = false
+    fireEvent.click(screen.getByRole('button', { name: 'Continue breathing reset' }))
+    act(() => frame(now))
+    expect(anchor.parentElement!.style.getPropertyValue('--flight-y')).toBe(position)
+    expect(feather.style.transform).toBe(orientation)
+    now = 101_000
+    act(() => frame(now))
+    expect(anchor.parentElement!.style.getPropertyValue('--flight-y')).not.toBe(position)
   })
 })
