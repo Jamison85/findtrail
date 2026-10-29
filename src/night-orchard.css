@@ -130,3 +130,19 @@
     background: #E38B74;
   }
 }
+
+/* Verified against 320–768px screenshots: improve the Home wordmark's
+   contrast and keep the two trail actions visually distinct. */
+@layer utilities {
+  .brand-lockup,
+  .brand-lockup strong,
+  .brand-lockup .brand-mark {
+    color: #F5EDE6;
+  }
+  .trail-action-dock .button--found {
+    color: #F5EDE6;
+    background: #2A4A4C;
+    border: 1px solid rgba(141, 172, 160, .48);
+    box-shadow: none;
+  }
+}
