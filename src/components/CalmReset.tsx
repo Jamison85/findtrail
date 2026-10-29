@@ -104,7 +104,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       flight.style.setProperty('--flight-roll', `${pose.roll}deg`)
       flight.style.setProperty('--flight-yaw', `${pose.yaw}deg`)
       flight.style.setProperty('--flight-pitch', `${pose.pitch}deg`)
-      if (!reducedMotion && startedAt !== null && seconds < 12) frame = requestAnimationFrame(draw)
+      if (!reducedMotion && startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
     }
     draw(performance.now())
     return () => cancelAnimationFrame(frame)
