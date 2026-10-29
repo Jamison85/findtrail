@@ -1,9 +1,9 @@
 import { getFocusedStops, getWiderStops } from '../trailEngine'
-import { skippedPlaces, visitedAreaCount } from '../searchProgress'
+import { skippedPlaces, unfinishedPlaces, visitedAreaCount } from '../searchProgress'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
-import { SkippedPlaces } from './SkippedPlaces'
+import { SkippedPlaces, UnfinishedPlaces } from './SkippedPlaces'
 
 interface WidenSearchViewProps {
   search: ActiveSearch
@@ -49,6 +49,7 @@ export function WidenSearchView({ search, onWiden, onReviewSkipped, onFound, onR
         <p><strong>{placeLabel}</strong><small>{spotLabel} · trail saved</small></p>
       </div>
 
+      <UnfinishedPlaces search={search} places={unfinishedPlaces(search, focusedStops)} onReview={onReviewSkipped} />
       <SkippedPlaces places={openPlaces} onReview={onReviewSkipped} />
 
       <section className="widen-panel" aria-labelledby="widen-heading">

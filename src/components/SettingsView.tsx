@@ -5,6 +5,8 @@ import { Icon } from './Icon'
 
 interface SettingsViewProps {
   data: PersistedData
+  offlineReady?: boolean
+  offlineError?: boolean
   canInstall: boolean
   iosInstallHelpAvailable: boolean
   backupStatus: { message: string; kind: 'success' | 'error' } | null
@@ -38,7 +40,7 @@ function SettingsSection({ icon, title, detail, children, className = '' }: Sett
   )
 }
 
-export function SettingsView({ data, canInstall, iosInstallHelpAvailable, backupStatus, onUpdate, onUpdateSavedItem, onRemoveSavedItem, onInstall, onShowIOSInstallHelp, onExport, onRestore, onClear }: SettingsViewProps) {
+export function SettingsView({ data, offlineReady, offlineError, canInstall, iosInstallHelpAvailable, backupStatus, onUpdate, onUpdateSavedItem, onRemoveSavedItem, onInstall, onShowIOSInstallHelp, onExport, onRestore, onClear }: SettingsViewProps) {
   const fileInput = useRef<HTMLInputElement>(null)
   const findLabel = `${data.history.length} saved ${data.history.length === 1 ? 'find' : 'finds'}`
   const homeLabel = `${data.savedItems.length} saved ${data.savedItems.length === 1 ? 'home' : 'homes'}`
@@ -54,6 +56,7 @@ export function SettingsView({ data, canInstall, iosInstallHelpAvailable, backup
         <span aria-hidden="true"><Icon name="lock" size={19} /></span>
         <p><strong>Private on this device</strong><small>{findLabel} · {homeLabel} · no account or tracking</small></p>
       </div>
+      <p className="offline-readiness" role="status">{offlineReady ? 'Offline access ready on this device.' : offlineError ? 'Offline setup could not finish. Reconnect and reload to try again.' : 'Offline setup is pending. Keep this page open while it finishes.'}</p>
 
       {canInstall ? (
         <button className="install-card" onClick={onInstall}>
@@ -114,7 +117,7 @@ export function SettingsView({ data, canInstall, iosInstallHelpAvailable, backup
         </div>
       </SettingsSection>
 
-      <footer className="version-note">FindTrail 2.12 · A clear path to finding what’s missing.</footer>
+      <footer className="version-note">FindTrail 2.13 · One place at a time.</footer>
     </section>
   )
 }

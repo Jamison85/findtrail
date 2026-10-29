@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { buildTrail, compactActiveSearch, freshPlaces, getFocusedStops, getFoundSuggestions, getTrailStage, getWiderStops, isFocusedPassComplete, mostLikelyLocation, mostSuccessfulStop, rebuildSearch, startFreshPass } from './trailEngine'
+import { buildTrail, compactActiveSearch, freshPlaces, getFocusedStops, getFoundSuggestions, getTrailStage, getWiderStops, isFocusedPassComplete, isWiderPassComplete, mostLikelyLocation, mostSuccessfulStop, rebuildSearch, startFreshPass } from './trailEngine'
 import { createActiveSearch, parseBackup, serializeBackup, DEFAULT_SETTINGS } from './storage'
-import { allSearchStops, skippedPlaces, visitedAreaCount } from './searchProgress'
+import { allSearchStops, skippedPlaces, unfinishedPlaces, checkedSpotsAt, visitedAreaCount } from './searchProgress'
 import type { FoundEntry, SavedItem } from './types'
 
 const history: FoundEntry[] = [
@@ -23,7 +23,7 @@ describe('buildTrail', () => {
     expect(rebuilt.skippedStops).toEqual(['bags'])
     expect(rebuilt.id).toBe(search.id)
     expect(rebuilt.startedAt).toBe(search.startedAt)
-    expect(rebuilt.stops[rebuilt.currentIndex].id).toBe('work')
+    expect(rebuilt.stops[rebuilt.currentIndex].id).toBe('pockets')
     const backup = parseBackup(serializeBackup({ version: 3, history: [], savedItems: [], settings: DEFAULT_SETTINGS, activeSearch: rebuilt }))
     expect(backup.ok && backup.data.activeSearch?.checkedSpots).toEqual(search.checkedSpots)
     expect(visitedAreaCount(rebuilt)).toBe(2)
@@ -99,6 +99,20 @@ describe('buildTrail', () => {
     expect(ringing[0].id).toBe('ring-phone')
     expect(dead[0].id).toBe('chargers')
     expect(ringing[1].kind).toBe('home')
+    expect(dead.map((stop) => stop.id)).not.toContain('ring-phone')
+    const silent = buildTrail('phone', 'Phone', { itemDetail: 'silent', lastPlace: 'home', lastAction: 'sat' }, [], [phoneHome])
+    expect(silent[0].id).toBe('ring-phone')
+    expect(silent[0].instruction).toContain('may work even on silent')
+  })
+
+  it('retains partly checked areas and avoids counting the same named spot twice', () => {
+    const stops = [
+      { id: 'room-a', title: 'Room A', instruction: 'Look.', spots: ['Blue bowl', 'Floor nearby'] },
+      { id: 'room-b', title: 'Room B', instruction: 'Look.', spots: ['Blue bowl', 'Floor nearby'] },
+    ]
+    const search = { ...createActiveSearch('keys', 'Keys'), stops, checkedSpots: { 'room-a': ['Blue bowl', 'Floor nearby'], 'room-b': ['Floor nearby'] } }
+    expect(checkedSpotsAt(search, stops[1])).toEqual(['Blue bowl', 'Floor nearby'])
+    expect(unfinishedPlaces({ ...search, checkedSpots: { 'room-a': ['Blue bowl'] } }).map((stop) => stop.id)).toEqual(['room-a'])
   })
 
   it('starts with the attached phone for a wallet and the current place before a past home', () => {
@@ -124,7 +138,7 @@ describe('buildTrail', () => {
     expect(getTrailStage(trail, trail.length - 1)).toMatchObject({ name: 'final', current: 1, total: 1 })
   })
 
-  it('moves an older long search safely into the focused route', () => {
+  it('keeps an older long search at its saved current place', () => {
     const oldStops = [
       ...Array.from({ length: 8 }, (_, index) => ({ id: `place-${index + 1}`, title: `Place ${index + 1}`, instruction: 'Check here.', spots: ['One spot'] })),
       { id: 'slow-sweep', title: 'Slow final sweep', instruction: 'Check slowly.', spots: ['Likeliest place'], kind: 'final' as const },
@@ -142,9 +156,11 @@ describe('buildTrail', () => {
       lastUpdatedAt: '2026-09-21T12:05:00.000Z',
     })
 
-    expect(migrated.stops).toHaveLength(7)
+    expect(migrated.stops).toHaveLength(9)
     expect(migrated.stops.at(-1)?.id).toBe('slow-sweep')
-    expect(migrated.currentIndex).toBe(6)
+    expect(migrated.currentIndex).toBe(7)
+    expect(getTrailStage(migrated.stops, migrated.currentIndex)).toMatchObject({ name: 'wider', current: 5, total: 5 })
+    expect(isWiderPassComplete(migrated.stops, migrated.currentIndex)).toBe(true)
   })
 
   it('offers current-stop and item suggestions without duplicates', () => {

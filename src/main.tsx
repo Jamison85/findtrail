@@ -12,8 +12,8 @@ import './found-view-polish.css'
 import './history-settings-polish.css'
 import './install-coach.css'
 import './onboarding.css'
-import './launch-splash.css'
 import './search-assistance.css'
+import './night-orchard.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -38,6 +38,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     })
 
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then((registration) => {
+      const ready = () => window.dispatchEvent(new Event('findtrail:offline-ready'))
+      if (registration.active) ready()
+      else void navigator.serviceWorker.ready.then(ready)
       const announce = (worker: ServiceWorker | null) => {
         if (!worker || !navigator.serviceWorker.controller) return
         window.dispatchEvent(new CustomEvent('findtrail:update-ready', { detail: { worker } }))
@@ -54,6 +57,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       })
     }).catch((error) => {
       console.warn('FindTrail offline support could not start.', error)
+      window.dispatchEvent(new Event('findtrail:offline-error'))
     })
   })
 }

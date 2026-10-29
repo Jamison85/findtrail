@@ -1,13 +1,13 @@
-const artworkUrl = `${import.meta.env.BASE_URL}home-memory-trail.webp`
+const artworkUrl = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 
 export function HomeArtwork() {
   return (
-    <div className="home-artwork" role="img" aria-label="A calm home scene for starting a FindTrail search">
+    <div className="home-artwork" role="img" aria-label="A still lake at dusk">
       <img
         src={artworkUrl}
         alt=""
-        width="1536"
-        height="1024"
+        width="1080"
+        height="1920"
         fetchPriority="high"
         draggable="false"
       />

@@ -1,51 +1,42 @@
 import { describe, expect, it } from 'vitest'
 import { featherPose } from './featherFlight'
 
-describe('continuous feather flight', () => {
-  it('meets the water at each exhale ending and rests after the last breath', () => {
-    for (const seconds of [0, 12, 24, 36, 60]) {
+describe('one natural feather landing', () => {
+  it('descends only once, then stays at the waterline', () => {
+    expect(featherPose(0).height).toBe(1)
+    for (let seconds = .25; seconds <= 12; seconds += .25) {
+      expect(featherPose(seconds).height).toBeLessThanOrEqual(featherPose(seconds - .25).height)
+    }
+    for (let seconds = 12; seconds <= 36; seconds += .25) {
       const pose = featherPose(seconds)
-      expect(pose.height).toBeCloseTo(0, 10)
-      expect(pose.offset).toBeCloseTo(0, 10)
-      expect(pose.roll).toBeCloseTo(0, 10)
-      expect(pose.yaw % 360).toBeCloseTo(0, 10)
-      expect(pose.pitch % 360).toBeCloseTo(0, 10)
+      expect(pose.height).toBe(0)
+      expect(pose.offset).toBe(0)
+      expect(pose.yaw).toBe(0)
+      expect(pose.pitch).toBe(0)
     }
-    expect(featherPose(60)).toEqual(featherPose(36))
+    expect(featherPose(12).roll).toBe(-64)
   })
 
-  it('keeps turning through the former keyframe stops', () => {
-    for (const seconds of [15, 18, 21]) {
-      const yawBefore = featherPose(seconds - .001).yaw
-      const yawAt = featherPose(seconds).yaw
-      const yawAfter = featherPose(seconds + .001).yaw
-      const incoming = (yawAt - yawBefore) / .001
-      const outgoing = (yawAfter - yawAt) / .001
-      expect(incoming).toBeGreaterThan(5)
-      expect(outgoing).toBeGreaterThan(5)
-      expect(Math.abs(incoming - outgoing)).toBeLessThan(.1)
+  it('lands at the single ripple origin without flipping or jumping', () => {
+    for (let seconds = 0; seconds < 12; seconds += .2) {
+      const pose = featherPose(seconds)
+      expect(Math.abs(pose.yaw)).toBeLessThan(13)
+      expect(Math.abs(pose.pitch)).toBeLessThan(6)
+      expect(Math.abs(pose.roll)).toBeLessThan(70)
+    }
+    for (const axis of ['height', 'offset', 'roll', 'yaw', 'pitch'] as const) {
+      expect(Math.abs(featherPose(11.999)[axis] - featherPose(12)[axis])).toBeLessThan(.01)
     }
   })
 
-  it('arrives and departs without jumps in speed at breath boundaries', () => {
-    for (const seconds of [12, 24]) {
-      const before = featherPose(seconds - .001)
-      const after = featherPose(seconds + .001)
-      for (const axis of ['height', 'offset', 'roll', 'yaw', 'pitch'] as const) {
-        expect(Math.abs(after[axis] - before[axis]) / .002).toBeLessThan(.001)
-      }
-    }
-  })
-
-  it('holds at inhale height and keeps reduced motion free of spins and drift', () => {
-    expect(featherPose(4).height).toBe(1)
-    expect(featherPose(5).height).toBe(1)
-    expect(featherPose(6).height).toBe(1)
-    for (let seconds = 0; seconds <= 36; seconds += .5) {
-      const pose = featherPose(seconds, true)
-      expect(pose.height).toBeGreaterThanOrEqual(0)
-      expect(pose.height).toBeLessThanOrEqual(1)
-      expect([pose.offset, pose.roll, pose.yaw, pose.pitch]).toEqual([0, 0, 0, 0])
+  it('rocks almost imperceptibly after contact, but is completely still in reduced motion', () => {
+    const a = featherPose(17)
+    const b = featherPose(22)
+    expect(a.roll).not.toBe(b.roll)
+    expect(Math.abs(a.roll + 64)).toBeLessThan(1)
+    expect(Math.abs(b.roll + 64)).toBeLessThan(1)
+    for (const seconds of [0, 4, 12, 24, 36]) {
+      expect(featherPose(seconds, true)).toEqual({ height: 0, offset: 0, roll: -64, yaw: 0, pitch: 0 })
     }
   })
 })

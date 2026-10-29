@@ -5,6 +5,7 @@ import type { ActiveSearch, Settings } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
 import { DeviceFinderLinks } from './DeviceFinderLinks'
+import { checkedSpotsAt } from '../searchProgress'
 
 interface TrailViewProps {
   search: ActiveSearch
@@ -23,7 +24,8 @@ interface TrailViewProps {
 
 export function TrailView({ search, settings, offerReset, onDismissReset, onBack, onToggleSpot, onNext, onFound, onCalm, onEditClues, onExcludePlace, onAlreadyChecked }: TrailViewProps) {
   const stop = search.stops[search.currentIndex]
-  const checked = search.checkedSpots[stop.id] ?? []
+  const checked = checkedSpotsAt(search, stop)
+  const checkedHere = search.checkedSpots[stop.id] ?? []
   const totalChecked = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
   const isLastStop = search.currentIndex === search.stops.length - 1
   const areaChecked = checked.length === stop.spots.length
@@ -31,8 +33,11 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const [heard, setHeard] = useState('')
   const [voiceError, setVoiceError] = useState('')
   const [voiceStatus, setVoiceStatus] = useState('')
+  const [voiceNoticeOpen, setVoiceNoticeOpen] = useState(false)
+  const [voiceNoticeAccepted, setVoiceNoticeAccepted] = useState(false)
   const [departing, setDeparting] = useState(false)
   const recognitionRef = useRef<ReturnType<typeof createRecognition>>(null)
+  const voiceNoticeRef = useRef<HTMLDivElement>(null)
   const advanceTimerRef = useRef<number | null>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const voiceSupported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition)
@@ -90,7 +95,10 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
     setVoiceStatus('')
     if (settings.speakSteps) readCurrent()
     headingRef.current?.focus({ preventScroll: true })
-    return stopSpeaking
+    return () => {
+      stopSpeaking()
+      recognitionRef.current?.stop()
+    }
     // Reading should happen only when the trail stop changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stop.id, settings.speakSteps])
@@ -99,6 +107,12 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
     recognitionRef.current?.stop()
     if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
   }, [])
+
+  useEffect(() => {
+    if (!voiceNoticeOpen) return
+    voiceNoticeRef.current?.focus({ preventScroll: true })
+    voiceNoticeRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [voiceNoticeOpen])
 
   function advanceTrail() {
     if (departing || advanceTimerRef.current !== null) return
@@ -121,6 +135,11 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
       setListening(false)
       return
     }
+    if (!voiceNoticeAccepted) { setVoiceNoticeOpen(true); return }
+    beginListening()
+  }
+
+  function beginListening() {
     setVoiceError('')
     const recognition = createRecognition((command) => {
       if (command === 'next') advanceTrail()
@@ -179,11 +198,12 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
         <div className="spot-list" role="group" aria-label={`Places to check at ${stop.title}`}>
           {stop.spots.map((spot, index) => {
             const isChecked = checked.includes(spot)
+            const checkedEarlier = isChecked && !checkedHere.includes(spot)
             return (
-              <button key={spot} className={isChecked ? 'spot-row is-checked' : 'spot-row'} onClick={() => onToggleSpot(spot)} aria-pressed={isChecked}>
+              <button key={spot} className={isChecked ? 'spot-row is-checked' : 'spot-row'} onClick={() => onToggleSpot(spot)} aria-pressed={isChecked} disabled={checkedEarlier} aria-label={checkedEarlier ? `${spot}, checked earlier in this search` : undefined}>
                 <span className="spot-row__check"><Icon name="check" size={17} /></span>
                 <span className="spot-row__label">{spot}</span>
-                <small aria-hidden="true">{isChecked ? 'Checked' : `${index + 1}`}</small>
+                <small aria-hidden="true">{checkedEarlier ? 'Earlier' : isChecked ? 'Checked' : `${index + 1}`}</small>
               </button>
             )
           })}
@@ -198,7 +218,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
 
         <aside className="side-quest-note">
           <span className="side-quest-note__icon"><Icon name="calm" size={18} /></span>
-          <span><strong>Side-quest shield</strong>Stay in this area. No organizing or “quick checks” elsewhere yet. Sneaky little side quest.</span>
+          <span><strong>Stay with this place</strong>Finish checking here before moving on. You can return to other tasks afterward.</span>
         </aside>
       </article>
 
@@ -206,10 +226,11 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
 
       <div className="trail-utilities" aria-label="Search assistance">
         <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>
-        <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined} aria-label={voiceSupported ? (listening ? 'Stop hands-free listening' : 'Start hands-free listening') : 'Hands-free voice commands are unavailable in this browser'}>
-          <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Hands-free'}
+        <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined} aria-label={voiceSupported ? (listening ? 'Stop voice command' : 'Use voice command') : 'Voice commands are unavailable in this browser'}>
+          <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Voice command'}
         </button>
       </div>
+      {voiceNoticeOpen && <div ref={voiceNoticeRef} tabIndex={-1} className="voice-notice" role="group" aria-label="Voice command privacy"><p>Your browser may send microphone audio to its speech provider. Voice commands may need a connection. FindTrail saves no recording. Say “next”, “found it”, or “repeat”.</p><button className="button button--secondary" onClick={() => setVoiceNoticeOpen(false)}>Keep using touch</button><button className="button button--primary" onClick={() => { setVoiceNoticeAccepted(true); setVoiceNoticeOpen(false); beginListening() }}>Use browser voice command</button></div>}
       {(heard || voiceError || voiceStatus) && <p className={voiceError ? 'voice-status is-error' : 'voice-status'} aria-live="polite">{voiceError || voiceStatus || `Heard: “${heard}”`}</p>}
 
       <div className="sticky-actions trail-action-dock">

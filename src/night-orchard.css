@@ -1,0 +1,148 @@
+/* Night Orchard × Mineral Ember. This layer keeps every existing view and its
+   control structure while bringing the shared surfaces into one palette. */
+@layer tokens {
+  :root {
+    color-scheme: dark;
+    --paper: #1F1C26;
+    --paper-deep: #2D2733;
+    --white: #302A36;
+    --ink: #F5EDE6;
+    --ink-soft: #D0C6CE;
+    --evergreen: #2A4A4C;
+    --forest: #355C5D;
+    --moss: #8DACA0;
+    --sage: #2A4A4C;
+    --clay: #D96D56;
+    --clay-deep: #BE614E;
+    --clay-text: #C58EA3;
+    --clay-soft: #3B2B37;
+    --danger: #F19B94;
+    --line: rgba(245, 237, 230, .2);
+    --shadow-sm: 0 8px 24px rgba(0, 0, 0, .16);
+    --shadow-md: 0 18px 50px rgba(0, 0, 0, .24);
+    --text-body: 1rem;
+    --text-caption: .8125rem;
+  }
+}
+
+@layer screens {
+  .home-view { height: auto; min-height: calc(100dvh - var(--nav-height)); overflow: visible; background: var(--paper); }
+  .home-main { grid-template-rows: minmax(240px, 35dvh) auto auto; gap: 14px; padding: 0 16px 20px; }
+  .home-hero { border-radius: 24px; background: var(--paper-deep); }
+  .home-artwork img { object-position: 50% 52%; filter: saturate(.9) brightness(.75); }
+  .home-artwork::after { background: linear-gradient(0deg, rgba(31, 28, 38, .9), rgba(31, 28, 38, .12) 90%); }
+  .hero-copy { top: auto; bottom: 0; width: 100%; padding: 26px 22px 20px; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; transform: none; }
+  .hero-copy h1 { max-width: 11ch; color: var(--ink); font-size: clamp(2.4rem, 11vw, 3.4rem); line-height: 1.03; }
+  .hero-copy p { max-width: 18rem; color: var(--ink); font-size: .95rem; }
+  .item-picker { padding: 15px 12px; border-color: var(--line); border-radius: 22px; background: var(--paper-deep); backdrop-filter: none; }
+  .item-grid { grid-template-rows: repeat(2, minmax(76px, auto)); }
+  .item-button { min-height: 76px; border-color: var(--line); color: var(--ink); background: var(--white); }
+  .item-button strong { font-size: .8125rem; }
+  .item-button__icon { color: var(--clay); }
+  .recent-card { background: var(--paper-deep); border-color: var(--line); }
+  .recent-card__icon, .resume-card__icon { color: var(--ink); background: var(--evergreen); }
+  .resume-card { background: rgba(45, 39, 51, .95); border-color: var(--line); }
+  .home-view--active .home-main { grid-template-rows: minmax(240px, 35dvh) auto; }
+  .clue-view, .trail-view, .widen-view, .end-view, .found-view, .complete-view, .history-view, .settings-view { background: radial-gradient(circle at 100% 0%, rgba(42, 74, 76, .35), transparent 16rem), var(--paper); }
+  .trail-view > article.stop-card,
+  .trail-view > article.stop-card--history,
+  .trail-view > article.stop-card--learned,
+  .trail-view > article.stop-card--home,
+  .trail-view > article.stop-card--safety,
+  .trail-view > article.stop-card--final { color: var(--ink); background: var(--white); border-color: var(--line); }
+  .trail-view article .stop-card__copy h1 { font-size: clamp(2.15rem, 9vw, 2.8rem); }
+  .stop-card__instruction { font-size: 1rem; }
+  .spot-row { min-height: 56px; background: var(--paper-deep); border-color: var(--line); font-size: 1rem; }
+  .spot-row__check { background: var(--white); }
+  .spot-row:disabled { opacity: 1; }
+  .spot-row.is-checked { background: #263D3F; color: var(--ink); }
+  .side-quest-note { background: var(--paper-deep); }
+  .choice-button { background: var(--white); border-color: var(--line); box-shadow: none; }
+  .choice-button__marker { color: var(--ink); }
+  .choice-button.is-selected { background: var(--sage); }
+  .found-capture, .complete-sheet, .history-entry, .settings-section, .widen-card, .recovery-card { background: var(--white); border-color: var(--line); }
+  .found-capture .location-chips .chip, .found-capture .found-optional, .found-capture input { background: var(--paper-deep); color: var(--ink); }
+  .found-area-choice button[aria-pressed="true"] { color: var(--ink); }
+  .found-done { display: block; margin: 8px auto 0; }
+}
+
+@layer components {
+  .button--primary { color: #1F1C26; background: #D96D56; }
+  .button--primary:hover { background: #E38B74; }
+  .button--found { color: var(--paper); background: var(--clay); }
+  .icon-button { background: var(--white); }
+  .text-button { color: #E9A6AE; }
+  .brand-lockup, .brand-mark, .item-button { color: var(--ink); }
+  .local-pill { background: var(--white); border-color: var(--line); }
+  .skip-link, .update-banner, .stop-marker, .found-signal__seal { color: var(--ink); }
+  .storage-banner--recovery { display: flex; flex-wrap: wrap; justify-content: flex-start; padding: 12px 16px; color: var(--ink); background: #493239; text-align: left; }
+  .storage-banner--recovery span { flex: 1 0 100%; }
+  .storage-banner--recovery button { min-height: 44px; border: 1px solid currentColor; border-radius: 10px; padding: 6px 10px; }
+  .voice-notice { display: grid; gap: 8px; padding: 14px; margin: 12px 0 175px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); }
+  .voice-notice p { font-size: .875rem; }
+  .voice-notice .button { min-height: 44px; }
+}
+
+@media (max-width: 360px) {
+  .home-main { padding-inline: 12px; }
+  .item-grid { gap: 5px; }
+  .item-button strong { font-size: .75rem; }
+}
+
+@layer screens {
+  .spot-row__label { font-size: 1rem; line-height: 1.35; }
+  .spot-row.is-checked small { color: var(--ink); }
+  .bottom-nav__item.is-active, .trail-route__meta strong, .clue-route li.is-current > small,
+  .clue-route li.is-complete > span, .widen-identity__item, .found-ready.is-ready,
+  .recovery-status__saved, .settings-view .backup-status, .settings-section > header > span,
+  .recent-card__arrow { color: var(--ink); }
+  .trail-pause-offer button { color: var(--ink); }
+  .widen-identity__icon, .recovery-identity__icon, .memory-pattern__icon,
+  .history-row__icon, .device-privacy > span, .saved-home-row__icon,
+  .complete-mark, .complete-learning > span { color: var(--ink); }
+  .recovery-step--priority .recovery-step__number,
+  .settings-view .mini-action.is-active, .settings-view .install-card > span,
+  .found-signal__seal, .complete-learning > span, .history-empty > span { color: var(--paper); }
+  .onboarding__brand, .onboarding__brand-mark, .onboarding-item.is-selected,
+  .onboarding-item.is-selected svg { color: var(--ink); }
+  .offline-readiness { margin: -2px 3px 14px; font-size: .8125rem; }
+}
+
+@layer components {
+  .offline-banner, .storage-banner:not(.storage-banner--recovery) { color: var(--paper); }
+  .voice-tool.is-listening { color: var(--paper); }
+  :focus-visible { outline-color: #E9A6AE; }
+  .found-area-choice button[aria-pressed="true"] { color: var(--ink); }
+}
+
+/* Primary controls take the warm coral from the approved concept.
+   Ink-on-coral exceeds 4.5:1 contrast; preserve deep teal for quiet surfaces. */
+@layer utilities {
+  .button--primary,
+  .trail-action-dock .button--primary {
+    color: #1F1C26;
+    background: #D96D56;
+    box-shadow: 0 10px 26px rgba(217, 109, 86, .22);
+  }
+  .button--primary:hover:not(:disabled),
+  .trail-action-dock .button--primary:hover:not(:disabled) {
+    color: #1F1C26;
+    background: #E38B74;
+  }
+}
+
+/* Verified against 320–768px screenshots: improve the Home wordmark's
+   contrast and keep the two trail actions visually distinct. */
+@layer utilities {
+  .brand-lockup,
+  .brand-lockup strong,
+  .brand-lockup .brand-mark {
+    color: #F5EDE6;
+  }
+  .trail-action-dock .button--found {
+    color: #F5EDE6;
+    background: #2A4A4C;
+    border: 1px solid rgba(141, 172, 160, .48);
+    box-shadow: none;
+  }
+}

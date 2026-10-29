@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { CONTACT_SECONDS, CYCLE_SECONDS, RESET_CYCLES } from './resetTiming'
+import { CONTACT_SECONDS } from './resetTiming'
 
 interface HorizonRipplesProps {
   reducedMotion: boolean
@@ -9,7 +9,7 @@ interface HorizonRipplesProps {
 const WATER_IMAGE = `${import.meta.env.BASE_URL}findtrail-reset-lake.webp`
 const WATER_VIDEO = `${import.meta.env.BASE_URL}findtrail-water-impact.mp4`
 const WATER_VIDEO_SECONDS = 10
-const LAST_WAVE_END = CONTACT_SECONDS + CYCLE_SECONDS * (RESET_CYCLES - 1) + WATER_VIDEO_SECONDS
+const LAST_WAVE_END = CONTACT_SECONDS + WATER_VIDEO_SECONDS
 
 export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps) {
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -42,7 +42,6 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
     if (reducedMotion || startedAt === null) return
 
     let frame = 0
-    let lastCycle = -1
     let lastCheck = 0
     let playPending = false
     let cancelled = false
@@ -63,17 +62,13 @@ export function HorizonRipples({ reducedMotion, startedAt }: HorizonRipplesProps
           if (!video.paused) video.pause()
           video.style.opacity = '0'
         } else {
-          const cycle = Math.min(RESET_CYCLES - 1, Math.floor((elapsed - CONTACT_SECONDS) / CYCLE_SECONDS))
-          const age = elapsed - CONTACT_SECONDS - cycle * CYCLE_SECONDS
-          // The clip lasts ten seconds, but landings are twelve seconds apart.
-          // Never replay an ended clip in the still-water gap before the next touch.
-          if (age >= WATER_VIDEO_SECONDS || (cycle === lastCycle && video.ended)) {
+          const age = elapsed - CONTACT_SECONDS
+          if (age >= WATER_VIDEO_SECONDS || video.ended) {
             if (!video.paused) video.pause()
             video.style.opacity = '0'
           } else if (video.readyState >= 2) {
-            if (cycle !== lastCycle || Math.abs(video.currentTime - age) > .35) {
+            if (Math.abs(video.currentTime - age) > .35) {
               video.currentTime = age
-              lastCycle = cycle
             }
             video.style.opacity = '1'
             if (video.paused && !playPending) {

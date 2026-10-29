@@ -39,6 +39,7 @@ function phaseFor(elapsed: number): { label: ResetPhase; secondsLeft: number } {
 export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => void; hasSearch: boolean; motion: Settings['motion'] }) {
   const [elapsed, setElapsed] = useState(0)
   const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [paused, setPaused] = useState(false)
   const reducedMotion = useReducedMotion(motion)
   const timerRef = useRef<number | null>(null)
   const flightRef = useRef<HTMLDivElement>(null)
@@ -47,17 +48,19 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
   const complete = remaining === 0
   const breath = phaseFor(elapsed)
-  const phase = !playing ? 'Follow the feather' : complete ? 'Reset complete' : breath.label
+  const phase = paused ? 'Reset paused' : !playing ? 'Follow the feather' : complete ? 'Reset complete' : breath.label
   const phaseSeconds = complete ? 0 : breath.secondsLeft
-  const guidance = !playing
+  const guidance = paused
+    ? 'Your place is saved. Continue when you are ready.'
+    : !playing
     ? 'In, pause, and out at your pace.'
     : complete
     ? 'Notice what feels quieter now.'
     : phase === 'Breathe in'
-      ? 'Rise with the feather'
+      ? 'Breathe in gently'
       : phase === 'Hold gently'
-        ? 'Rest at the top'
-        : 'Drift down with it'
+        ? 'Pause only if comfortable'
+        : 'Let the breath soften'
 
   useEffect(() => {
     if (startedAt === null) return
@@ -78,26 +81,39 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
   }, [startedAt])
 
   useEffect(() => {
+    if (startedAt === null) return
+    const pauseWhenHidden = () => {
+      if (!document.hidden) return
+      setElapsed(Math.min(TOTAL_SECONDS, (performance.now() - startedAt) / 1000))
+      setStartedAt(null)
+      setPaused(true)
+    }
+    document.addEventListener('visibilitychange', pauseWhenHidden)
+    return () => document.removeEventListener('visibilitychange', pauseWhenHidden)
+  }, [startedAt])
+
+  useEffect(() => {
     const flight = flightRef.current
     if (!flight) return
     let frame = 0
     const draw = (now: number) => {
-      const seconds = startedAt === null ? 0 : Math.max(0, (now - startedAt) / 1000)
+      const seconds = startedAt === null ? paused ? elapsed : 0 : Math.max(0, (now - startedAt) / 1000)
       const pose = featherPose(seconds, reducedMotion)
       flight.style.setProperty('--flight-height', String(pose.height))
       flight.style.setProperty('--flight-offset', String(pose.offset))
       flight.style.setProperty('--flight-roll', `${pose.roll}deg`)
       flight.style.setProperty('--flight-yaw', `${pose.yaw}deg`)
       flight.style.setProperty('--flight-pitch', `${pose.pitch}deg`)
-      if (startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
+      if (!reducedMotion && startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
     }
     draw(performance.now())
     return () => cancelAnimationFrame(frame)
-  }, [startedAt, reducedMotion])
+  }, [startedAt, reducedMotion, paused, paused ? elapsed : 0])
 
   function beginReset() {
-    setElapsed(0)
-    setStartedAt(performance.now())
+    if (!paused) setElapsed(0)
+    setStartedAt(performance.now() - (paused ? elapsed * 1000 : 0))
+    setPaused(false)
   }
 
   return (
@@ -116,7 +132,7 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
         <div className="calm-copy">
           <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> Breathing reset</span>
           <h1 id="view-heading" tabIndex={-1}>The search can wait one breath.</h1>
-          <p>Breathe in as it rises, pause gently at the top, and out as it falls.{!playing && ' Tap Begin whenever you are ready.'}</p>
+          <p>Watch the feather settle once. Then breathe in, pause gently if comfortable, and breathe out at your pace.{!playing && !paused && ' Tap Begin whenever you are ready.'}</p>
         </div>
 
         <div className="calm-breath-stage">
@@ -142,14 +158,14 @@ export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => voi
       <footer className="calm-instrument">
         <div className="calm-breath-card">
           <span className="sr-only" aria-live="polite">{playing ? phase : 'Begin when you are ready.'}</span>
-          {playing && <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
+          {(playing || paused) && <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
             <span style={{ transform: `scaleX(${Math.min(1, elapsed / TOTAL_SECONDS)})` }} />
           </div>}
         </div>
 
         <button className="calm-resume" onClick={playing ? onResume : beginReset}>
           <span className="calm-resume__feather"><FeatherMark /></span>
-          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : 'Begin breathing reset'}</span>
+          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : paused ? 'Continue breathing reset' : 'Begin breathing reset'}</span>
           <i aria-hidden="true"><Icon name="forward" size={16} /></i>
         </button>
 

@@ -1,4 +1,4 @@
-const VERSION = 'findtrail-v2.12.4-final-polish-2026-10-02'
+const VERSION = 'findtrail-v2.13-night-orchard-2026-10-29'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
@@ -72,12 +72,24 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then(async (response) => {
+      (async () => {
+        const fallback = async () => (await caches.match(event.request, { ignoreVary: true }))
+          || (await caches.match(scoped('/index.html'), { ignoreVary: true }))
+          || Response.error()
+        const network = fetch(event.request).then(async (response) => {
           if (response.ok) await (await caches.open(RUNTIME_CACHE)).put(event.request, response.clone())
           return response
+        }).catch(fallback)
+        let timer
+        const cachedAfterDelay = new Promise((resolve) => {
+          timer = setTimeout(async () => {
+            const cached = await caches.match(event.request, { ignoreVary: true }) || await caches.match(scoped('/index.html'), { ignoreVary: true })
+            if (cached) resolve(cached)
+          }, 2500)
         })
-        .catch(async () => (await caches.match(event.request, { ignoreVary: true })) || (await caches.match(scoped('/index.html'), { ignoreVary: true })) || Response.error()),
+        try { return await Promise.race([network, cachedAfterDelay]) }
+        finally { clearTimeout(timer) }
+      })(),
     )
     return
   }

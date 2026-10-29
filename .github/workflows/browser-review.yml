@@ -1,0 +1,34 @@
+name: FindTrail 2.13 browser review
+
+on:
+  push:
+    branches: [build/findtrail-night-orchard-audit]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Install isolated browser QA tooling
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install chromium --with-deps
+      - name: Check rendered mobile journeys
+        run: node scripts/browser-qa.mjs
+      - name: Preserve mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: findtrail-2-13-mobile-screenshots
+          path: browser-qa/
+          if-no-files-found: ignore

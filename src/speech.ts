@@ -73,7 +73,10 @@ if (typeof window !== 'undefined') {
 }
 
 function loadPiper(): Promise<PiperModule> {
-  piperModule ??= import(/* @vite-ignore */ PIPER_MODULE_URL) as Promise<PiperModule>
+  piperModule ??= (import(/* @vite-ignore */ PIPER_MODULE_URL) as Promise<PiperModule>).catch((error: unknown) => {
+    piperModule = null
+    throw error
+  })
   return piperModule
 }
 
@@ -155,7 +158,8 @@ export function stopSpeaking(): void {
 
 export function parseCommand(transcript: string): Command {
   const value = transcript.toLocaleLowerCase().trim()
-  if (/\b(found|got it|there it is|found it)\b/.test(value)) return 'found'
+  if (/\b(not|never|nothing|haven['’]?t|hasn['’]?t|didn['’]?t|don['’]?t|can['’]?t|cannot)\b/.test(value) && /\b(found|find|got)\b/.test(value)) return 'unknown'
+  if (/^(?:i\s+)?(?:found(?:\s+it)?|got it|there it is)[.!]?$/i.test(value)) return 'found'
   if (/\b(next|nothing here|keep going|not here)\b/.test(value)) return 'next'
   if (/\b(repeat|say (?:that )?again|read it)\b/.test(value)) return 'repeat'
   return 'unknown'

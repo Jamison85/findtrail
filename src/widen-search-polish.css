@@ -3,7 +3,7 @@
     min-height: 100dvh;
     background:
       radial-gradient(circle at 90% 4%, rgba(200, 107, 83, .13), transparent 15rem),
-      linear-gradient(165deg, #faf5ec 0 56%, #e4eee7 100%);
+      linear-gradient(165deg, #1F1C26 0 56%, #2A4A4C 100%);
   }
 
   .widen-topbar {
@@ -79,7 +79,7 @@
     padding: 10px 12px;
     border: 1px solid rgba(23, 58, 52, .11);
     border-radius: 16px;
-    background: rgba(219, 231, 223, .78);
+    background: rgba(42, 74, 76, .78);
   }
 
   .widen-status > span {
@@ -89,7 +89,7 @@
     place-items: center;
     border-radius: 11px;
     color: var(--evergreen);
-    background: rgba(255, 253, 249, .78);
+    background: rgba(48, 42, 54, .78);
   }
 
   .widen-status strong,
@@ -103,7 +103,7 @@
     padding: 18px;
     border: 1px solid rgba(255, 255, 255, .85);
     border-radius: 25px;
-    background: rgba(255, 253, 249, .95);
+    background: rgba(48, 42, 54, .95);
     box-shadow: 0 20px 48px rgba(23, 58, 52, .12);
   }
 

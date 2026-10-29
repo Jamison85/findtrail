@@ -1,4 +1,4 @@
-# FindTrail 2.1 product specification
+# FindTrail product specification
 
 ## Job to be done
 
@@ -26,11 +26,11 @@ An interrupted search must survive a refresh or app restart.
 - Item-specific next actions after an unsuccessful first trail
 - Validated local JSON backup and restore
 - User-controlled installed-app update notices
-- Thirty-second visual breathing reset
-- Optional spoken instructions and browser-supported hands-free commands
+- 36-second guided breathing reset with one feather landing and one water impact
+- Optional local spoken instructions and browser-supported single voice commands with microphone disclosure
 - Reduced motion and larger text settings
 - Offline PWA shell with install metadata
-- Destructive-data confirmation and storage error recovery
+- Destructive-data confirmation, original-data recovery, and simultaneous-tab conflict protection
 
 ## Explicit non-goals
 
@@ -46,4 +46,4 @@ FindTrail is steady, capable, and lightly funny. It says “Nothing here. Good, 
 
 ## Visual direction
 
-An adult field guide, softened for a stressful moment: deep evergreen, warm paper, moss, clay, and plum. Rounded geometry is paired with editorial type scale, trail-line illustrations, generous touch targets, and restrained animation. It must not look clinical, childish, or like a generic AI dashboard.
+An adult field guide, softened for a stressful moment: deep plum, mineral teal, rose, coral ember, and ivory. Rounded geometry is paired with editorial type scale, trail-line illustrations, generous touch targets, and restrained animation. It must not look clinical, childish, or like a generic AI dashboard.

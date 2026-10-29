@@ -262,7 +262,7 @@
     position: absolute;
     top: var(--water-touch-y, 64%);
     left: 50%;
-    width: clamp(88px, 26vw, 112px);
+    width: clamp(118px, 31vw, 152px);
     aspect-ratio: 2 / 3;
     transform: translate(-54.3%, calc(-93.4% - var(--feather-rise) * var(--flight-height, 0)));
     transform-origin: 54.3% 93.4%;
@@ -270,7 +270,7 @@
     transform-style: preserve-3d;
     filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .22));
     will-change: transform;
-    --feather-rise: clamp(108px, 16dvh, 132px);
+    --feather-rise: clamp(180px, 32dvh, 270px);
     --feather-sway: clamp(12px, 4vw, 22px);
 
   }
@@ -278,7 +278,7 @@
   .calm-feather-drift {
     width: 100%;
     height: 100%;
-    transform-origin: 50% 50%;
+    transform-origin: 54.3% 93.4%;
     transform-style: preserve-3d;
     will-change: transform;
     transform: translateX(calc(var(--feather-sway) * var(--flight-offset, 0))) rotate(var(--flight-roll, 0deg));
@@ -289,7 +289,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    transform-origin: 50% 50%;
+    transform-origin: 54.3% 93.4%;
     transform-style: preserve-3d;
     backface-visibility: visible;
     will-change: transform;
@@ -443,7 +443,7 @@
     .calm-guidance__count { min-height: 31px; }
     .calm-guidance__count b { font-size: 1.78rem; }
     .calm-guidance__hint { font-size: .6rem; }
-    .calm-feather-anchor { width: clamp(78px, 23vw, 98px); }
+    .calm-feather-anchor { width: clamp(110px, 30vw, 130px); }
     .calm-instrument { padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
     .calm-breath-card { padding-bottom: 7px; }
     .calm-resume { min-height: 49px; margin-top: 1px; }

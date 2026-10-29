@@ -2,7 +2,7 @@
 
 FindTrail is a calm, local-first progressive web app for finding misplaced items. It turns a frantic whole-house search into one useful place at a time, remembers where items were found, and gently promotes likely locations during future searches.
 
-Version 2.12 finishes the first-run and search-polish pass. New users get a short three-step onboarding before Home loads, iPhone users keep reusable Home Screen install guidance, Reset uses the natural feather consistently, learned History shortcuts prioritize repeated useful locations, and update notices wait for a root screen instead of interrupting an active search. The production Home, clue flow, focused and wider trails, Found learning, Still Missing recovery, feather-and-water breathing reset, local voice, backup and restore, offline shell, and local-first privacy model remain intact.
+Version 2.13 is in review on the implementation branch. Home now opens immediately, with the introduction available through **How it works**. The approved Night Orchard and Mineral Ember palette is applied across the existing screens. Activity clues lead the short trail when relevant; a dead phone does not suggest ringing. Reset has one feather descent and one water impact while the three breathing cycles continue. Interrupted searches, unfinished areas, Found drafts, backups, and offline access retain their existing local data format. This branch has not been deployed.
 
 ## Search improvements
 
@@ -35,7 +35,7 @@ npm run dev
 npm run check
 ```
 
-See [docs/QA_REPORT.md](docs/QA_REPORT.md) for the current release evidence and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for the remaining physical-device approval.
+See [docs/QA_REPORT_2.13.md](docs/QA_REPORT_2.13.md) for this branch’s evidence, the [2.12 QA report](docs/QA_REPORT.md) for historical validation, and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for the remaining approval steps.
 
 ## Deployment
 
@@ -48,3 +48,5 @@ npm run deploy
 ## Privacy
 
 Search progress, preferences, saved home spots, custom-item shortcuts, and found-item history remain in browser storage on the current device. FindTrail has no account system, analytics, advertising, or remote database. A portable JSON backup is created only when the user explicitly exports one.
+
+The `public/_headers` policy applies to compatible hosts such as Cloudflare Workers. GitHub Pages does not apply this file, so verify headers on the actual host. Browser voice commands may use the browser vendor’s speech provider after the user opts in; Read aloud downloads a free model and generates speech locally when supported.
