@@ -101,6 +101,14 @@ export interface ActiveSearch {
   previousStops?: SearchStop[]
   resumeScreen?: 'clues' | 'trail' | 'end'
   reviewingSkippedFrom?: 'widen' | 'end'
+  resetReturn?: 'trail' | 'widen' | 'end' | 'clues'
+  foundDraft?: {
+    location: string
+    returnScreen: 'trail' | 'widen' | 'end'
+    foundInCurrentArea: boolean | null
+    saveAsHome: boolean
+    pinCustomItem: boolean
+  }
   startedAt: string
   lastUpdatedAt: string
 }

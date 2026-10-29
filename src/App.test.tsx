@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { ONBOARDING_STORAGE_KEY } from './components/Onboarding'
-import { DEFAULT_SETTINGS, STORAGE_KEY } from './storage'
+import { DEFAULT_SETTINGS, STORAGE_KEY, RECOVERY_KEY } from './storage'
 
 async function buildTrailFromDoorway() {
   fireEvent.click(await screen.findByText('Went through a doorway'))
@@ -25,35 +25,36 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
 
-    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
     await waitFor(() => expect(window.location.search).toBe(''))
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await waitFor(() => expect(window.history.state.findtrailScreen).toBe('settings'))
     act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { findtrailScreen: 'home' } })))
-    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
   })
 
 
 
-  it('welcomes a genuinely new user before showing the home screen', () => {
+  it('shows Home immediately and offers the introduction on demand', () => {
     localStorage.removeItem(ONBOARDING_STORAGE_KEY)
     render(<App />)
 
+    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'How it works' }))
     expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toHaveFocus()
-    expect(screen.queryByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
 
-    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'A still lake at dusk' })).toBeInTheDocument()
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
   it('keeps the home artwork static instead of implying search checkpoints', () => {
     render(<App />)
-    expect(screen.getByRole('img', { name: 'A calm home scene for starting a FindTrail search' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'A still lake at dusk' })).toBeInTheDocument()
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
   })
@@ -62,7 +63,7 @@ describe('FindTrail app', () => {
     const transitionWait = { timeout: 6000 }
     render(<App />)
     expect(screen.getByText('Private on this device')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'A clear path to finding what’s missing.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
     const keysButton = screen.getByRole('button', { name: /keys/i })
     fireEvent.click(keysButton)
     expect(keysButton).toHaveClass('is-departing')
@@ -157,7 +158,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Breathe in as it rises, pause gently at the top, and out as it falls. Tap Begin whenever you are ready.')).toBeInTheDocument()
+    expect(screen.getByText('Watch the feather settle once. Then breathe in, pause gently if comfortable, and breathe out at your pace. Tap Begin whenever you are ready.')).toBeInTheDocument()
     expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
     expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /begin breathing reset/i })).toBeInTheDocument()
@@ -542,5 +543,48 @@ describe('FindTrail app', () => {
     expect(window.confirm).toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'History' }))
     expect(screen.getByText('No found places yet')).toBeInTheDocument()
+  })
+
+  it('does not overwrite damaged saved data until the user preserves the original', () => {
+    const original = '{broken data'
+    localStorage.setItem(STORAGE_KEY, original)
+    render(<App />)
+    expect(screen.getByText(/Saved data needs your review/)).toBeInTheDocument()
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(original)
+    fireEvent.click(screen.getByRole('button', { name: 'Use recovered data' }))
+    expect(JSON.parse(localStorage.getItem(RECOVERY_KEY) || '[]')[0].originals[STORAGE_KEY]).toBe(original)
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}').version).toBe(3)
+  })
+
+  it('halts saving if another tab changes the same data', () => {
+    render(<App />)
+    const other = JSON.stringify({ version: 3, history: [], activeSearch: null, settings: { ...DEFAULT_SETTINGS, calmPause: false }, savedItems: [] })
+    localStorage.setItem(STORAGE_KEY, other)
+    act(() => window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: other })))
+    expect(screen.getByText(/Another tab changed your saved data/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /Offer a reset every 3 stops/i }))
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(other)
+  })
+
+  it('resumes a found-place draft and its exact Reset destination after reload', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 3, settings: DEFAULT_SETTINGS, history: [], savedItems: [],
+      activeSearch: {
+        version: 3, id: 'draft-1', itemId: 'keys', itemLabel: 'Keys', answers: {},
+        stops: [{ id: 'entry', title: 'The landing zone', instruction: 'Look.', spots: ['Blue bowl'] }],
+        currentIndex: 0, checkedSpots: { entry: ['Blue bowl'] }, resetReturn: 'trail',
+        foundDraft: { location: 'Blue bowl', returnScreen: 'trail', foundInCurrentArea: null, saveAsHome: false, pinCustomItem: true },
+        startedAt: '2026-09-22T12:00:00.000Z', lastUpdatedAt: '2026-09-22T12:05:00.000Z',
+      },
+    }))
+    window.history.replaceState({}, '', '/?screen=calm')
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    expect(screen.getByRole('textbox', { name: 'Exact place' })).toHaveValue('Blue bowl')
+    expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'false')
   })
 })

@@ -54,8 +54,8 @@ describe('TrailView', () => {
     expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuetext', 'Place 1 of 2 in the focused pass')
     expect(screen.getByRole('group', { name: 'Places to check at The landing zone' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Read aloud' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Hands-free voice commands are unavailable in this browser' })).toBeDisabled()
-    expect(screen.getByText(/Sneaky little side quest\./)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Voice commands are unavailable in this browser' })).toBeDisabled()
+    expect(screen.getByText(/Finish checking here before moving on\./)).toBeInTheDocument()
     expect(screen.queryByText(/Sneaky bastard\./)).not.toBeInTheDocument()
   })
 

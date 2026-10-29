@@ -6,13 +6,13 @@
 - [x] Unit and component tests pass
 - [x] Production build passes
 - [x] Dependency audit has no high or critical production vulnerability
-- [x] CI passes on the production branch
+- [ ] CI passes on the 2.13 review branch
 
 ## Functional
 
 - [x] Home custom-item sheet opens and submits without changing page height
 - [x] Home recent-find card opens the matching history detail
-- [x] First-run onboarding appears before Home and can resume after an interrupted first visit
+- [x] Home opens immediately; How it works opens the optional introduction
 - [x] First-use Home state remains useful without saved history
 - [x] Common-item and custom-item searches complete
 - [x] Clue answers visibly change trail order
@@ -29,7 +29,7 @@
 - [x] Settings separates guidance, appearance, saved homes, backup, and destructive controls
 - [x] iPhone Home Screen instructions remain available from Settings after the first-use coach
 - [x] Calm reset resumes the correct screen
-- [x] Ambient horizon reset completes three 12-second cycles with a gentle hold
+- [x] Reset guides three 12-second breaths with one feather descent and one water impact
 - [x] Reset has no sound control or audio path
 - [x] Feather-contact ripple is clearly visible without overpowering the reset, and reduced motion receives a still horizon
 - [x] Update notices wait until a root screen and never shrink the reset
@@ -39,9 +39,22 @@
 - [x] Skipped places remain separate from visited counts and reopen directly from either checkpoint, including after app restart
 - [x] Found place saves with one required detail; optional learning choices stay available without delaying Save
 - [x] Speech features fail gracefully when browser support is absent
-- [x] Offline app shell opens after one successful online visit
+- [x] Offline shell precaches core assets and exposes readiness status in Settings
+
+## FindTrail 2.13 release validation (pending)
+
+- [ ] Hosted preview at 320, 360, 412, and 430 pixel widths; inspect Home, Clues, Trail, Found, Still Missing, History, Settings, and Reset
+- [ ] Keyboard and screen-reader walkthrough at 200% zoom and reduced motion
+- [ ] Airplane-mode reload after the offline-ready status appears, including lake media byte range playback
+- [ ] Verify the browser microphone disclosure and first-use local voice model download on the target browsers
+- [ ] Inspect privacy headers and voice model network requests on the actual host
+- [ ] Review one search with changed, carried, cleaned, silent-phone, and dead-phone clues
+- [ ] Install on a physical device and test interrupted search, reset return, backup restore, and found draft
 
 ## Visual and accessibility
+
+The checked viewport results below are historical FindTrail 2.12 evidence. They are not validation of this branch.
+
 
 - [x] FindTrail 2.12 search journey at 360 × 800 Android viewport
 - [x] FindTrail 2.12 search journey at 412 × 915 Galaxy-class viewport

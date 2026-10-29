@@ -1,10 +1,10 @@
 import { ITEM_BY_ID } from '../data'
 import { getRecoveryActions } from '../recovery'
-import { skippedPlaces, visitedAreaCount } from '../searchProgress'
+import { skippedPlaces, unfinishedPlaces, visitedAreaCount } from '../searchProgress'
 import type { ActiveSearch } from '../types'
 import { Icon } from './Icon'
 import { FeatherMark } from './FeatherMark'
-import { SkippedPlaces } from './SkippedPlaces'
+import { SkippedPlaces, UnfinishedPlaces } from './SkippedPlaces'
 import { DeviceFinderLinks } from './DeviceFinderLinks'
 
 interface StillMissingViewProps {
@@ -113,6 +113,7 @@ export function StillMissingView({ search, onReviewSkipped, onFound, onReset, on
         </ol>
       </section>
 
+      <UnfinishedPlaces search={search} places={unfinishedPlaces(search)} onReview={onReviewSkipped} />
       <SkippedPlaces places={openPlaces} onReview={onReviewSkipped} />
 
       <section className="recovery-choice" aria-labelledby="recovery-choice-heading">

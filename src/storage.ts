@@ -3,6 +3,7 @@ import type { ActiveSearch, FoundEntry, ItemId, PersistedData, SavedItem, Search
 export const STORAGE_KEY = 'findtrail:data:v3'
 export const LEGACY_STORAGE_KEY = 'findtrail:data:v2'
 export const BACKUP_FORMAT = 'findtrail-backup'
+export const RECOVERY_KEY = 'findtrail:recovery:v1'
 
 export const DEFAULT_SETTINGS: Settings = {
   motion: 'system',
@@ -81,6 +82,14 @@ function validActiveSearch(value: unknown): ActiveSearch | null {
   if (value.previousStops !== undefined && (!Array.isArray(value.previousStops) || !value.previousStops.every(validStop))) return null
   if (value.resumeScreen !== undefined && !['clues', 'trail', 'end'].includes(String(value.resumeScreen))) return null
   if (value.reviewingSkippedFrom !== undefined && value.reviewingSkippedFrom !== 'widen' && value.reviewingSkippedFrom !== 'end') return null
+  if (value.resetReturn !== undefined && !['clues', 'trail', 'widen', 'end'].includes(String(value.resetReturn))) return null
+  if (value.foundDraft !== undefined) {
+    const draft = value.foundDraft
+    if (!isObject(draft) || typeof draft.location !== 'string'
+      || !['trail', 'widen', 'end'].includes(String(draft.returnScreen))
+      || ![true, false, null].includes(draft.foundInCurrentArea as boolean | null)
+      || typeof draft.saveAsHome !== 'boolean' || typeof draft.pinCustomItem !== 'boolean') return null
+  }
   return { ...(value as unknown as ActiveSearch), version: 3, skippedStops: (value.skippedStops as string[] | undefined) ?? [] }
 }
 
@@ -143,6 +152,53 @@ export function loadData(storage: Pick<Storage, 'getItem'> = localStorage): Pers
   } catch {
     return freshData()
   }
+}
+
+export interface DataLoadResult {
+  data: PersistedData
+  currentRaw: string | null
+  originals: Record<string, string>
+  recoveryNeeded: boolean
+}
+
+/** Read without writing. The app must acknowledge recovery before autosaving. */
+export function readDataState(storage: Pick<Storage, 'getItem'> = localStorage): DataLoadResult {
+  const originals: Record<string, string> = {}
+  let currentRaw: string | null = null
+  let recoveryNeeded = false
+  try {
+    for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY]) {
+      const raw = storage.getItem(key)
+      if (key === STORAGE_KEY) currentRaw = raw
+      if (raw === null) continue
+      originals[key] = raw
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        const data = parsePersisted(parsed)
+        if (!data || !isObject(parsed)) { recoveryNeeded = true; continue }
+        const incomplete = !Array.isArray(parsed.history)
+          || !isCompleteSettings(parsed.settings)
+          || !('activeSearch' in parsed)
+          || data.history.length !== parsed.history.length
+          || (parsed.activeSearch != null && data.activeSearch === null)
+          || (Number(parsed.version) === 3 && (!Array.isArray(parsed.savedItems) || data.savedItems.length !== parsed.savedItems.length))
+        return { data, currentRaw, originals, recoveryNeeded: recoveryNeeded || incomplete }
+      } catch { recoveryNeeded = true }
+    }
+  } catch { recoveryNeeded = true }
+  return { data: freshData(), currentRaw, originals, recoveryNeeded }
+}
+
+export function preserveRecovery(originals: Record<string, string>, storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage): boolean {
+  try {
+    if (!Object.keys(originals).length) return true
+    // Never replace an earlier recovery copy. Subsequent incidents remain exportable.
+    const previous = storage.getItem(RECOVERY_KEY)
+    const records: unknown[] = previous ? JSON.parse(previous) : []
+    if (!Array.isArray(records)) return false
+    storage.setItem(RECOVERY_KEY, JSON.stringify([...records, { savedAt: new Date().toISOString(), originals }]))
+    return true
+  } catch { return false }
 }
 
 export function saveData(data: PersistedData, storage: Pick<Storage, 'setItem'> = localStorage): boolean {

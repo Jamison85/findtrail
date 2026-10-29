@@ -33,16 +33,14 @@ and [NVIDIA, Effective Water Simulation from Physical Models](https://developer.
 
 The impact is at `(50%, 64%)` of the uncropped video. A ResizeObserver maps
 that point through the same cover crop as the poster and video. The feather's
-visible tip is at `(54.3%, 93.4%)` of its transparent image; all its transforms
-pivot around that point. The three 12-second breaths use 4 seconds in, 2 seconds
-holding gently, and 6 seconds out. The feather reaches the water at 11.2, 23.2,
-and 35.2 seconds, leaving only 0.8 seconds at the bottom of each breath.
-Each landing plays this same single-impact clip once.
+visible tip is at `(54.3%, 93.4%)` of its transparent image; the descent
+transforms pivot around it. Begin starts one asymmetric descent. The feather
+reaches the lake at twelve seconds and settles in a shallow diagonal pose.
+The impact clip plays once and then returns to the still lake.
 
-Begin starts the reset. Water follows the feather's CSS animation start time,
-so a delayed visual start cannot reveal the first ring before contact. Media
-playback catches up after loading or a hidden tab; it ends after the final
-wave settles. Reduced motion retains the still lake. The service worker
-precaches the asset and responds to media byte ranges for offline playback.
-The ten-second clip is hidden and paused in the two-second gap before each
-next landing, preventing the browser from restarting an ended video early.
+The independent breathing guidance continues for three 12-second cycles:
+four seconds in, a gentle optional two-second pause, and six seconds out.
+If the page is hidden, the breathing timer pauses and can be continued.
+Reduced motion shows the feather already resting on still water; no clip or
+feather animation plays. The service worker precaches the image and clip and
+responds to media byte ranges for offline playback.

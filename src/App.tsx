@@ -8,16 +8,15 @@ import { HistoryView } from './components/HistoryView'
 import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
 import { canShowIOSInstallInstructions, IOSInstallCoach } from './components/IOSInstallCoach'
-import { LaunchSplash } from './components/LaunchSplash'
-import { Onboarding, shouldShowOnboarding } from './components/Onboarding'
+import { Onboarding } from './components/Onboarding'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { WidenSearchView } from './components/WidenSearchView'
 import { ITEMS, ITEM_BY_ID, STOPS } from './data'
 import { buildTrail, compactActiveSearch, freshPlaces, getFocusedStops, getWiderStartIndex, isFocusedPassComplete, rebuildSearch, startFreshPass } from './trailEngine'
-import { createActiveSearch, itemIdentity, loadData, parseBackup, saveData, serializeBackup } from './storage'
-import { allSearchStops, skippedPlaces, visitedAreaCount } from './searchProgress'
+import { createActiveSearch, itemIdentity, readDataState, preserveRecovery, STORAGE_KEY, parseBackup, saveData, serializeBackup } from './storage'
+import { allSearchStops, skippedPlaces, unfinishedPlaces, visitedAreaCount } from './searchProgress'
 import { trapDialogFocus } from './modalFocus'
 import type { ActiveSearch, ClueOption, ClueQuestion, FoundEntry, ItemId, PersistedData, SavedItem, Screen, Settings } from './types'
 
@@ -70,32 +69,36 @@ function shouldReduceMotion(settings: Settings): boolean {
 }
 
 export default function App() {
+  const [initialLoad, setInitialLoad] = useState(() => readDataState())
   const [data, setData] = useState<PersistedData>(() => {
-    const loaded = loadData()
+    const loaded = initialLoad.data
     return loaded.activeSearch ? { ...loaded, activeSearch: compactActiveSearch(loaded.activeSearch) } : loaded
   })
   const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(window.location.search).get('screen') === 'calm' ? 'calm' : 'home')
   const [clueIndex, setClueIndex] = useState(0)
   const [customOpen, setCustomOpen] = useState(false)
   const [customName, setCustomName] = useState('')
-  const [foundLocation, setFoundLocation] = useState('')
-  const [foundInCurrentArea, setFoundInCurrentArea] = useState(false)
-  const [foundReturnScreen, setFoundReturnScreen] = useState<Screen>('trail')
-  const [saveAsHome, setSaveAsHome] = useState(false)
-  const [pinCustomItem, setPinCustomItem] = useState(true)
+  const [foundLocation, setFoundLocation] = useState(initialLoad.data.activeSearch?.foundDraft?.location ?? '')
+  const [foundInCurrentArea, setFoundInCurrentArea] = useState<boolean | null>(initialLoad.data.activeSearch?.foundDraft?.foundInCurrentArea ?? null)
+  const [foundReturnScreen, setFoundReturnScreen] = useState<'trail' | 'widen' | 'end'>(initialLoad.data.activeSearch?.foundDraft?.returnScreen ?? 'trail')
+  const [saveAsHome, setSaveAsHome] = useState(initialLoad.data.activeSearch?.foundDraft?.saveAsHome ?? false)
+  const [pinCustomItem, setPinCustomItem] = useState(initialLoad.data.activeSearch?.foundDraft?.pinCustomItem ?? true)
   const [foundSummary, setFoundSummary] = useState<FoundSummary | null>(null)
-  const [returnScreen, setReturnScreen] = useState<Screen>('home')
+  const [returnScreen, setReturnScreen] = useState<Screen>(initialLoad.data.activeSearch?.resetReturn ?? 'home')
   const [pauseOffer, setPauseOffer] = useState(false)
   const [storageError, setStorageError] = useState(false)
   const [online, setOnline] = useState(() => navigator.onLine)
+  const [offlineReady, setOfflineReady] = useState(() => Boolean(navigator.serviceWorker?.controller))
+  const [offlineError, setOfflineError] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null)
   const [backupStatus, setBackupStatus] = useState<{ message: string; kind: 'success' | 'error' } | null>(null)
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null)
-  const [onboardingOpen, setOnboardingOpen] = useState(() => shouldShowOnboarding())
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [iosInstallHelpRequest, setIosInstallHelpRequest] = useState(0)
-  const [launching, setLaunching] = useState(() => import.meta.env.MODE !== 'test')
-  const launchExperience = useRef<HTMLDivElement>(null)
+  const [recoveryNeeded, setRecoveryNeeded] = useState(initialLoad.recoveryNeeded)
+  const [storageConflict, setStorageConflict] = useState(false)
+  const expectedRaw = useRef(initialLoad.currentRaw)
   const previousScreen = useRef(screen)
   const focusItemPickerOnHome = useRef(false)
   const onboardingWasOpen = useRef(onboardingOpen)
@@ -105,7 +108,6 @@ export default function App() {
   const newPlaces = active ? freshPlaces(active, data.history, data.savedItems) : []
   const optionalPlaces = active ? buildTrail(active.itemId, active.itemLabel, active.answers, data.history, data.savedItems, [], true)
     .filter((stop) => stop.kind !== 'safety' && stop.kind !== 'final') : []
-  const launchReducedMotion = shouldReduceMotion(data.settings)
   const navigationReady = useRef(false)
   const screenFromHistory = useRef(false)
   const screenRef = useRef(screen)
@@ -160,27 +162,31 @@ export default function App() {
   }, [screen])
 
   useEffect(() => {
-    setStorageError(!saveData(data))
-  }, [data])
+    if (recoveryNeeded || storageConflict) return
+    persistCurrent(data)
+  }, [data, recoveryNeeded, storageConflict])
 
   useEffect(() => {
-    if (!launching) return
-    const experience = launchExperience.current
-    experience?.setAttribute('inert', '')
-    const timer = window.setTimeout(() => setLaunching(false), launchReducedMotion ? 850 : 1800)
-    return () => {
-      window.clearTimeout(timer)
-      experience?.removeAttribute('inert')
+    const changed = (event: StorageEvent) => {
+      if ((event.key === STORAGE_KEY || event.key === null) && event.newValue !== expectedRaw.current) setStorageConflict(true)
     }
-  }, [launching, launchReducedMotion])
+    window.addEventListener('storage', changed)
+    return () => window.removeEventListener('storage', changed)
+  }, [])
 
   useEffect(() => {
-    if (launching) return
+    if (screen !== 'found') return
+    setData((current) => current.activeSearch ? { ...current, activeSearch: stamp({ ...current.activeSearch,
+      foundDraft: { location: foundLocation, returnScreen: foundReturnScreen, foundInCurrentArea, saveAsHome, pinCustomItem },
+    }) } : current)
+  }, [screen, active?.id, foundLocation, foundReturnScreen, foundInCurrentArea, saveAsHome, pinCustomItem])
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       document.getElementById(onboardingOpen ? 'onboarding-title' : 'view-heading')?.focus({ preventScroll: true })
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [launching, onboardingOpen])
+  }, [onboardingOpen])
 
   useEffect(() => {
     const onlineHandler = () => setOnline(true)
@@ -206,6 +212,17 @@ export default function App() {
     }
     window.addEventListener('findtrail:update-ready', updateHandler)
     return () => window.removeEventListener('findtrail:update-ready', updateHandler)
+  }, [])
+
+  useEffect(() => {
+    const ready = () => { setOfflineReady(true); setOfflineError(false) }
+    const failed = () => setOfflineError(true)
+    window.addEventListener('findtrail:offline-ready', ready)
+    window.addEventListener('findtrail:offline-error', failed)
+    return () => {
+      window.removeEventListener('findtrail:offline-ready', ready)
+      window.removeEventListener('findtrail:offline-error', failed)
+    }
   }, [])
 
   useEffect(() => {
@@ -238,7 +255,10 @@ export default function App() {
   }, [onboardingOpen])
 
   function navigate(next: Screen) {
-    if (next === 'calm') setReturnScreen(active?.stops.length ? 'trail' : 'home')
+    if (next === 'calm') {
+      openReset(active?.resumeScreen === 'end' ? 'end' : active?.widenReady ? 'widen' : active?.stops.length ? 'trail' : active ? 'clues' : 'home')
+      return
+    }
     setHistoryEntryId(null)
     setScreen(next)
   }
@@ -250,6 +270,13 @@ export default function App() {
 
   function updateActive(updater: (current: ActiveSearch) => ActiveSearch) {
     setData((current) => current.activeSearch ? { ...current, activeSearch: stamp(updater(current.activeSearch)) } : current)
+  }
+
+  function openReset(origin: Screen) {
+    setPauseOffer(false)
+    setReturnScreen(origin)
+    if (['trail', 'widen', 'end', 'clues'].includes(origin)) updateActive((current) => ({ ...current, resetReturn: origin as ActiveSearch['resetReturn'] }))
+    setScreen('calm')
   }
 
   function startSearch(itemId: ItemId, label?: string) {
@@ -295,6 +322,16 @@ export default function App() {
 
   function resumeSearch() {
     if (!active) return
+    if (active.foundDraft) {
+      const draft = active.foundDraft
+      setFoundLocation(draft.location)
+      setFoundReturnScreen(draft.returnScreen)
+      setFoundInCurrentArea(draft.foundInCurrentArea)
+      setSaveAsHome(draft.saveAsHome)
+      setPinCustomItem(draft.pinCustomItem)
+      setScreen('found')
+      return
+    }
     if (active.stops.length && active.resumeScreen !== 'clues') {
       setScreen(active.reviewingSkippedFrom ? 'trail' : active.widenReady ? 'widen' : active.resumeScreen === 'end' ? 'end' : 'trail')
       return
@@ -349,7 +386,7 @@ export default function App() {
   }
 
   function reviewSkippedPlace(stopId: string, from: 'widen' | 'end') {
-    if (!active || !skippedPlaces(active).some((stop) => stop.id === stopId)) return
+    if (!active || ![...skippedPlaces(active), ...unfinishedPlaces(active)].some((stop) => stop.id === stopId)) return
     const stop = allSearchStops(active).find((candidate) => candidate.id === stopId)
     if (!stop) return
     updateActive((current) => {
@@ -446,11 +483,21 @@ export default function App() {
   }
 
   function openFound() {
+    if (active?.foundDraft) {
+      const draft = active.foundDraft
+      setFoundLocation(draft.location)
+      setFoundInCurrentArea(draft.foundInCurrentArea)
+      setFoundReturnScreen(draft.returnScreen)
+      setSaveAsHome(draft.saveAsHome)
+      setPinCustomItem(draft.pinCustomItem)
+      setScreen('found')
+      return
+    }
     const stop = screen === 'trail' ? active?.stops[active.currentIndex] : undefined
     const checked = stop ? active?.checkedSpots[stop.id] ?? [] : []
     setFoundLocation(checked.at(-1) ?? '')
-    setFoundInCurrentArea(false)
-    setFoundReturnScreen(screen)
+    setFoundInCurrentArea(null)
+    setFoundReturnScreen(screen === 'widen' || screen === 'end' ? screen : 'trail')
     setSaveAsHome(false)
     setPinCustomItem(true)
     setScreen('found')
@@ -534,7 +581,47 @@ export default function App() {
   }
 
   function retryStorage() {
-    setStorageError(!saveData(data))
+    if (!recoveryNeeded && !storageConflict) persistCurrent(data)
+  }
+
+  function persistCurrent(next: PersistedData) {
+    try {
+      if (localStorage.getItem(STORAGE_KEY) !== expectedRaw.current) { setStorageConflict(true); return }
+      if (!saveData(next)) { setStorageError(true); return }
+      expectedRaw.current = localStorage.getItem(STORAGE_KEY)
+      setStorageError(false)
+    } catch { setStorageError(true) }
+  }
+
+  function downloadText(contents: string, filename: string) {
+    const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  function acceptRecovery() {
+    try {
+      if (localStorage.getItem(STORAGE_KEY) !== expectedRaw.current) { setStorageConflict(true); return }
+      if (!preserveRecovery(initialLoad.originals) || !saveData(data)) { setStorageError(true); return }
+      expectedRaw.current = localStorage.getItem(STORAGE_KEY)
+      setRecoveryNeeded(false)
+      setStorageError(false)
+    } catch { setStorageError(true) }
+  }
+
+  function loadNewerData() {
+    if (!window.confirm('Load the other window’s saved data? Export this window’s work first if you want to keep both copies.')) return
+    const loaded = readDataState()
+    expectedRaw.current = loaded.currentRaw
+    setInitialLoad(loaded)
+    setRecoveryNeeded(loaded.recoveryNeeded)
+    setStorageConflict(false)
+    setData(loaded.data)
+    setFoundSummary(null)
+    setScreen('home')
   }
 
   function updateSavedItem(id: string, next: Partial<Pick<SavedItem, 'homeSpot' | 'pinned'>>) {
@@ -580,12 +667,22 @@ export default function App() {
     const summary = `${parsed.data.history.length} found ${parsed.data.history.length === 1 ? 'place' : 'places'} and ${parsed.data.savedItems.length} saved ${parsed.data.savedItems.length === 1 ? 'home' : 'homes'}`
     if (!window.confirm(`Restore ${summary}? This will replace the FindTrail data on this device.`)) return
     const restored = parsed.data.activeSearch ? { ...parsed.data, activeSearch: compactActiveSearch(parsed.data.activeSearch) } : parsed.data
+    let raw: string | null
+    try { raw = localStorage.getItem(STORAGE_KEY) } catch { setStorageError(true); return }
+    if (raw !== expectedRaw.current) { setStorageConflict(true); return }
+    if (!preserveRecovery({ ...initialLoad.originals, ...(raw ? { [STORAGE_KEY]: raw } : {}) })) {
+      setBackupStatus({ message: 'Could not preserve the current data. Export a backup and free some storage before restoring.', kind: 'error' })
+      return
+    }
     if (!saveData(restored)) {
       setStorageError(true)
       setBackupStatus({ message: 'This browser could not save the restored backup. Try again after freeing storage.', kind: 'error' })
       return
     }
     setData(restored)
+    expectedRaw.current = localStorage.getItem(STORAGE_KEY)
+    setRecoveryNeeded(false)
+    setStorageConflict(false)
     setBackupStatus({ message: 'Backup restored.', kind: 'success' })
   }
 
@@ -613,38 +710,29 @@ export default function App() {
   ) : (
     <div className="app-shell">
       <a className="skip-link" href="#app-content">Skip to content</a>
-      <IOSInstallCoach enabled={!launching} requestKey={iosInstallHelpRequest} />
+      <IOSInstallCoach enabled requestKey={iosInstallHelpRequest} />
       {!online && <div className="offline-banner" role="status">Offline mode · your saved trail still works</div>}
       {updateWorker && rootScreen && <div className="update-banner" role="status"><span><strong>FindTrail update ready</strong><small>Your trail is saved. Reload when you are ready.</small></span><button onClick={applyUpdate}>Update now</button><button onClick={() => setUpdateWorker(null)} aria-label="Remind me later"><Icon name="close" size={16} /></button></div>}
-      {storageError && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
+      {recoveryNeeded && <div className="storage-banner storage-banner--recovery" role="alert"><span>Saved data needs your review. The original copy is still here. Changes in this tab are held until you choose what to keep.</span><button onClick={() => downloadText(JSON.stringify(initialLoad.originals, null, 2), 'findtrail-recovery-originals.json')}>Export original data</button><button onClick={acceptRecovery}>Use recovered data</button><button onClick={() => setScreen('settings')}>Restore backup</button></div>}
+      {storageConflict && <div className="storage-banner storage-banner--recovery" role="alert"><span>Another tab changed your saved data. This tab has not overwritten it.</span><button onClick={exportBackup}>Export this tab</button><button onClick={loadNewerData}>Load newer data</button></div>}
+      {storageError && !recoveryNeeded && !storageConflict && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
-        {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} />}
+        {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} onIntro={() => setOnboardingOpen(true)} />}
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
-        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => { setPauseOffer(false); setReturnScreen('trail'); setScreen('calm') }} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
-        {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => { setReturnScreen('widen'); setScreen('calm') }} onHome={() => setScreen('home')} />}
-        {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onBack={() => setScreen(foundReturnScreen)} />}
+        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => openReset('trail')} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
+        {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => openReset('widen')} onHome={() => setScreen('home')} />}
+        {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
-        {screen === 'calm' && <CalmReset hasSearch={Boolean(active?.stops.length)} motion={data.settings.motion} onResume={() => setScreen(returnScreen === 'trail' && !active ? 'home' : returnScreen)} />}
-        {screen === 'settings' && <SettingsView data={data} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
-        {screen === 'end' && active && <StillMissingView search={active} freshPlaceCount={newPlaces.length} onFreshPlaces={tryFreshPlaces} onEditClues={editClues} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => { setReturnScreen('end'); setScreen('calm') }} onRestart={repeatCurrentRoute} onHome={() => setScreen('home')} />}
+        {screen === 'calm' && <CalmReset hasSearch={Boolean(active)} motion={data.settings.motion} onResume={() => { if (active && returnScreen === 'clues') { const questions = ITEM_BY_ID[active.itemId].questions; const next = questions.findIndex((question) => !active.answers[question.id]); setClueIndex(next < 0 ? questions.length - 1 : next) } setScreen(active ? returnScreen : 'home') }} />}
+        {screen === 'settings' && <SettingsView data={data} offlineReady={offlineReady} offlineError={offlineError} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
+        {screen === 'end' && active && <StillMissingView search={active} freshPlaceCount={newPlaces.length} onFreshPlaces={tryFreshPlaces} onEditClues={editClues} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => openReset('end')} onRestart={repeatCurrentRoute} onHome={() => setScreen('home')} />}
       </main>
       {rootScreen && <BottomNav active={screen} onNavigate={navigate} />}
     </div>
   )
 
-  return (
-    <>
-      <div
-        ref={launchExperience}
-        className={`launch-experience${launching ? ' is-covered' : ''}${launching && launchReducedMotion ? ' is-reduced-launch' : ''}`}
-        aria-hidden={launching ? true : undefined}
-      >
-        {experience}
-      </div>
-      {launching && <LaunchSplash reducedMotion={launchReducedMotion} />}
-    </>
-  )
+  return experience
 }
 
 interface HomeViewProps {
@@ -657,9 +745,10 @@ interface HomeViewProps {
   onResume: () => void
   onDiscard: () => void
   onOpenHistory: (id: string) => void
+  onIntro?: () => void
 }
 
-function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, onStart, onResume, onDiscard, onOpenHistory }: HomeViewProps) {
+function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, onStart, onResume, onDiscard, onOpenHistory, onIntro }: HomeViewProps) {
   const latest = data.history[0]
   const pinnedItems = data.savedItems.filter((item) => item.itemId === 'other' && item.pinned)
   const [departingItemId, setDepartingItemId] = useState<ItemId | null>(null)
@@ -717,15 +806,15 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
               <div>
                 <span>Trail in progress</span>
                 <h1 id="view-heading" tabIndex={-1}>Keep looking for {data.activeSearch.itemLabel.toLocaleLowerCase()}?</h1>
-                <p>{data.activeSearch.stops.length ? `Ready at stop ${data.activeSearch.currentIndex + 1}.` : 'Your clues are saved.'}</p>
+                <p>{data.activeSearch.foundDraft ? 'Your found-place note is ready to finish.' : data.activeSearch.stops.length ? `Next: ${data.activeSearch.stops[data.activeSearch.currentIndex]?.title ?? 'your search'}.` : 'Your clues are saved.'}</p>
               </div>
               <button className="button button--primary" onClick={onResume}>Resume trail</button>
               <button className="text-button text-button--muted" onClick={onDiscard}>End this search</button>
             </article>
           ) : (
             <div className="hero-copy">
-              <h1 id="view-heading" tabIndex={-1} aria-label="A clear path to finding what’s missing.">A clear path to <em>finding what’s missing.</em></h1>
-              <p>Choose what’s missing. FindTrail organizes your search and keeps you moving toward the next likely place.</p>
+              <h1 id="view-heading" tabIndex={-1}>Let’s find it.</h1>
+              <p>One place at a time. We’ll help you find what’s missing.</p>
             </div>
           )}
         </section>
@@ -733,7 +822,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
         <div id="item-picker" className="item-picker">
           <div className="section-heading">
             <h2 id="item-picker-heading" tabIndex={-1}>What went missing?</h2>
-            <small>One tap</small>
+            {onIntro && <button className="text-button" onClick={onIntro}>How it works</button>}
           </div>
           {pinnedItems.length > 0 && <div className="pinned-items" role="group" aria-label="Pinned items">
             {pinnedItems.map((item) => <button key={item.id} className="pinned-item" onClick={() => onStart('other', item.itemLabel)}><Icon name="pin" size={15} /><span>{item.itemLabel}</span></button>)}

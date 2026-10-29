@@ -21,3 +21,22 @@ export function skippedPlaces(search: ActiveSearch, stops = allSearchStops(searc
     && !search.excludedStopIds?.includes(stop.id)
     && (search.checkedSpots[stop.id]?.length ?? 0) === 0)
 }
+
+// Partial areas are unfinished work, not skipped areas. Keep these separate so
+// the UI never counts a partially searched room as a zero-check skip.
+export function unfinishedPlaces(search: ActiveSearch, stops = allSearchStops(search)): SearchStop[] {
+  return stops.filter((stop) => isSearchArea(stop) && !search.excludedStopIds?.includes(stop.id)
+    && (search.checkedSpots[stop.id]?.length ?? 0) > 0
+    && checkedSpotsAt(search, stop).length < stop.spots.length)
+}
+
+function exactPlace(value: string): string | null {
+  const key = value.trim().toLocaleLowerCase().replace(/\s+/g, ' ')
+  // Relative descriptions refer to different physical places in each area.
+  return /^(the surface beside it|the floor directly below|floor nearby|floor below|surface above or below)$/.test(key) ? null : key
+}
+
+export function checkedSpotsAt(search: ActiveSearch, stop: SearchStop): string[] {
+  const exact = new Set(Object.values(search.checkedSpots).flat().map(exactPlace).filter(Boolean))
+  return stop.spots.filter((spot) => search.checkedSpots[stop.id]?.includes(spot) || (exactPlace(spot) !== null && exact.has(exactPlace(spot))))
+}

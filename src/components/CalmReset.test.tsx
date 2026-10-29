@@ -37,13 +37,13 @@ describe('CalmReset', () => {
     act(() => vi.advanceTimersByTime(100))
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Hold gently')
     expect(document.querySelector('.calm-guidance__count')).toHaveTextContent('2')
-    expect(screen.getByText('Rest at the top')).toBeInTheDocument()
+    expect(screen.getByText('Pause only if comfortable')).toBeInTheDocument()
 
     now = 26_100
     act(() => vi.advanceTimersByTime(100))
     expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe out')
     expect(document.querySelector('.calm-guidance__count')).toHaveTextContent('6')
-    expect(screen.getByText('Drift down with it')).toBeInTheDocument()
+    expect(screen.getByText('Let the breath soften')).toBeInTheDocument()
 
     now = 32_000
     act(() => vi.advanceTimersByTime(100))
@@ -55,5 +55,28 @@ describe('CalmReset', () => {
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuemax', '36')
     expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '36')
     expect(screen.getByRole('button', { name: /return to my trail/i })).toBeInTheDocument()
+  })
+
+  it('holds the breath timer when the page is interrupted and continues from that moment', () => {
+    vi.useFakeTimers()
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+    render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Begin breathing reset' }))
+    now = 5_100
+    act(() => vi.advanceTimersByTime(100))
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(screen.getByRole('button', { name: 'Continue breathing reset' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '5')
+    now = 100_000
+    act(() => vi.advanceTimersByTime(100))
+    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '5')
+    fireEvent.click(screen.getByRole('button', { name: 'Continue breathing reset' }))
+    expect(screen.getByRole('button', { name: 'Return to my trail' })).toBeInTheDocument()
+    now = 101_000
+    act(() => vi.advanceTimersByTime(100))
+    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '6')
   })
 })

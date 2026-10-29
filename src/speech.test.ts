@@ -7,6 +7,9 @@ describe('parseCommand', () => {
     ['nothing here, next', 'next'],
     ['say that again please', 'repeat'],
     ['check the couch', 'unknown'],
+    ['I did not find it', 'unknown'],
+    ['I haven’t found it', 'unknown'],
+    ['Found it!', 'found'],
   ])('maps “%s” to %s', (transcript, command) => {
     expect(parseCommand(transcript)).toBe(command)
   })

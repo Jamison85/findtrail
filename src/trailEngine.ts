@@ -1,6 +1,6 @@
 import { CLUE_PROMOTIONS, ITEM_BY_ID, STOPS } from './data'
 import { itemIdentity } from './storage'
-import { allSearchStops } from './searchProgress'
+import { allSearchStops, checkedSpotsAt } from './searchProgress'
 import type { ActiveSearch, FoundEntry, ItemId, SavedItem, SearchStop } from './types'
 
 export const FOCUSED_PASS_SIZE = 3
@@ -29,17 +29,9 @@ export function compactTrail(stops: SearchStop[]): SearchStop[] {
 }
 
 export function compactActiveSearch(search: ActiveSearch): ActiveSearch {
-  if (search.reviewingSkippedFrom) return search
-  const stops = compactTrail(search.stops)
-  if (stops.length === search.stops.length && stops.every((stop, index) => stop.id === search.stops[index]?.id)) return search
-  const currentId = search.stops[search.currentIndex]?.id
-  const matchingIndex = stops.findIndex((stop) => stop.id === currentId)
-  const finalIndex = stops.findIndex((stop) => stop.kind === 'final')
-  return {
-    ...search,
-    stops,
-    currentIndex: matchingIndex >= 0 ? matchingIndex : Math.max(0, finalIndex >= 0 ? finalIndex : stops.length - 1),
-  }
+  // New routes are compacted when built. A saved route is a user's work, not
+  // disposable recommendations: shortening it can strand their current area.
+  return search
 }
 
 export function getFocusedStops(stops: SearchStop[]): SearchStop[] {
@@ -48,7 +40,7 @@ export function getFocusedStops(stops: SearchStop[]): SearchStop[] {
 
 export function getWiderStops(stops: SearchStop[]): SearchStop[] {
   return searchableStopIndices(stops)
-    .slice(FOCUSED_PASS_SIZE, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+    .slice(FOCUSED_PASS_SIZE)
     .map((index) => stops[index])
 }
 
@@ -63,7 +55,7 @@ export function isFocusedPassComplete(stops: SearchStop[], currentIndex: number)
 
 export function isWiderPassComplete(stops: SearchStop[], currentIndex: number): boolean {
   const indices = searchableStopIndices(stops)
-  const wider = indices.slice(FOCUSED_PASS_SIZE, FOCUSED_PASS_SIZE + WIDER_PASS_SIZE)
+  const wider = indices.slice(FOCUSED_PASS_SIZE)
   return wider.length > 0 && currentIndex === wider.at(-1)
 }
 
@@ -91,7 +83,7 @@ export function getTrailStage(stops: SearchStop[], currentIndex: number): TrailS
     name: 'wider',
     label: 'Wider pass',
     current: widerPosition + 1,
-    total: Math.min(WIDER_PASS_SIZE, Math.max(1, searchIndices.length - FOCUSED_PASS_SIZE)),
+    total: Math.max(1, searchIndices.length - FOCUSED_PASS_SIZE),
   }
 }
 
@@ -170,9 +162,9 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
   if (itemId === 'money' && ['card', 'both'].includes(answers.itemDetail)) orderedIds.push('card-safety')
 
   // An actionable item detail should not disappear behind six general guesses.
-  const actionableDetail = (itemId === 'phone' && ['ring', 'dead'].includes(answers.itemDetail))
+  const actionableDetail = (itemId === 'phone' && ['ring', 'silent', 'dead'].includes(answers.itemDetail))
     || (itemId === 'wallet' && answers.itemDetail === 'phone')
-  if (actionableDetail) orderedIds.push(...(CLUE_PROMOTIONS.itemDetail[answers.itemDetail] ?? []))
+  if (actionableDetail) orderedIds.push(...(itemId === 'phone' && answers.itemDetail === 'silent' ? ['ring-phone'] : CLUE_PROMOTIONS.itemDetail[answers.itemDetail] ?? []))
 
   for (const questionId of ['lastPlace', 'lastAction', 'itemDetail']) {
     const value = answers[questionId]
@@ -184,8 +176,16 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
 
   const seen = new Set<string>()
   const standardStops = orderedIds
-    .filter((id) => STOPS[id] && !seen.has(id) && seen.add(id))
+    .filter((id) => STOPS[id] && !(itemId === 'phone' && answers.itemDetail === 'dead' && id === 'ring-phone') && !seen.has(id) && seen.add(id))
     .map((id) => ({ ...STOPS[id], spots: [...STOPS[id].spots] }))
+
+  if (itemId === 'phone' && answers.itemDetail === 'silent') {
+    const locate = standardStops.find((stop) => stop.id === 'ring-phone')
+    if (locate) {
+      locate.title = 'Try the device finder'
+      locate.instruction = 'A finding-service sound may work even on silent. From another device, try the phone maker’s finder and check the time of its last recorded location.'
+    }
+  }
 
   const safetyStops = standardStops.filter((stop) => stop.kind === 'safety')
   let remainingStops = standardStops.filter((stop) => stop.kind !== 'safety')
@@ -214,14 +214,22 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
   const currentPlaceKnown = Boolean(answers.lastPlace && answers.lastPlace !== 'unsure')
   const currentIds = (CLUE_PROMOTIONS.lastPlace[answers.lastPlace] ?? [])
     .concat(CLUE_PROMOTIONS.lastAction[answers.lastAction] ?? [])
-  const currentStops = currentPlaceKnown
-    ? candidates.filter((stop) => currentIds.includes(stop.id) && !immediate.some((first) => first.id === stop.id)).slice(0, 2)
+  const activityIds = CLUE_PROMOTIONS.lastAction[answers.lastAction] ?? []
+  const strongActivity = ['changed', 'carried', 'cleaned'].includes(answers.lastAction)
+  const relevantIds = strongActivity ? [...activityIds, ...currentIds] : currentIds
+  const currentStops = currentPlaceKnown || strongActivity
+    ? [...new Set(relevantIds)].flatMap((id) => {
+      const stop = candidates.find((candidate) => candidate.id === id && !immediate.some((first) => first.id === id))
+      return stop ? [{ ...stop, reason: activityIds.includes(id) && strongActivity
+        ? `Suggested because you ${answers.lastAction === 'changed' ? 'changed clothes' : answers.lastAction === 'carried' ? 'used a bag' : 'cleaned or moved things'}.`
+        : 'Suggested from the last place you remember having it.' }] : []
+    }).slice(0, strongActivity ? 3 : 2)
     : []
   const prioritizedStops = [
     ...immediate,
-    ...(answers.lastPlace === 'home' && home ? [home] : []),
+    ...(answers.lastPlace === 'home' && home && !strongActivity ? [home] : []),
     ...currentStops,
-    ...(answers.lastPlace !== 'home' && home ? [home] : []),
+    ...(home && (answers.lastPlace !== 'home' || strongActivity) ? [home] : []),
     ...(!sameAsHome && learnedLocation ? [learnedLocation] : []),
     ...(learnedArea ? [learnedArea] : []),
     ...remainingStops,
@@ -237,7 +245,7 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
 
 export function rebuildSearch(search: ActiveSearch, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[]): ActiveSearch {
   const stops = buildTrail(search.itemId, search.itemLabel, answers, history, savedItems, search.excludedStopIds)
-  const incomplete = (stop: SearchStop) => stop.kind === 'final' || stop.spots.some((spot) => !search.checkedSpots[stop.id]?.includes(spot))
+  const incomplete = (stop: SearchStop) => stop.kind === 'final' || checkedSpotsAt(search, stop).length < stop.spots.length
   const nextIndex = stops.findIndex(incomplete)
   return {
     ...search, answers, stops,

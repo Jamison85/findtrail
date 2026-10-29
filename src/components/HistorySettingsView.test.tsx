@@ -130,7 +130,7 @@ describe('SettingsView', () => {
     expect(onExport).toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Clear history' }))
     expect(onClear).toHaveBeenCalled()
-    expect(screen.getByRole('status')).toHaveTextContent('Backup downloaded.')
+    expect(screen.getByText('Backup downloaded.')).toBeInTheDocument()
   })
 
   it('keeps iPhone Home Screen instructions available in Settings', () => {

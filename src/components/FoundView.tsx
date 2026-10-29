@@ -16,7 +16,7 @@ interface FoundViewProps {
   search: ActiveSearch
   currentStepTitle?: string
   value: string
-  foundInCurrentArea: boolean
+  foundInCurrentArea: boolean | null
   saveAsHome: boolean
   pinCustomItem: boolean
   onChange: (value: string) => void
@@ -24,6 +24,7 @@ interface FoundViewProps {
   onSaveAsHome: (value: boolean) => void
   onPinCustomItem: (value: boolean) => void
   onSave: () => void
+  onDone?: () => void
   onBack: () => void
 }
 
@@ -65,7 +66,7 @@ function SuccessTrail({ icon }: { icon: ItemId }) {
   )
 }
 
-export function FoundView({ search, currentStepTitle, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onBack }: FoundViewProps) {
+export function FoundView({ search, currentStepTitle, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onDone, onBack }: FoundViewProps) {
   const item = ITEM_BY_ID[search.itemId]
   const stop = currentStepTitle ? search.stops[search.currentIndex] : undefined
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
@@ -133,8 +134,8 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
             <div className="found-area-choice" role="group" aria-label={`Did “${currentStepTitle}” help you find it?`}>
               <strong>Did “{currentStepTitle}” help you find it?</strong>
               <div>
-                <button type="button" className={foundInCurrentArea ? 'is-selected' : ''} aria-pressed={foundInCurrentArea} onClick={() => onFoundInCurrentArea(true)}>Yes, this step</button>
-                <button type="button" className={!foundInCurrentArea ? 'is-selected' : ''} aria-pressed={!foundInCurrentArea} onClick={() => onFoundInCurrentArea(false)}>No, found another way</button>
+                <button type="button" className={foundInCurrentArea === true ? 'is-selected' : ''} aria-pressed={foundInCurrentArea === true} onClick={() => onFoundInCurrentArea(true)}>Yes, this step</button>
+                <button type="button" className={foundInCurrentArea === false ? 'is-selected' : ''} aria-pressed={foundInCurrentArea === false} onClick={() => onFoundInCurrentArea(false)}>No, found another way</button>
               </div>
               <p>A yes helps put this step earlier next time. Your exact place is saved either way.</p>
             </div>
@@ -161,6 +162,7 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
         <button className="button button--primary button--wide found-save" onClick={onSave} disabled={!ready}>
           <Icon name="check" size={19} />Save this found place
         </button>
+        {onDone && <button className="text-button found-done" onClick={onDone}>Done for now · don’t save a place</button>}
       </section>
     </section>
   )

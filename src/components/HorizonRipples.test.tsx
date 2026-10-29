@@ -5,7 +5,7 @@ import { HorizonRipples } from './HorizonRipples'
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 describe('reset water playback', () => {
-  it('waits for the landing, follows each impact, and stops after the final wave', () => {
+  it('waits for the one landing, plays one impact, and returns to still water', () => {
     let frame: FrameRequestCallback = () => undefined
     const request = vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1 })
     vi.stubGlobal('requestAnimationFrame', request)
@@ -24,22 +24,15 @@ describe('reset water playback', () => {
     expect(play).toHaveBeenCalledOnce()
     expect(video.currentTime).toBe(0)
     expect(video.style.opacity).toBe('1')
+    frame(16_000)
+    expect(video.currentTime).toBeCloseTo(4)
+    expect(video.style.opacity).toBe('1')
     frame(22_100)
-    expect(video.style.opacity).toBe('0')
-    frame(23_000)
+    expect(pause).toHaveBeenCalled()
     expect(video.style.opacity).toBe('0')
     frame(24_100)
-    expect(video.currentTime).toBeCloseTo(.1)
-    expect(video.style.opacity).toBe('1')
-    frame(34_100)
-    expect(video.style.opacity).toBe('0')
-    frame(35_000)
-    expect(video.style.opacity).toBe('0')
     frame(36_200)
-    expect(video.currentTime).toBeCloseTo(.2)
-    expect(video.style.opacity).toBe('1')
-    frame(46_000)
-    expect(pause).toHaveBeenCalled()
+    expect(play).toHaveBeenCalledOnce()
     expect(video.style.opacity).toBe('0')
     unmount()
     expect(cancelAnimationFrame).toHaveBeenCalledWith(1)
