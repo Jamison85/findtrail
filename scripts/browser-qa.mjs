@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { chromium } from 'playwright'
 
-const URL = 'http://127.0.0.1:4173/findtrail/'
+const URL = 'http://127.0.0.1:4173/'
 const sizes = [[320, 700], [360, 800], [390, 844], [412, 915], [430, 932], [768, 1024]]
 await mkdir('browser-qa', { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4173', '--strictPort'], { stdio: 'inherit' })
