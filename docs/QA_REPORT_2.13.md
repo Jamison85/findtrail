@@ -17,7 +17,7 @@ This document records local checks for the proposed branch. It does not assert t
 
 ## Local automated checks
 
-`npm run check` runs TypeScript, Vitest, and Vite build. Final local result: 17 test files, 109 tests passed; TypeScript and Vite production build passed. Production dependency audit reported 0 vulnerabilities. Tests include recovery safeguards, conflicts, saved draft and Reset return, activity priorities, phone states, one landing, and background pause.
+`npm run check` runs TypeScript, Vitest, and Vite build. Final local result: 17 test files, 109 tests passed; TypeScript and Vite production build passed. Production dependency audit reported 0 vulnerabilities. GitHub Actions Production checks run 301 passed on the draft pull request. Tests include recovery safeguards, conflicts, saved draft and Reset return, activity priorities, phone states, one landing, and background pause.
 
 ## Validation still required
 

@@ -6,7 +6,7 @@
 - [x] Unit and component tests pass
 - [x] Production build passes
 - [x] Dependency audit has no high or critical production vulnerability
-- [ ] CI passes on the 2.13 review branch
+- [x] CI passes on the 2.13 review branch (Production checks run 301)
 
 ## Functional
 
