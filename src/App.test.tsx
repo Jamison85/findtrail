@@ -157,8 +157,9 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('At home'))
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
-    expect(screen.getByRole('heading', { name: /You haven't lost your place/i })).toBeInTheDocument()
-    expect(screen.getByText('Your search is still here. Take just this moment.')).toBeInTheDocument()
+    // Reduced motion opens directly on the actionable, static focus state.
+    expect(screen.getByRole('heading', { name: /One place. One useful step/i })).toBeInTheDocument()
+    expect(screen.getByText('Your trail is still right where you left it.')).toBeInTheDocument()
     expect(document.querySelector('.calm-feather')).not.toBeInTheDocument()
     expect(screen.getByText('The landing zone')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Return to this place/i })).toBeInTheDocument()
