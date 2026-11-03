@@ -43,6 +43,8 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
   const [breathing, setBreathing] = useState(false)
   const view = useRef<HTMLElement>(null)
   const cta = useRef<HTMLButtonElement>(null)
+  const openingHeading = useRef<HTMLHeadingElement>(null)
+  const payoffHeading = useRef<HTMLHeadingElement>(null)
   const stageRef = useRef<Stage>(stage)
   const elapsed = useRef(0)
   const runningSince = useRef<number | null>(null)
@@ -50,6 +52,15 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
   const pausedAnimations = useRef<Animation[]>([])
   const next = clearNextStep(search, returnScreen)
   const ready = stage === 'ready'
+
+  // Do not leave keyboard focus inside a headline that becomes aria-hidden.
+  // Move focus only if it is still on that headline, never away from a control
+  // the person is actively using.
+  useEffect(() => {
+    if (ready && document.activeElement === openingHeading.current) {
+      payoffHeading.current?.focus({ preventScroll: true })
+    }
+  }, [ready])
 
   function stopTimer() {
     if (timer.current !== null) window.clearTimeout(timer.current)
@@ -167,12 +178,12 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
 
         <div className="clear-hero">
           <div className="clear-message clear-before" aria-hidden={ready}>
-            <h1 id={!ready ? 'view-heading' : undefined} aria-label="You haven't lost your place." tabIndex={-1}>You haven't<br />lost your place.</h1>
+            <h1 ref={openingHeading} id={!ready ? 'view-heading' : undefined} aria-label="You haven't lost your place." tabIndex={-1}>You haven't<br />lost your place.</h1>
             <p>Your search is still here. Take just this moment.</p>
           </div>
           <div className="clear-message clear-after" aria-hidden={!ready}>
             <span className="clear-eyebrow">THE NEXT USEFUL THING</span>
-            <h2 id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label="One place. One useful step.">One place.<br />One useful step.</h2>
+            <h2 ref={payoffHeading} id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label="One place. One useful step.">One place.<br />One useful step.</h2>
             <p>Your trail is still right where you left it.</p>
           </div>
           {!ready && <button className="clear-advance" type="button" onClick={() => reveal(true)}>I'm ready for one step <Icon name="forward" size={15} /></button>}
