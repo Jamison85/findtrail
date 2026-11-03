@@ -1,9 +1,9 @@
-const VERSION = 'findtrail-v2.13-night-orchard-2026-10-29'
+const VERSION = 'findtrail-v2.16-clear-focus-2026-11-03'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
 const scoped = (path) => `${BASE_PATH}${path}` || '/'
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/home-memory-trail.webp', '/findtrail-natural-feather-v2.webp', '/findtrail-reset-lake.webp', '/findtrail-water-impact.mp4'].map(scoped)
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/home-memory-trail.webp', '/clear-dawn.webp', '/findtrail-natural-feather-v2.webp', '/findtrail-reset-lake.webp', '/findtrail-water-impact.mp4'].map(scoped)
 
 async function waterVideoResponse(request) {
   const cached = await caches.match(request.url, { ignoreVary: true })
