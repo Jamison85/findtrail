@@ -168,12 +168,12 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
 
         <div className="clear-hero">
           <div className="clear-message clear-before" aria-hidden={ready}>
-            <h1 id="view-heading" tabIndex={-1}>You haven't<br />lost your place.</h1>
+            <h1 id={!ready ? 'view-heading' : undefined} aria-label="You haven't lost your place." tabIndex={-1}>You haven't<br />lost your place.</h1>
             <p>Your search is still here. Take just this moment.</p>
           </div>
           <div className="clear-message clear-after" aria-hidden={!ready}>
             <span className="clear-eyebrow">THE NEXT USEFUL THING</span>
-            <h2>One place.<br />One useful step.</h2>
+            <h2 id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label="One place. One useful step.">One place.<br />One useful step.</h2>
             <p>Your trail is still right where you left it.</p>
           </div>
           {!ready && <button className="clear-advance" type="button" onClick={() => reveal(true)}>I'm ready for one step <Icon name="forward" size={15} /></button>}
