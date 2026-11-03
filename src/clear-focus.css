@@ -16,7 +16,7 @@
 .clear-view *, .clear-view *::before, .clear-view *::after { box-sizing: border-box; }
 .clear-view button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .clear-view button:focus-visible { outline: 3px solid #b6fae5; outline-offset: 4px; }
-.clear-world { position: absolute; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; background: #101b29; }
+.clear-world { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; background: #101b29; }
 .clear-world > div { position: absolute; inset: 0; pointer-events: none; }
 .clear-scene {
   background-image: var(--clear-photo);
@@ -205,3 +205,19 @@ html[data-text-size="large"] .clear-action{font-size:21px}
 .clear-view.clear-reduced .clear-attention-veil {opacity:.88}
 .clear-view.clear-reduced .clear-horizon-quiet {opacity:.78;transform:none}
 .clear-view.clear-reduced .clear-spot-card {opacity:1;filter:none;transform:none}
+
+/* Refined on actual 390px screenshot: landscape must be visible and header
+   must give the brand and exit their own space without overlap. */
+.clear-topbar {gap:8px;}
+.clear-brand {flex:0 1 auto;gap:5px;}
+.clear-brand strong {font-size:clamp(17px,4.6vw,20px);}
+.clear-brand span {margin-left:1px;font-size:9px;letter-spacing:.14em;}
+.clear-mark {width:26px;height:31px;flex:0 0 26px;}
+.clear-exit {flex:0 0 auto;gap:5px;font-size:11px;padding:0 9px;}
+@media (max-width:359px) {
+  .clear-brand {gap:4px}
+  .clear-brand strong {font-size:17px}
+  .clear-brand span {font-size:8px;letter-spacing:.10em}
+  .clear-mark {width:24px;height:29px;flex-basis:24px}
+  .clear-exit {font-size:10px;padding:0 7px}
+}
