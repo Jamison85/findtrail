@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { ActiveSearch, Screen, Settings } from '../types'
-import { BrandMark } from './BrandMark'
 import { Icon } from './Icon'
 import { clearNextStep } from './clearNextStep'
 
@@ -162,7 +161,7 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
 
       <div className="clear-inner">
         <header className="clear-topbar">
-          <div className="clear-brand"><BrandMark className="clear-mark" /><strong>FindTrail</strong><span>CLEAR</span></div>
+          <div className="clear-brand"><svg className="clear-mark" viewBox="0 0 36 44" fill="none" aria-hidden="true"><path d="M18 40S32 25.5 32 17.2a14 14 0 0 0-28 0C4 25.5 18 40 18 40Z" stroke="#FF9783" strokeWidth="2.8" /><circle cx="18" cy="17" r="5.5" fill="#FF9783" /></svg><strong>FindTrail</strong><span>CLEAR</span></div>
           <button className="clear-exit" type="button" onClick={onResume} aria-label="Continue search without changing progress">Continue search <Icon name="forward" size={15} /></button>
         </header>
 
