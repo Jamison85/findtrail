@@ -27,7 +27,7 @@ function continuation(title: string, search: ActiveSearch): ClearNextStep {
 export function clearNextStep(search: ActiveSearch | null, origin: Screen): ClearNextStep {
   if (!search) return {
     kind: 'new',
-    label: 'READY WHEN YOU ARE',
+    label: 'READY TO BEGIN',
     title: 'One thing to find.',
     instruction: 'Choose the missing item. FindTrail will build your trail from there.',
     buttonLabel: 'Begin a search',
