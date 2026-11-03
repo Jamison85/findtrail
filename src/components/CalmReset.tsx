@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { ActiveSearch, Screen, Settings } from '../types'
 import { Icon } from './Icon'
 import { clearNextStep } from './clearNextStep'
@@ -158,10 +157,9 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
       ref={view}
       className={`view clear-view ${stage === 'start' ? '' : 'clear-quieting'} ${stage === 'focusing' || ready ? 'clear-focusing' : ''} ${ready ? 'clear-ready' : ''} ${reduced ? 'clear-reduced' : ''}`}
       aria-labelledby="view-heading"
-      style={{ '--clear-photo': `url("${import.meta.env.BASE_URL}clear-dawn.webp")` } as CSSProperties}
     >
       <div className="clear-world" aria-hidden="true">
-        <div className="clear-scene" />
+        <div className="clear-scene"><img src={`${import.meta.env.BASE_URL}clear-dawn.webp`} alt="" draggable={false} /></div>
         <div className="clear-atmosphere" />
         <div className="clear-dim" />
         <div className="clear-lens" />
