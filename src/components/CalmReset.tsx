@@ -171,18 +171,18 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
       <div className="clear-inner">
         <header className="clear-topbar">
           <div className="clear-brand"><svg className="clear-mark" viewBox="0 0 36 44" fill="none" aria-hidden="true"><path d="M18 40S32 25.5 32 17.2a14 14 0 0 0-28 0C4 25.5 18 40 18 40Z" stroke="#FF9783" strokeWidth="2.8" /><circle cx="18" cy="17" r="5.5" fill="#FF9783" /></svg><strong>FindTrail</strong><span>CLEAR</span></div>
-          <button className="clear-exit" type="button" onClick={onResume} aria-label="Continue search without changing progress">Continue search <Icon name="forward" size={15} /></button>
+          <button className="clear-exit" type="button" onClick={onResume} aria-label="Continue search without changing progress"><span className="clear-exit-long">Back to search</span><span className="clear-exit-short">Exit</span><Icon name="forward" size={15} /></button>
         </header>
 
         <div className="clear-hero">
           <div className="clear-message clear-before" aria-hidden={ready}>
-            <h1 ref={openingHeading} id={!ready ? 'view-heading' : undefined} aria-label="You haven't lost your place." tabIndex={-1}>You haven't<br />lost your place.</h1>
-            <p>Your search is still here. Take just this moment.</p>
+            <h1 ref={openingHeading} id={!ready ? 'view-heading' : undefined} aria-label={search ? "You haven't lost your place." : "You can pause here."} tabIndex={-1}>{search ? <>You haven't<br />lost your place.</> : <>You can<br />pause here.</>}</h1>
+            <p>{search ? 'Your search is still here. Take just this moment.' : 'Take a moment. Nothing needs solving yet.'}</p>
           </div>
           <div className="clear-message clear-after" aria-hidden={!ready}>
             <span className="clear-eyebrow">THE NEXT USEFUL THING</span>
-            <h2 ref={payoffHeading} id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label="One place. One useful step.">One place.<br />One useful step.</h2>
-            <p>Your trail is still right where you left it.</p>
+            <h2 ref={payoffHeading} id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label={search ? 'One place. One useful step.' : 'One step to start.'}>{search ? <>One place.<br />One useful step.</> : <>One step<br />to start.</>}</h2>
+            <p>{search ? 'Your trail is still right where you left it.' : 'You can begin with one missing item.'}</p>
           </div>
           {!ready && <button className="clear-advance" type="button" onClick={() => reveal(true)}>I'm ready for one step <Icon name="forward" size={15} /></button>}
         </div>
