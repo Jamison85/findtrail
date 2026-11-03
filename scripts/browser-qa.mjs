@@ -72,6 +72,13 @@ try {
   const trailHeading = await page.locator('.trail-view h1').first().textContent()
   const checkedBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('findtrail:data:v3') || '{}').activeSearch?.checkedSpots)
   await page.locator('.trail-reset-button').first().click()
+  await page.locator('.clear-view .clear-scene img').waitFor()
+  await page.waitForFunction(() => {
+    const img = document.querySelector('.clear-scene img')
+    return img && img.complete && img.naturalWidth > 0
+  }, { timeout: 10000 })
+  const backdrop = await page.locator('.clear-scene img').evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight, visible: getComputedStyle(img).display !== 'none' }))
+  assert.ok(backdrop.visible && backdrop.width >= 500 && backdrop.height >= 500, 'CLEAR photographic scene must load')
   await visitScreen(page, '.clear-view', 'clear-390-opening')
   await page.waitForTimeout(6300)
   await page.getByRole('button', { name: /Return to this place|Continue safely|Continue my search/i }).waitFor()
