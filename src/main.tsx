@@ -14,6 +14,7 @@ import './install-coach.css'
 import './onboarding.css'
 import './search-assistance.css'
 import './night-orchard.css'
+import './clear-focus.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
