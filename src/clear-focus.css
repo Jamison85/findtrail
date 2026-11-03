@@ -114,7 +114,7 @@
   display:block;margin-bottom:12px;color:var(--clear-mint);
   font-size:10px;font-weight:750;letter-spacing:.2em;
 }
-.clear-view.clear-focusing .clear-before { opacity:.12;transform:translateY(-12px) scale(.95); }
+.clear-view.clear-focusing .clear-before { opacity:0;transform:translateY(-12px) scale(.95); }
 .clear-view.clear-ready .clear-before { opacity:0;transform:translateY(-17px) scale(.94);pointer-events:none; }
 .clear-view.clear-ready .clear-after { opacity:1;transform:translateY(0);pointer-events:auto; }
 .clear-view.clear-ready .clear-after p { color:#eee9e5; }

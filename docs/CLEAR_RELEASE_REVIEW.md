@@ -11,7 +11,7 @@ Reviewed 2026-11-03 on `feat/clear-focus-integration`. The existing CLEAR design
 - [Final focus, 430 px](clear-release-evidence/final-430.png)
 - [Large text, 320 px](clear-release-evidence/large-text-320.png)
 
-I reviewed the recording frame by frame. The opening gives the person time without requiring input. Haze and color settle while the lake remains lit, then the card emerges from the same scene. The final coral button is the clear next action. The photographic lake, plum and teal atmosphere, typography, and card structure are preserved.
+I reran the complete real-time recording and reviewed frames through the headline handoff. The opening gives the person time without requiring input. Haze and color settle while the lake remains lit, then the card emerges from the same scene. The final coral button is the clear next action. The photographic lake, plum and teal atmosphere, typography, and card structure are preserved.
 
 ## Changes
 
@@ -20,6 +20,8 @@ I reviewed the recording frame by frame. The opening gives the person time witho
 - Refined the scene from soft haze to a clearer, gently less saturated finish without losing the warm horizon; improved small-screen safe-area padding and wrapped-button spacing.
 - Made the visible exit label the accessible name and supplied a separate description about preserved progress.
 - Bumped the service-worker cache version so installed copies receive the refined assets.
+- Removed a faint opening-headline ghost behind the final headline during the transition. The final visible headline is now a level-one heading for screen readers. Bumped the cache version again for this refinement.
+- Allowed the browser review script to use an already installed Chromium binary through `CHROMIUM_PATH`; CI still uses Playwright's installed browser by default.
 
 ## Validation
 
@@ -28,7 +30,7 @@ I reviewed the recording frame by frame. The opening gives the person time witho
 - A real search checked one spot before CLEAR. The final card named the next unchecked spot. Returning restored the same trail heading, and the complete saved search object remained unchanged. Unit tests cover safety priority, skipped and excluded places, clue and widening flows, and no-search behavior.
 - Keyboard focus reaches the final action from the final heading. The polite status announces the next step. An axe-core WCAG 2.1 AA scan of the large-text final state found zero violations. Its automated color-contrast rule could not determine contrast for 14 nodes over photographic or translucent surfaces; those states were inspected visually.
 - A browser visibility-event interruption paused progression for five seconds and resumed without jumping. A production-build offline reload retained the search and loaded all five precached photographic and reset media assets.
-- Headless Chromium at 390 × 844 px recorded a 16.7 ms median frame interval and a 33.3 ms 95th percentile during the 6.6-second motion sample, with no interval over 50 ms in the final run. This is an emulated browser measurement, not a physical-device benchmark.
+- Headless Chromium at 390 × 844 px recorded a 16.7 ms median frame interval and a 16.8 ms 95th percentile during the 6.6-second motion sample, with no interval over 50 ms in the final run. This is an emulated browser measurement, not a physical-device benchmark.
 
 ## Remaining limits and release assessment
 

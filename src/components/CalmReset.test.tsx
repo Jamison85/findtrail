@@ -24,6 +24,7 @@ describe('FindTrail CLEAR', () => {
     expect(document.querySelector('.calm-feather')).not.toBeInTheDocument()
     expect(screen.getByText('The landing zone')).toBeInTheDocument()
     expect(screen.getByText('Beside the door')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'One place. One useful step.', level: 1 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Return to this place' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Return to this place' }))
     expect(resume).toHaveBeenCalledOnce()

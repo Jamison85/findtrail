@@ -183,7 +183,7 @@ export function CalmReset({ search, returnScreen, motion, onResume, onBegin }: C
           </div>
           <div className="clear-message clear-after" aria-hidden={!ready}>
             <span className="clear-eyebrow">THE NEXT USEFUL THING</span>
-            <h2 ref={payoffHeading} id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label={search ? 'One place. One useful step.' : 'One step to start.'}>{search ? <>One place.<br />One useful step.</> : <>One step<br />to start.</>}</h2>
+            <h1 ref={payoffHeading} id={ready ? 'view-heading' : undefined} tabIndex={-1} aria-label={search ? 'One place. One useful step.' : 'One step to start.'}>{search ? <>One place.<br />One useful step.</> : <>One step<br />to start.</>}</h1>
             <p>{search ? 'Your trail is still right where you left it.' : 'You can begin with one missing item.'}</p>
           </div>
           {!ready && <button className="clear-advance" type="button" onClick={() => reveal(true)}>I'm ready for one step <Icon name="forward" size={15} /></button>}

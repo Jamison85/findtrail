@@ -43,7 +43,7 @@ async function visitScreen(page, selector, label) {
 }
 try {
   await ready()
-  browser = await chromium.launch({ headless: true })
+  browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH })
   for (const [width, height] of sizes) {
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })
     const page = await context.newPage()
