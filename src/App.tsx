@@ -26,12 +26,26 @@ interface InstallPromptEvent extends Event {
 }
 
 const NAVIGATION_STATE_KEY = 'findtrailScreen'
+const CLEAR_RETURN_STATE_KEY = 'findtrailClearReturn'
 const SCREENS = new Set<Screen>(['home', 'clues', 'trail', 'widen', 'found', 'complete', 'history', 'calm', 'settings', 'end'])
+const CLEAR_RETURNS = new Set<Screen>(['home', 'clues', 'trail', 'widen', 'end'])
 
 function navigationScreen(state: unknown): Screen | null {
   if (!state || typeof state !== 'object') return null
   const value = (state as Record<string, unknown>)[NAVIGATION_STATE_KEY]
   return typeof value === 'string' && SCREENS.has(value as Screen) ? value as Screen : null
+}
+
+function clearReturnScreen(state: unknown, search: ActiveSearch | null): Screen {
+  if (state && typeof state === 'object') {
+    const value = (state as Record<string, unknown>)[CLEAR_RETURN_STATE_KEY]
+    if (typeof value === 'string' && CLEAR_RETURNS.has(value as Screen)) return value as Screen
+  }
+  if (!search) return 'home'
+  if (search.resetReturn) return search.resetReturn // Existing saved CLEAR visits.
+  if (search.resumeScreen === 'end') return 'end'
+  if (search.widenReady) return 'widen'
+  return search.stops.length ? 'trail' : 'clues'
 }
 
 function navigationUrl(screen: Screen): URL {
@@ -42,10 +56,13 @@ function navigationUrl(screen: Screen): URL {
   return url
 }
 
-function navigationState(screen: Screen): Record<string, unknown> {
+function navigationState(screen: Screen, returnScreen?: Screen): Record<string, unknown> {
   const current = window.history.state
   const state = current && typeof current === 'object' ? current as Record<string, unknown> : {}
-  return { ...state, [NAVIGATION_STATE_KEY]: screen }
+  const next: Record<string, unknown> = { ...state, [NAVIGATION_STATE_KEY]: screen }
+  if (screen === 'calm') next[CLEAR_RETURN_STATE_KEY] = returnScreen
+  else delete next[CLEAR_RETURN_STATE_KEY]
+  return next
 }
 
 function stamp(search: ActiveSearch): ActiveSearch {
@@ -84,7 +101,7 @@ export default function App() {
   const [saveAsHome, setSaveAsHome] = useState(initialLoad.data.activeSearch?.foundDraft?.saveAsHome ?? false)
   const [pinCustomItem, setPinCustomItem] = useState(initialLoad.data.activeSearch?.foundDraft?.pinCustomItem ?? true)
   const [foundSummary, setFoundSummary] = useState<FoundSummary | null>(null)
-  const [returnScreen, setReturnScreen] = useState<Screen>(initialLoad.data.activeSearch?.resetReturn ?? 'home')
+  const [returnScreen, setReturnScreen] = useState<Screen>(() => clearReturnScreen(window.history.state, initialLoad.data.activeSearch))
   const [pauseOffer, setPauseOffer] = useState(false)
   const [storageError, setStorageError] = useState(false)
   const [online, setOnline] = useState(() => navigator.onLine)
@@ -130,8 +147,10 @@ export default function App() {
             : true
       const next = available ? requested : 'home'
 
+      if (next === 'calm') setReturnScreen(clearReturnScreen(event.state, currentActive))
+
       if (next === screenRef.current) {
-        window.history.replaceState(navigationState(next), '', navigationUrl(next))
+        window.history.replaceState(navigationState(next, clearReturnScreen(event.state, currentActive)), '', navigationUrl(next))
         return
       }
 
@@ -146,7 +165,7 @@ export default function App() {
   useEffect(() => {
     const fromHistory = screenFromHistory.current
     screenFromHistory.current = false
-    const state = navigationState(screen)
+    const state = navigationState(screen, returnScreen)
     const url = navigationUrl(screen)
 
     if (!navigationReady.current || fromHistory) {
@@ -159,7 +178,7 @@ export default function App() {
     // duplicate entry when the current entry already represents this screen.
     if (navigationScreen(window.history.state) === screen) return
     window.history.pushState(state, '', url)
-  }, [screen])
+  }, [screen, returnScreen])
 
   useEffect(() => {
     if (recoveryNeeded || storageConflict) return
@@ -275,7 +294,6 @@ export default function App() {
   function openReset(origin: Screen) {
     setPauseOffer(false)
     setReturnScreen(origin)
-    if (['trail', 'widen', 'end', 'clues'].includes(origin)) updateActive((current) => ({ ...current, resetReturn: origin as ActiveSearch['resetReturn'] }))
     setScreen('calm')
   }
 
@@ -724,7 +742,7 @@ export default function App() {
         {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
-        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} motion={data.settings.motion} onResume={() => { if (active && returnScreen === 'clues') { const questions = ITEM_BY_ID[active.itemId].questions; const next = questions.findIndex((question) => !active.answers[question.id]); setClueIndex(next < 0 ? questions.length - 1 : next) } setScreen(active ? returnScreen : 'home') }} />}
+        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} motion={data.settings.motion} onResume={() => { if (active && returnScreen === 'clues') { const questions = ITEM_BY_ID[active.itemId].questions; const next = questions.findIndex((question) => !active.answers[question.id]); setClueIndex(next < 0 ? questions.length - 1 : next) } setScreen(active ? returnScreen : 'home') }} onBegin={() => { focusItemPickerOnHome.current = true; setScreen('home') }} />}
         {screen === 'settings' && <SettingsView data={data} offlineReady={offlineReady} offlineError={offlineError} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
         {screen === 'end' && active && <StillMissingView search={active} freshPlaceCount={newPlaces.length} onFreshPlaces={tryFreshPlaces} onEditClues={editClues} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => openReset('end')} onRestart={repeatCurrentRoute} onHome={() => setScreen('home')} />}
       </main>

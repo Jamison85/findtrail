@@ -28,6 +28,7 @@ interface CalmResetProps {
   returnScreen: Screen
   motion: Settings['motion']
   onResume: () => void
+  onBegin: () => void
 }
 
 /**
@@ -35,7 +36,7 @@ interface CalmResetProps {
  * It never advances a stop or modifies a search. The parent owns returning to
  * the exact same place and restoring the search heading's keyboard focus.
  */
-export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetProps) {
+export function CalmReset({ search, returnScreen, motion, onResume, onBegin }: CalmResetProps) {
   const reduced = useReducedMotion(motion)
   const [stage, setStage] = useState<Stage>(reduced ? 'ready' : 'start')
   const [run, setRun] = useState(0)
@@ -171,7 +172,8 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
       <div className="clear-inner">
         <header className="clear-topbar">
           <div className="clear-brand"><svg className="clear-mark" viewBox="0 0 36 44" fill="none" aria-hidden="true"><path d="M18 40S32 25.5 32 17.2a14 14 0 0 0-28 0C4 25.5 18 40 18 40Z" stroke="#FF9783" strokeWidth="2.8" /><circle cx="18" cy="17" r="5.5" fill="#FF9783" /></svg><strong>FindTrail</strong><span>CLEAR</span></div>
-          <button className="clear-exit" type="button" onClick={onResume} aria-label="Continue search without changing progress"><span className="clear-exit-long">Back to search</span><span className="clear-exit-short">Exit</span><Icon name="forward" size={15} /></button>
+          <button className="clear-exit" type="button" onClick={onResume} aria-describedby="clear-exit-description"><span className="clear-exit-long">{search ? 'Back to search' : 'Back to home'}</span><span className="clear-exit-short">Exit</span><Icon name="forward" size={15} /></button>
+          <span id="clear-exit-description" className="sr-only">{search ? 'Your search progress stays unchanged.' : 'Return to the FindTrail home screen.'}</span>
         </header>
 
         <div className="clear-hero">
@@ -203,7 +205,7 @@ export function CalmReset({ search, returnScreen, motion, onResume }: CalmResetP
             </article>
           </div>
           <div className="clear-action-space">
-            {ready && <button ref={cta} className="clear-action" type="button" onClick={onResume}>{next.buttonLabel}<Icon name="forward" size={22} /></button>}
+            {ready && <button ref={cta} className="clear-action" type="button" onClick={next.kind === 'new' ? onBegin : onResume}>{next.buttonLabel}<Icon name="forward" size={22} /></button>}
           </div>
           <footer className="clear-foot">
             <button className="clear-micro" type="button" aria-expanded={breathing} onClick={() => setBreathing((value) => !value)}>{breathing ? 'Hide breathing cue' : 'Optional breathing cue'}</button>

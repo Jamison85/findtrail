@@ -23,7 +23,7 @@ jobs:
       - run: npm run check
       - name: Install isolated browser QA tooling
         run: |
-          npm install --no-save --package-lock=false playwright
+          npm install --no-save --package-lock=false playwright axe-core
           npx playwright install chromium --with-deps
       - name: Check rendered mobile journeys
         run: node scripts/browser-qa.mjs

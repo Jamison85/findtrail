@@ -19,7 +19,7 @@ describe('FindTrail CLEAR', () => {
   it('replaces the feather with a continuous photographic scene and actual next unchecked place', () => {
     const resume = vi.fn()
     const before = JSON.stringify(search)
-    render(<CalmReset search={search} returnScreen="trail" motion="reduced" onResume={resume} />)
+    render(<CalmReset search={search} returnScreen="trail" motion="reduced" onResume={resume} onBegin={() => undefined} />)
     expect(document.querySelector('.clear-scene')).toBeInTheDocument()
     expect(document.querySelector('.calm-feather')).not.toBeInTheDocument()
     expect(screen.getByText('The landing zone')).toBeInTheDocument()
@@ -33,16 +33,16 @@ describe('FindTrail CLEAR', () => {
   it('offers immediate return, manual focus and optional breathing without another primary action', () => {
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
     const resume = vi.fn()
-    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={resume} />)
+    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={resume} onBegin={() => undefined} />)
     expect(screen.getByRole('heading', { name: /You haven't lost your place/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Continue search without changing progress/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Back to search/i })).toHaveAccessibleDescription('Your search progress stays unchanged.')
     expect(screen.queryByRole('button', { name: 'Return to this place' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Optional breathing cue' }))
     expect(screen.getByText(/Breathe gently in/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /I'm ready for one step/i }))
     expect(screen.getByRole('button', { name: 'Return to this place' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /I'm ready for one step/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Continue search without changing progress/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Back to search/i }))
     expect(resume).toHaveBeenCalledOnce()
   })
 
@@ -50,7 +50,7 @@ describe('FindTrail CLEAR', () => {
     vi.useFakeTimers()
     let hidden = false
     vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
-    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={() => undefined} />)
+    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={() => undefined} onBegin={() => undefined} />)
     act(() => vi.advanceTimersByTime(2000))
     expect(screen.queryByRole('button', { name: 'Return to this place' })).not.toBeInTheDocument()
     hidden = true
@@ -64,9 +64,12 @@ describe('FindTrail CLEAR', () => {
   })
 
   it('provides the no-search fallback without inventing a location', () => {
-    render(<CalmReset search={null} returnScreen="home" motion="reduced" onResume={() => undefined} />)
+    const begin = vi.fn()
+    render(<CalmReset search={null} returnScreen="home" motion="reduced" onResume={() => undefined} onBegin={begin} />)
     expect(screen.getByText('One thing to find.')).toBeInTheDocument()
     expect(screen.queryByText('Beside the door')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Begin a search' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Back to home/i })).toHaveAccessibleDescription('Return to the FindTrail home screen.')
+    fireEvent.click(screen.getByRole('button', { name: 'Begin a search' }))
+    expect(begin).toHaveBeenCalledOnce()
   })
 })

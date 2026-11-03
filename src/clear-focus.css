@@ -23,13 +23,13 @@
   background-size: cover;
   background-position: 76% 46%;
   transform: scale(1.055) translate3d(-.55%, .3%, 0);
-  filter: brightness(.84) saturate(.87) contrast(1.02);
+  filter: blur(1.2px) brightness(.85) saturate(.86) contrast(1.01);
   transition: transform 6.3s cubic-bezier(.16,.7,.21,1), filter 5.8s cubic-bezier(.22,.62,.22,1);
   will-change: transform;
 }
 .clear-atmosphere {
   background: linear-gradient(170deg, rgba(20,24,43,.50) 0%,rgba(28,25,38,.22) 28%,rgba(165,150,148,.18) 51%,rgba(26,48,53,.15) 70%,rgba(11,23,31,.18) 100%);
-  opacity: .45; transition: opacity 5.6s ease;
+  opacity: .58; transition: opacity 5.6s ease;
 }
 .clear-dim {
   background: linear-gradient(180deg,rgba(10,16,27,.65),rgba(13,21,34,.18) 35%,rgba(10,19,28,.06) 51%,rgba(7,15,21,.68) 100%);
@@ -37,7 +37,7 @@
 }
 .clear-lens {
   background: radial-gradient(ellipse 115% 31% at 47% 49%,rgba(222,215,211,.22),rgba(146,144,151,.10) 42%,transparent 75%);
-  opacity: .22; filter: blur(24px);
+  opacity: .35; filter: blur(24px);
   transform: translateY(3%);
   transition: opacity 4.5s ease, transform 6s ease;
 }
@@ -59,21 +59,21 @@
    for a decisive, optimistic finish; never fade to a black screen. */
 .clear-view.clear-quieting .clear-scene {
   transform: scale(1.024) translate3d(-.15%,0,0);
-  filter: brightness(.82) saturate(.83) contrast(.99);
+  filter: blur(.55px) brightness(.87) saturate(.82) contrast(1);
 }
 .clear-view.clear-quieting .clear-lens { opacity: .09; transform: translateY(-7%); }
 .clear-view.clear-quieting .clear-attention-veil { opacity: .42; }
 .clear-view.clear-quieting .clear-horizon-quiet { opacity: .42; transform: translateY(0); }
 .clear-view.clear-focusing .clear-scene, .clear-view.clear-ready .clear-scene {
   transform: scale(1.008) translate3d(0,0,0);
-  filter: brightness(.84) saturate(.80) contrast(1);
+  filter: blur(0) brightness(.9) saturate(.78) contrast(1);
 }
-.clear-view.clear-focusing .clear-atmosphere { opacity: .27; }
-.clear-view.clear-focusing .clear-dim { opacity: .65; }
+.clear-view.clear-focusing .clear-atmosphere { opacity: .2; }
+.clear-view.clear-focusing .clear-dim { opacity: .48; }
 .clear-view.clear-focusing .clear-lens { opacity: .03; transform: translateY(-13%); }
-.clear-view.clear-focusing .clear-attention-veil { opacity: .88; }
-.clear-view.clear-focusing .clear-horizon-quiet { opacity: .78; transform: translateY(-2%); }
-.clear-view.clear-focusing .clear-bottom-shade { opacity: 1; }
+.clear-view.clear-focusing .clear-attention-veil { opacity: .73; }
+.clear-view.clear-focusing .clear-horizon-quiet { opacity: .6; transform: translateY(-2%); }
+.clear-view.clear-focusing .clear-bottom-shade { opacity: .9; }
 
 .clear-inner {
   position: relative; z-index: 1;
@@ -156,9 +156,9 @@
 .clear-action {
   min-height:62px;width:100%;
   display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:0 21px;border:0;border-radius:19px;
+  padding:10px 21px;border:0;border-radius:19px;
   color:#251c1c;background:linear-gradient(110deg,#ffa18c,#ff9381);
-  font-size:clamp(17px,5vw,21px);font-weight:750;
+  font-size:clamp(17px,5vw,21px);font-weight:750;line-height:1.2;
   box-shadow:0 12px 32px rgba(31,11,17,.23),inset 0 1px 0 rgba(255,255,255,.34);
   animation:clear-action-enter .75s cubic-bezier(.16,.8,.2,1) both;
 }
@@ -169,7 +169,7 @@
 .clear-replay {color:#c4d6ce;text-decoration:none;}
 .clear-breathe {flex:1 1 100%;margin:0;padding:10px 12px;background:rgba(11,24,33,.56);border:1px solid rgba(148,212,199,.3);border-radius:12px;text-align:center;color:#d9f3e9;font-size:13px;line-height:1.4;}
 @media (max-width:359px) {
-  .clear-inner {padding:18px 18px 12px;}
+  .clear-inner {padding:max(18px,env(safe-area-inset-top)) 18px max(12px,env(safe-area-inset-bottom));}
   .clear-brand{gap:5px}.clear-brand strong{font-size:18px}.clear-brand span{font-size:9px;letter-spacing:.18em;margin-left:2px}
   .clear-mark{width:27px;height:31px}.clear-exit{font-size:10px;padding:0 8px;gap:3px}
   .clear-hero{margin-top:29px;min-height:145px}.clear-message h1,.clear-message h2{font-size:35px}.clear-message p{margin-top:10px;font-size:14px}
@@ -201,9 +201,9 @@ html[data-text-size="large"] .clear-action{font-size:21px}
 /* Motion access is a functional requirement, not just a shorter duration. */
 .clear-view.clear-reduced .clear-world > * {transition:none!important;animation:none!important;}
 .clear-view.clear-reduced .clear-message,.clear-view.clear-reduced .clear-spot-card,.clear-view.clear-reduced .clear-action {transition:none!important;animation:none!important;}
-.clear-view.clear-reduced .clear-scene {transform:none;filter:brightness(.84) saturate(.80) contrast(1)}
-.clear-view.clear-reduced .clear-attention-veil {opacity:.88}
-.clear-view.clear-reduced .clear-horizon-quiet {opacity:.78;transform:none}
+.clear-view.clear-reduced .clear-scene {transform:none;filter:brightness(.9) saturate(.78) contrast(1)}
+.clear-view.clear-reduced .clear-attention-veil {opacity:.73}
+.clear-view.clear-reduced .clear-horizon-quiet {opacity:.6;transform:none}
 .clear-view.clear-reduced .clear-spot-card {opacity:1;filter:none;transform:none}
 
 /* Refined on actual 390px screenshot: landscape must be visible and header
