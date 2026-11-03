@@ -233,3 +233,10 @@ html[data-text-size="large"] .clear-action{font-size:21px}
   user-select:none;
   pointer-events:none;
 }
+
+/* Keep the return control readable without colliding with CLEAR branding. */
+.clear-exit-short {display:none;}
+@media (max-width:359px) {
+  .clear-exit-long {display:none;}
+  .clear-exit-short {display:inline;}
+}
