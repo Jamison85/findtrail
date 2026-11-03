@@ -22,7 +22,7 @@ describe('FindTrail app', () => {
     window.history.replaceState({}, '', '/?screen=calm')
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: /You haven't lost your place/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /You can pause here/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Continue search without changing progress/i }))
 
     expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
