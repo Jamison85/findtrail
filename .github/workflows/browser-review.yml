@@ -1,8 +1,10 @@
-name: FindTrail 2.13 browser review
+name: FindTrail CLEAR browser review
 
 on:
   push:
-    branches: [build/findtrail-night-orchard-audit]
+    branches: [feat/clear-focus-integration]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -29,6 +31,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: findtrail-2-13-mobile-screenshots
+          name: findtrail-clear-mobile-screenshots
           path: browser-qa/
           if-no-files-found: ignore
