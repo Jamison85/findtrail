@@ -54,7 +54,7 @@ try {
     await context.close()
   }
 
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 })
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, recordVideo: { dir: 'browser-qa', size: { width: 390, height: 844 } } })
   const page = await context.newPage()
   page.on('pageerror', (error) => issues.push('journey runtime: ' + error.message))
   await page.goto(URL)
