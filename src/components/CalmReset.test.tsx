@@ -1,82 +1,46 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ActiveSearch } from '../types'
 import { CalmReset } from './CalmReset'
 
+const search: ActiveSearch = {
+  version: 3, id: 'reset-test', itemId: 'keys', itemLabel: 'Keys', answers: {},
+  stops: [{ id: 'entry', title: 'The landing zone', instruction: 'Look where you set things down.', spots: ['Entry hook', 'Shoe shelf'] }],
+  currentIndex: 0, checkedSpots: { entry: ['Entry hook'] },
+  startedAt: '2026-11-18T12:00:00.000Z', lastUpdatedAt: '2026-11-18T12:00:00.000Z',
+}
+
 describe('CalmReset', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
+
+  it('reveals the next unchecked spot and returns without changing the search', () => {
+    vi.useFakeTimers()
+    const resume = vi.fn()
+    const original = JSON.stringify(search)
+    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={resume} onBegin={vi.fn()} />)
+    expect(screen.getByRole('heading', { name: 'You haven’t lost your place.' })).toBeInTheDocument()
+    expect(screen.queryByText('Shoe shelf')).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(4200))
+    expect(screen.getByText('Shoe shelf')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Return to this place' }))
+    expect(resume).toHaveBeenCalledOnce()
+    expect(JSON.stringify(search)).toBe(original)
   })
 
-  it('guides the reset without repeating the breath instructions in the footer', () => {
-    vi.useFakeTimers()
-    let now = 0
-    vi.spyOn(performance, 'now').mockImplementation(() => now)
-
-    render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
-    expect(document.querySelector('.horizon-ripples')).toBeInTheDocument()
-    expect(document.querySelector('.calm-feather')?.getAttribute('src')).toContain('findtrail-natural-feather-v2.webp')
-    expect(document.querySelector('.calm-feather-anchor')).toBeInTheDocument()
-    expect(screen.getByText('In, pause, and out at your pace.')).toBeInTheDocument()
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Follow the feather')
-    expect(screen.getByText(/Tap Begin whenever you are ready/)).toBeInTheDocument()
-    expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
-    now = 20_000
-    act(() => vi.advanceTimersByTime(20_000))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Follow the feather')
-    fireEvent.click(screen.getByRole('button', { name: /begin breathing reset/i }))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
-    expect(document.querySelector('.calm-guidance__count')).toHaveTextContent('4')
-    expect(screen.queryByText(/Tap Begin whenever you are ready/)).not.toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
-    expect(screen.queryByText('4 in · 6 out rhythm')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Cycle 1 of 3/i)).not.toBeInTheDocument()
-    expect(screen.queryByText('Breathe comfortably. Never force the pace.')).not.toBeInTheDocument()
-
-    now = 24_100
-    act(() => vi.advanceTimersByTime(100))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Hold gently')
-    expect(document.querySelector('.calm-guidance__count')).toHaveTextContent('2')
-    expect(screen.getByText('Pause only if comfortable')).toBeInTheDocument()
-
-    now = 26_100
-    act(() => vi.advanceTimersByTime(100))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe out')
-    expect(document.querySelector('.calm-guidance__count')).toHaveTextContent('6')
-    expect(screen.getByText('Let the breath soften')).toBeInTheDocument()
-
-    now = 32_000
-    act(() => vi.advanceTimersByTime(100))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Breathe in')
-
-    now = 56_000
-    act(() => vi.advanceTimersByTime(100))
-    expect(document.querySelector('.calm-guidance__phase')).toHaveTextContent('Reset complete')
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuemax', '36')
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '36')
-    expect(screen.getByRole('button', { name: /return to my trail/i })).toBeInTheDocument()
+  it('offers the next step immediately with reduced motion and a way to begin without a search', () => {
+    const begin = vi.fn()
+    render(<CalmReset search={null} returnScreen="home" motion="reduced" onResume={vi.fn()} onBegin={begin} />)
+    expect(screen.getByText('One thing to find.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Optional breathing cue' }))
+    expect(screen.getByText(/There is no pace to keep/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Begin a search' }))
+    expect(begin).toHaveBeenCalledOnce()
   })
 
-  it('holds the breath timer when the page is interrupted and continues from that moment', () => {
+  it('lets someone reveal the step without waiting for the transition', () => {
     vi.useFakeTimers()
-    let now = 0
-    vi.spyOn(performance, 'now').mockImplementation(() => now)
-    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
-    render(<CalmReset hasSearch motion="reduced" onResume={() => undefined} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Begin breathing reset' }))
-    now = 5_100
-    act(() => vi.advanceTimersByTime(100))
-    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
-    act(() => document.dispatchEvent(new Event('visibilitychange')))
-    expect(screen.getByRole('button', { name: 'Continue breathing reset' })).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '5')
-    now = 100_000
-    act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '5')
-    fireEvent.click(screen.getByRole('button', { name: 'Continue breathing reset' }))
-    expect(screen.getByRole('button', { name: 'Return to my trail' })).toBeInTheDocument()
-    now = 101_000
-    act(() => vi.advanceTimersByTime(100))
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '6')
+    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={vi.fn()} onBegin={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /I’m ready for one step/ }))
+    expect(screen.getByText('Shoe shelf')).toBeInTheDocument()
   })
 })

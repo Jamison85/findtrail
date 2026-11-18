@@ -22,8 +22,8 @@ describe('FindTrail app', () => {
     window.history.replaceState({}, '', '/?screen=calm')
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(screen.getByRole('heading', { name: 'You haven’t lost your place.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
 
     expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
     await waitFor(() => expect(window.location.search).toBe(''))
@@ -47,14 +47,14 @@ describe('FindTrail app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
 
     expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'A still lake at dusk' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'A warmly lit room with a winding path between everyday places' })).toBeInTheDocument()
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
   it('keeps the home artwork static instead of implying search checkpoints', () => {
     render(<App />)
-    expect(screen.getByRole('img', { name: 'A still lake at dusk' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'A warmly lit room with a winding path between everyday places' })).toBeInTheDocument()
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
   })
@@ -157,15 +157,9 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('At home'))
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
-    expect(screen.getByRole('heading', { name: 'The search can wait one breath.' })).toBeInTheDocument()
-    expect(screen.getByText('Watch the feather settle once. Then breathe in, pause gently if comfortable, and breathe out at your pace. Tap Begin whenever you are ready.')).toBeInTheDocument()
-    expect(screen.queryByRole('progressbar', { name: 'Mental reset progress' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Optional sound')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /begin breathing reset/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /begin breathing reset/i }))
-    expect(screen.getByRole('progressbar', { name: 'Mental reset progress' })).toHaveAttribute('aria-valuenow', '0')
-    expect(screen.getByRole('button', { name: /return to my trail/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(screen.getByRole('heading', { name: 'One place. One step.' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Optional breathing cue' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
 
@@ -191,9 +185,9 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /begin breathing reset/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Optional breathing cue' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
     expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
   })
@@ -580,7 +574,7 @@ describe('FindTrail app', () => {
     }))
     window.history.replaceState({}, '', '/?screen=calm')
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
     fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
