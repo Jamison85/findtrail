@@ -216,10 +216,6 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
           {onExcludePlace && <button className="text-button" onClick={onExcludePlace} disabled={departing}>This place doesn’t apply</button>}
         </div>}
 
-        <aside className="side-quest-note">
-          <span className="side-quest-note__icon"><Icon name="calm" size={18} /></span>
-          <span><strong>Stay with this place</strong>Finish checking here before moving on. You can return to other tasks afterward.</span>
-        </aside>
       </article>
 
       {offerReset && <div className="trail-pause-offer" role="status"><span><strong>Want a breathing reset?</strong><small>Your place is saved.</small></span><button onClick={onCalm}>Take reset</button><button onClick={onDismissReset}>Not now</button></div>}

@@ -104,7 +104,8 @@ input::placeholder { color: #a8b7b9; }
 .clue-copy h1 { color: #fff4eb; }
 .choice-button { border: 1px solid var(--line); border-radius: 15px; color: var(--ink); background: #263543; box-shadow: none; }
 .choice-button.is-selected { border-color: #a9d7c5; background: #31565b; }
-.choice-button__marker { color: #f5d7aa; }
+.choice-button__marker { color: #f5d7aa; border-color: rgba(210, 231, 219, .48); background: #304754; }
+.choice-button__marker > span { background: #b1c9c1; }
 .clue-quick-start { padding: 11px; border: 1px solid rgba(241, 194, 139, .25); border-radius: 17px; background: #3a3941; }
 .clue-quick-start .button { color: #1b2630; background: var(--gold); border: 0; }
 .clue-quick-start p { color: #e2d9d2; }
