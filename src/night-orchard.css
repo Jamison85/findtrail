@@ -60,9 +60,13 @@
   .choice-button { background: var(--white); border-color: var(--line); box-shadow: none; }
   .choice-button__marker { color: var(--ink); }
   .choice-button.is-selected { background: var(--sage); }
+  .clue-view .choice-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); }
   .clue-quick-start { display: grid; gap: 6px; margin-block: 0 18px; }
   .clue-quick-start .button { min-height: 48px; white-space: normal; }
   .clue-quick-start p { margin: 0; color: var(--ink-soft); font-size: .8125rem; line-height: 1.45; text-wrap: pretty; }
+  .end-view .recovery-step--priority { background: var(--evergreen); border-color: var(--line); box-shadow: none; }
+  .recovery-choice { background: var(--white); border-color: var(--line); box-shadow: none; }
+  .skipped-places__list button { color: var(--ink); }
   .found-capture, .complete-sheet, .history-entry, .settings-section, .widen-card, .recovery-card { background: var(--white); border-color: var(--line); }
   .found-capture .location-chips .chip, .found-capture .found-optional, .found-capture input { background: var(--paper-deep); color: var(--ink); }
   .found-area-choice button[aria-pressed="true"] { color: var(--ink); }

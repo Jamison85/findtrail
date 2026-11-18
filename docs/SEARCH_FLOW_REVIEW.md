@@ -12,6 +12,8 @@ The approved Night Orchard palette and existing search structure are retained. N
 
 Browser review also surfaced repeated checklist movement at a pointer boundary. Checklist hover feedback now changes the surface without moving its hit area; pressed feedback is retained.
 
+The screenshots exposed inherited light recovery panels and dark skipped-place labels within the dark palette. These surfaces and labels now use the approved dark theme tokens. Browser QA checks at least 4.5:1 contrast on recovery instructions, the next-pass heading and skipped-place buttons. Enlarged clue choices reflow to one column instead of splitting short labels across several lines.
+
 ## Verification
 
 - Baseline: `npm run check`, 109 tests passed with TypeScript and production build.

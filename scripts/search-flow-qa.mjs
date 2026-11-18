@@ -25,6 +25,23 @@ async function advance(page) {
   await page.locator('.trail-action-dock__main .button--primary').click()
 }
 
+async function checkRecoveryContrast(page) {
+  const pairs = await page.evaluate(() => [
+    ['.recovery-step--priority p', '.recovery-step--priority'],
+    ['.recovery-choice h2', '.recovery-choice'],
+    ['.skipped-places__list button', '.skipped-places__list button'],
+  ].map(([text, surface]) => ({ text, color: getComputedStyle(document.querySelector(text)).color, background: getComputedStyle(document.querySelector(surface)).backgroundColor })))
+  const luminance = (color) => color.match(/[\d.]+/g).slice(0, 3).map(Number).map((value) => {
+    const channel = value / 255
+    return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4
+  }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0)
+  for (const pair of pairs) {
+    const values = [luminance(pair.color), luminance(pair.background)].sort((a, b) => b - a)
+    const ratio = (values[0] + .05) / (values[1] + .05)
+    assert.ok(ratio >= 4.5, `${pair.text}: contrast ${ratio.toFixed(2)} below 4.5:1`)
+  }
+}
+
 try {
   for (let i = 0; i < 60; i++) {
     try { if ((await fetch(URL)).ok) break } catch { /* server starting */ }
@@ -79,6 +96,7 @@ try {
     // Reach the recovery checkpoint, retaining skipped and unfinished areas.
     for (let i = 0; i < 4; i++) await advance(page)
     await page.locator('.end-view').waitFor()
+    await checkRecoveryContrast(page)
     await capture(page, `recovery-${width}`)
     await page.getByRole('button', { name: 'Save trail and return home' }).click()
     await page.getByText('Your route is saved. Choose your next move.').waitFor()
@@ -89,6 +107,7 @@ try {
     await page.getByRole('button', { name: 'House keys', exact: true }).click()
     // Exercise browser text enlargement without modifying persisted preferences.
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%' })
+    assert.equal(await page.locator('.choice-list').first().evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length), 1, 'enlarged clue choices reflow to a single readable column')
     await capture(page, `quick-start-large-text-${width}`)
     await context.close()
     console.log(`Search flow passed at ${width}px, including large text and reloads.`)
