@@ -28,6 +28,7 @@ async function advance(page) {
 async function checkRecoveryContrast(page) {
   const pairs = await page.evaluate(() => [
     ['.recovery-step--priority p', '.recovery-step--priority'],
+    ['.recovery-step--priority .recovery-step__number', '.recovery-step--priority .recovery-step__number'],
     ['.recovery-choice h2', '.recovery-choice'],
     ['.skipped-places__list button', '.skipped-places__list button'],
   ].map(([text, surface]) => ({ text, color: getComputedStyle(document.querySelector(text)).color, background: getComputedStyle(document.querySelector(surface)).backgroundColor })))

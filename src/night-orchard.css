@@ -65,6 +65,7 @@
   .clue-quick-start .button { min-height: 48px; white-space: normal; }
   .clue-quick-start p { margin: 0; color: var(--ink-soft); font-size: .8125rem; line-height: 1.45; text-wrap: pretty; }
   .end-view .recovery-step--priority { background: var(--evergreen); border-color: var(--line); box-shadow: none; }
+  .end-view .recovery-step--priority .recovery-step__number { color: var(--ink); background: var(--paper-deep); border-color: var(--line); }
   .recovery-choice { background: var(--white); border-color: var(--line); box-shadow: none; }
   .skipped-places__list button { color: var(--ink); }
   .found-capture, .complete-sheet, .history-entry, .settings-section, .widen-card, .recovery-card { background: var(--white); border-color: var(--line); }
