@@ -1,176 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
-import type { Settings } from '../types'
-import { HorizonRipples } from './HorizonRipples'
+import { useState } from 'react'
+import type { ActiveSearch, Screen } from '../types'
 import { Icon } from './Icon'
-import { BrandMark } from './BrandMark'
-import { FeatherMark } from './FeatherMark'
-import { CYCLE_SECONDS, HOLD_SECONDS, INHALE_SECONDS, TOTAL_SECONDS } from './resetTiming'
-import { featherPose } from './featherFlight'
+import { clearNextStep } from './clearNextStep'
 
-const RESET_FEATHER = `${import.meta.env.BASE_URL}findtrail-natural-feather-v2.webp`
-
-type ResetPhase = 'Breathe in' | 'Hold gently' | 'Breathe out'
-
-function useReducedMotion(motion: Settings['motion']) {
-  const [systemReduced, setSystemReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
-
-  useEffect(() => {
-    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    if (!media) return
-    const update = () => setSystemReduced(media.matches)
-    media.addEventListener?.('change', update)
-    return () => media.removeEventListener?.('change', update)
-  }, [])
-
-  return motion === 'reduced' || (motion === 'system' && systemReduced)
+interface CalmResetProps {
+  search: ActiveSearch | null
+  returnScreen: Screen
+  onResume: () => void
 }
 
-function phaseFor(elapsed: number): { label: ResetPhase; secondsLeft: number } {
-  const withinCycle = elapsed % CYCLE_SECONDS
-  if (withinCycle < INHALE_SECONDS) {
-    return { label: 'Breathe in', secondsLeft: Math.ceil(INHALE_SECONDS - withinCycle) }
-  }
-  if (withinCycle < INHALE_SECONDS + HOLD_SECONDS) {
-    return { label: 'Hold gently', secondsLeft: Math.ceil(INHALE_SECONDS + HOLD_SECONDS - withinCycle) }
-  }
-  return { label: 'Breathe out', secondsLeft: Math.ceil(CYCLE_SECONDS - withinCycle) }
-}
-
-export function CalmReset({ onResume, hasSearch, motion }: { onResume: () => void; hasSearch: boolean; motion: Settings['motion'] }) {
-  const [elapsed, setElapsed] = useState(0)
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [paused, setPaused] = useState(false)
-  const reducedMotion = useReducedMotion(motion)
-  const timerRef = useRef<number | null>(null)
-  const flightRef = useRef<HTMLDivElement>(null)
-  const playing = startedAt !== null
-
-  const remaining = Math.max(0, Math.ceil(TOTAL_SECONDS - elapsed))
-  const complete = remaining === 0
-  const breath = phaseFor(elapsed)
-  const phase = paused ? 'Reset paused' : !playing ? 'Follow the feather' : complete ? 'Reset complete' : breath.label
-  const phaseSeconds = complete ? 0 : breath.secondsLeft
-  const guidance = paused
-    ? 'Your place is saved. Continue when you are ready.'
-    : !playing
-    ? 'In, pause, and out at your pace.'
-    : complete
-    ? 'Notice what feels quieter now.'
-    : phase === 'Breathe in'
-      ? 'Breathe in gently'
-      : phase === 'Hold gently'
-        ? 'Pause only if comfortable'
-        : 'Let the breath soften'
-
-  useEffect(() => {
-    if (startedAt === null) return
-
-    timerRef.current = window.setInterval(() => {
-      const next = Math.min(TOTAL_SECONDS, (performance.now() - startedAt) / 1000)
-      setElapsed(next)
-      if (next >= TOTAL_SECONDS && timerRef.current !== null) {
-        window.clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-    }, 100)
-
-    return () => {
-      if (timerRef.current !== null) window.clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-  }, [startedAt])
-
-  useEffect(() => {
-    if (startedAt === null) return
-    const pauseWhenHidden = () => {
-      if (!document.hidden) return
-      setElapsed(Math.min(TOTAL_SECONDS, (performance.now() - startedAt) / 1000))
-      setStartedAt(null)
-      setPaused(true)
-    }
-    document.addEventListener('visibilitychange', pauseWhenHidden)
-    return () => document.removeEventListener('visibilitychange', pauseWhenHidden)
-  }, [startedAt])
-
-  useEffect(() => {
-    const flight = flightRef.current
-    if (!flight) return
-    let frame = 0
-    const draw = (now: number) => {
-      const seconds = startedAt === null ? paused ? elapsed : 0 : Math.max(0, (now - startedAt) / 1000)
-      const pose = featherPose(seconds, reducedMotion)
-      flight.style.setProperty('--flight-height', String(pose.height))
-      flight.style.setProperty('--flight-offset', String(pose.offset))
-      flight.style.setProperty('--flight-roll', `${pose.roll}deg`)
-      flight.style.setProperty('--flight-yaw', `${pose.yaw}deg`)
-      flight.style.setProperty('--flight-pitch', `${pose.pitch}deg`)
-      if (!reducedMotion && startedAt !== null && seconds < TOTAL_SECONDS) frame = requestAnimationFrame(draw)
-    }
-    draw(performance.now())
-    return () => cancelAnimationFrame(frame)
-  }, [startedAt, reducedMotion, paused, paused ? elapsed : 0])
-
-  function beginReset() {
-    if (!paused) setElapsed(0)
-    setStartedAt(performance.now() - (paused ? elapsed * 1000 : 0))
-    setPaused(false)
-  }
+export function CalmReset({ search, returnScreen, onResume }: CalmResetProps) {
+  const [breathing, setBreathing] = useState(false)
+  const next = clearNextStep(search, returnScreen)
 
   return (
-    <section className="view calm-view" aria-labelledby="view-heading">
-      <HorizonRipples reducedMotion={reducedMotion} startedAt={startedAt} />
-      <div className="calm-view__veil" aria-hidden="true" />
-
-      <header className="calm-topbar">
-        <strong className="calm-brand"><BrandMark className="calm-brand__mark" />FindTrail</strong>
-        <button className="calm-skip" onClick={onResume} aria-label="Skip">
-          Skip <Icon name="close" size={14} />
-        </button>
-      </header>
-
-      <div className="calm-view__content">
-        <div className="calm-copy">
-          <span className="calm-reset-label"><FeatherMark className="calm-reset-label__feather" /> Breathing reset</span>
-          <h1 id="view-heading" tabIndex={-1}>The search can wait one breath.</h1>
-          <p>Watch the feather settle once. Then breathe in, pause gently if comfortable, and breathe out at your pace.{!playing && !paused && ' Tap Begin whenever you are ready.'}</p>
+    <section className="view reset-journey" aria-labelledby="view-heading">
+      <div className="reset-journey__scene" aria-hidden="true" />
+      <div className="reset-journey__layout">
+        <header className="reset-journey__top">
+          <strong>Reset</strong>
+          <button className="icon-button reset-journey__exit" onClick={onResume} aria-label="Close reset"><Icon name="close" size={21} /></button>
+        </header>
+        <div className="reset-journey__message">
+          <h1 id="view-heading" tabIndex={-1}>Take a moment.</h1>
+          {search && <p>Your search is saved.</p>}
         </div>
-
-        <div className="calm-breath-stage">
-          <div className={complete ? 'calm-guidance is-complete' : 'calm-guidance'}>
-            <strong className="calm-guidance__phase">{complete ? 'Reset complete' : phase}</strong>
-            {playing && <span className="calm-guidance__count">
-              <b>{complete ? '✓' : phaseSeconds}</b>
-              {!complete && <small>seconds</small>}
-            </span>}
-            <span className="calm-guidance__hint">{guidance}</span>
-          </div>
-        </div>
-      </div>
-
-      <div ref={flightRef} className={`calm-flight${reducedMotion ? ' is-reduced-motion' : ''}${!playing ? ' is-waiting' : ''}`} aria-hidden="true">
-        <div className="calm-feather-anchor">
-          <div className="calm-feather-drift">
-            <img className="calm-feather" src={RESET_FEATHER} alt="" draggable="false" />
-          </div>
-        </div>
-      </div>
-
-      <footer className="calm-instrument">
-        <div className="calm-breath-card">
-          <span className="sr-only" aria-live="polite">{playing ? phase : 'Begin when you are ready.'}</span>
-          {(playing || paused) && <div className="calm-progress" role="progressbar" aria-label="Mental reset progress" aria-valuemin={0} aria-valuemax={TOTAL_SECONDS} aria-valuenow={Math.round(elapsed)}>
-            <span style={{ transform: `scaleX(${Math.min(1, elapsed / TOTAL_SECONDS)})` }} />
+        <div className="reset-journey__bottom">
+          {search && <div className="reset-next">
+            {next.spot && <span>{next.kind === 'safety' ? 'Safety first' : 'Next spot'}</span>}
+            <strong>{next.spot ?? next.title}</strong>
+            {next.kind === 'safety' && <p>{next.instruction}</p>}
           </div>}
+          <button className="button button--primary reset-journey__action" onClick={onResume}>{search ? 'Back to search' : 'Back to home'}</button>
+          <button className="text-button reset-journey__breathing" aria-expanded={breathing} aria-controls="reset-breathing-cue" onClick={() => setBreathing((open) => !open)}>{breathing ? 'Hide breathing cue' : 'Breathing cue'}</button>
+          <p id="reset-breathing-cue" className="reset-journey__breath-copy" hidden={!breathing}>Breathe gently in. Let your breath out slowly, at your own pace.</p>
         </div>
-
-        <button className="calm-resume" onClick={playing ? onResume : beginReset}>
-          <span className="calm-resume__feather"><FeatherMark /></span>
-          <span>{playing ? hasSearch ? 'Return to my trail' : 'Back to FindTrail' : paused ? 'Continue breathing reset' : 'Begin breathing reset'}</span>
-          <i aria-hidden="true"><Icon name="forward" size={16} /></i>
-        </button>
-
-        <span className="sr-only">{hasSearch ? 'This returns to your active search.' : 'This returns to the home screen.'}</span>
-      </footer>
+      </div>
     </section>
   )
 }

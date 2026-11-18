@@ -52,25 +52,12 @@ function FoundToggle({ label, detail, checked, onChange }: FoundToggleProps) {
   )
 }
 
-function SuccessTrail({ icon }: { icon: ItemId }) {
-  const item = ITEM_BY_ID[icon]
-  return (
-    <div className="found-signal" aria-hidden="true">
-      <svg viewBox="0 0 320 92" preserveAspectRatio="none">
-        <path className="found-signal__shadow" d="M4 66C57 66 58 25 115 30c50 5 56 42 108 30 35-8 44-28 83-33" />
-        <path className="found-signal__path" d="M4 66C57 66 58 25 115 30c50 5 56 42 108 30 35-8 44-28 83-33" />
-      </svg>
-      <span className="found-signal__start" />
-      <span className="found-signal__seal"><Icon name={item.icon} size={25} /><i><Icon name="check" size={13} /></i></span>
-    </div>
-  )
-}
-
 export function FoundView({ search, currentStepTitle, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onDone, onBack }: FoundViewProps) {
   const item = ITEM_BY_ID[search.itemId]
   const stop = currentStepTitle ? search.stops[search.currentIndex] : undefined
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
   const ready = Boolean(value.trim())
+  const foundLabel = search.itemId === 'other' ? search.itemLabel : `your ${search.itemLabel.toLocaleLowerCase()}`
 
   return (
     <section className={`view found-view found-view--${search.itemId}`} aria-labelledby="view-heading">
@@ -84,20 +71,14 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
       </header>
 
       <div className="found-intro">
-        <SuccessTrail icon={search.itemId} />
-        <h1 id="view-heading" tabIndex={-1}>There it is.</h1>
-        <p>Take one useful second to note the exact place. FindTrail will use it to make the next search shorter.</p>
+        <h1 id="view-heading" tabIndex={-1}><Icon name="check" size={28} /> Found {foundLabel}.</h1>
       </div>
 
       <section className="found-capture" aria-labelledby="found-location-heading">
         <div className="found-capture__heading">
           <div>
             <h2 id="found-location-heading">Where did it turn up?</h2>
-            <p>Choose a close match or type the exact spot. Specific beats perfect.</p>
           </div>
-          <span className={ready ? 'found-ready is-ready' : 'found-ready'} aria-live="polite">
-            <Icon name={ready ? 'check' : 'trail'} size={14} />{ready ? 'Ready' : 'One detail'}
-          </span>
         </div>
 
         <div className="location-chips" role="group" aria-label={`Suggested found places for ${search.itemLabel}`}>
@@ -125,12 +106,28 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
             autoComplete="off"
             enterKeyHint="done"
           />
-          <small>A useful detail helps: “blue bowl,” not just “kitchen.”</small>
         </label>
 
-        <details className="found-optional">
-          <summary><span>Remember more for next time <small>Optional</small></span><Icon name="forward" size={17} /></summary>
-          {currentStepTitle && (
+        <div className="found-memory-options">
+          <FoundToggle
+            label={`Make this the usual spot for ${search.itemLabel.toLocaleLowerCase()}`}
+            detail="FindTrail will suggest it again next time."
+            checked={saveAsHome}
+            onChange={onSaveAsHome}
+          />
+          {search.itemId === 'other' && saveAsHome && (
+            <FoundToggle
+              label={`Pin ${search.itemLabel} on Home`}
+              detail="Start this search again with one tap."
+              checked={pinCustomItem}
+              onChange={onPinCustomItem}
+            />
+          )}
+        </div>
+
+        {currentStepTitle && (
+          <details className="found-optional">
+            <summary><span>Help improve the trail <small>Optional</small></span><Icon name="forward" size={17} /></summary>
             <div className="found-area-choice" role="group" aria-label={`Did “${currentStepTitle}” help you find it?`}>
               <strong>Did “{currentStepTitle}” help you find it?</strong>
               <div>
@@ -139,30 +136,13 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
               </div>
               <p>A yes helps put this step earlier next time. Your exact place is saved either way.</p>
             </div>
-          )}
-
-          <div className="found-memory-options">
-            <FoundToggle
-              label={`Make this the home spot for ${search.itemLabel}`}
-              detail="FindTrail will check here before learned guesses."
-              checked={saveAsHome}
-              onChange={onSaveAsHome}
-            />
-            {search.itemId === 'other' && saveAsHome && (
-              <FoundToggle
-                label={`Pin ${search.itemLabel} on Home`}
-                detail="Start this search again with one tap."
-                checked={pinCustomItem}
-                onChange={onPinCustomItem}
-              />
-            )}
-          </div>
-        </details>
+          </details>
+        )}
 
         <button className="button button--primary button--wide found-save" onClick={onSave} disabled={!ready}>
-          <Icon name="check" size={19} />Save this found place
+          Save spot
         </button>
-        {onDone && <button className="text-button found-done" onClick={onDone}>Done for now · don’t save a place</button>}
+        {onDone && <button className="text-button found-done" onClick={onDone}>Done without saving</button>}
       </section>
     </section>
   )
@@ -193,7 +173,7 @@ export function CompleteView({ summary, durationLabel, onHome, onAnother }: Comp
           <span><Icon name={summary.savedAsHome ? 'home' : 'trail'} size={19} /></span>
           <p>
             <strong>{summary.savedAsHome ? 'Home spot saved.' : 'Added to found history.'}</strong>
-            <small>{summary.savedAsHome ? 'FindTrail will check here first next time.' : 'This found place may appear earlier next time.'}</small>
+            <small>{summary.savedAsHome ? 'FindTrail can suggest this spot next time.' : 'This found place may appear earlier next time.'}</small>
           </p>
         </div>
 

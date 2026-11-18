@@ -117,7 +117,7 @@ export function SettingsView({ data, offlineReady, offlineError, canInstall, ios
         </div>
       </SettingsSection>
 
-      <footer className="version-note">FindTrail 2.13 · One place at a time.</footer>
+      <footer className="version-note">FindTrail 2.14 · One place at a time.</footer>
     </section>
   )
 }
