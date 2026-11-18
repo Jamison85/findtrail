@@ -24,6 +24,67 @@ describe('search improvements', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
+  it('starts with learned places after the item question without inventing answers', () => {
+    const search = { ...createActiveSearch('keys', 'Keys'), answers: { itemDetail: 'house' }, resumeScreen: 'clues' as const }
+    seed(search)
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+    data.savedItems = [{ id: 'item:keys', itemId: 'keys', itemLabel: 'Keys', homeSpot: 'Blue bowl', pinned: false, createdAt: search.startedAt, updatedAt: search.startedAt }]
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start with likely places' }))
+    expect(screen.getByRole('heading', { name: 'Its saved home' })).toBeInTheDocument()
+    expect(saved().answers).toEqual({ itemDetail: 'house' })
+    expect(saved().id).toBe(search.id)
+    fireEvent.click(screen.getByRole('button', { name: 'Clues' }))
+    expect(screen.getByRole('heading', { name: 'Which keys are missing?' })).toBeInTheDocument()
+  })
+
+  it.each([
+    ['medicine', 'urgent', 'Get backup while you search'],
+    ['money', 'card', 'Protect the card'],
+    ['phone', 'dead', 'Charging places'],
+  ] as const)('keeps essential %s guidance on a quick start', (itemId, itemDetail, heading) => {
+    seed({ ...createActiveSearch(itemId, itemId), answers: { itemDetail }, resumeScreen: 'clues' })
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start with likely places' }))
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+    if (itemId === 'phone') expect(saved().stops.map((stop) => stop.id)).not.toContain('ring-phone')
+  })
+
+  it('requires the item question before offering a quick start', () => {
+    seed(createActiveSearch('keys', 'Keys'))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    expect(screen.queryByRole('button', { name: 'Start with likely places' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the selected activity and prior checks when starting from the last clue', () => {
+    const stops = buildTrail('keys', 'Keys', answers, [])
+    const search = { ...createActiveSearch('keys', 'Keys'), answers: { itemDetail: 'house', lastPlace: 'home' }, stops, resumeScreen: 'clues' as const, checkedSpots: { car: ['Driver-seat gap'] } }
+    seed(search)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    fireEvent.click(screen.getByRole('button', { name: /Changed clothes/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start with likely places' }))
+    expect(saved().answers.lastAction).toBe('changed')
+    expect(saved().checkedSpots).toEqual(search.checkedSpots)
+    expect(screen.getByRole('heading', { name: 'Current and previous pockets' })).toBeInTheDocument()
+  })
+
+  it.each([
+    [{ widenReady: true }, 'Your first pass is saved. Choose whether to search wider.', 'Pause before going wider.'],
+    [{ resumeScreen: 'end' as const }, 'Your route is saved. Choose your next move.', 'Pause the search loop.'],
+    [{ resumeScreen: 'clues' as const }, 'Your clues are saved. Finish them or start with what you know.', 'At home, what happened next?'],
+  ])('describes the saved checkpoint instead of repeating the last area', (checkpoint, description, heading) => {
+    seed({ ...createActiveSearch('keys', 'Keys'), answers, stops: buildTrail('keys', 'Keys', answers, []), currentIndex: 2, ...checkpoint })
+    render(<App />)
+    expect(screen.getByText(description)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+  })
+
   it('keeps checked spots when editing clues, including reloading midway through edits', () => {
     const search = { ...createActiveSearch('keys', 'Keys'), answers, stops: buildTrail('keys', 'Keys', answers, []), checkedSpots: { 'drop-zone': ['Entry table or hook'], car: ['Driver-seat gap'] } }
     seed(search)

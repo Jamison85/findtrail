@@ -244,13 +244,14 @@ export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<st
 }
 
 export function rebuildSearch(search: ActiveSearch, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[]): ActiveSearch {
-  const stops = buildTrail(search.itemId, search.itemLabel, answers, history, savedItems, search.excludedStopIds)
-  const incomplete = (stop: SearchStop) => stop.kind === 'final' || checkedSpotsAt(search, stop).length < stop.spots.length
-  const nextIndex = stops.findIndex(incomplete)
+  // Filter before compacting so finished areas do not use up the short pass.
+  // Keep their progress in previousStops, and always retain safety guidance.
+  const stops = compactTrail(buildTrail(search.itemId, search.itemLabel, answers, history, savedItems, search.excludedStopIds, true)
+    .filter((stop) => stop.kind === 'safety' || stop.kind === 'final' || checkedSpotsAt(search, stop).length < stop.spots.length))
   return {
     ...search, answers, stops,
     previousStops: allSearchStops(search),
-    currentIndex: Math.max(0, nextIndex),
+    currentIndex: 0,
     widenReady: false, reviewingSkippedFrom: undefined, resumeScreen: 'trail',
   }
 }

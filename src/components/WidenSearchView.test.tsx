@@ -26,6 +26,12 @@ const search: ActiveSearch = {
 }
 
 describe('WidenSearchView', () => {
+  it('describes a shorter remaining pass accurately', () => {
+    render(<WidenSearchView search={{ ...search, stops: [...search.stops.slice(0, 4), search.stops.at(-1)!] }} onWiden={vi.fn()} onReviewSkipped={vi.fn()} onFound={vi.fn()} onReset={vi.fn()} onHome={vi.fn()} />)
+    expect(screen.getByText('This pass has 1 useful place. You will still see only one place at a time.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Search this place' })).toBeInTheDocument()
+  })
+
   it('previews only the next three places and keeps every exit explicit', () => {
     const actions = { onWiden: vi.fn(), onReviewSkipped: vi.fn(), onFound: vi.fn(), onReset: vi.fn(), onHome: vi.fn() }
     render(<WidenSearchView search={search} {...actions} />)

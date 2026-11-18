@@ -320,6 +320,15 @@ export default function App() {
     setScreen('trail')
   }
 
+  function startWithCurrentClues(value: string | null) {
+    if (!active?.answers.itemDetail) return
+    const answers = value === null ? active.answers : answersThroughCurrentClue(value)
+    if (!answers) return
+    updateActive((current) => rebuildSearch(current, answers, data.history, data.savedItems))
+    setPauseOffer(false)
+    setScreen('trail')
+  }
+
   function resumeSearch() {
     if (!active) return
     if (active.foundDraft) {
@@ -718,7 +727,7 @@ export default function App() {
       {storageError && !recoveryNeeded && !storageConflict && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} onIntro={() => setOnboardingOpen(true)} />}
-        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
+        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onQuickStart={startWithCurrentClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
         {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => openReset('trail')} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => openReset('widen')} onHome={() => setScreen('home')} />}
         {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
@@ -746,6 +755,17 @@ interface HomeViewProps {
   onDiscard: () => void
   onOpenHistory: (id: string) => void
   onIntro?: () => void
+}
+
+function resumeDescription(search: ActiveSearch): string {
+  if (search.foundDraft) return 'Your found-place note is ready to finish.'
+  if (search.resumeScreen === 'clues' || !search.stops.length) return 'Your clues are saved. Finish them or start with what you know.'
+  if (search.reviewingSkippedFrom) return `Review: ${search.stops[search.currentIndex]?.title ?? 'an unfinished place'}.`
+  if (search.widenReady) return 'Your first pass is saved. Choose whether to search wider.'
+  if (search.resumeScreen === 'end') return 'Your route is saved. Choose your next move.'
+  const stop = search.stops[search.currentIndex]
+  if (!stop) return 'Your search is saved.'
+  return `Next: ${stop.title}.`
 }
 
 function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, onStart, onResume, onDiscard, onOpenHistory, onIntro }: HomeViewProps) {
@@ -806,7 +826,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
               <div>
                 <span>Trail in progress</span>
                 <h1 id="view-heading" tabIndex={-1}>Keep looking for {data.activeSearch.itemLabel.toLocaleLowerCase()}?</h1>
-                <p>{data.activeSearch.foundDraft ? 'Your found-place note is ready to finish.' : data.activeSearch.stops.length ? `Next: ${data.activeSearch.stops[data.activeSearch.currentIndex]?.title ?? 'your search'}.` : 'Your clues are saved.'}</p>
+                <p>{resumeDescription(data.activeSearch)}</p>
               </div>
               <button className="button button--primary" onClick={onResume}>Resume trail</button>
               <button className="text-button text-button--muted" onClick={onDiscard}>End this search</button>
@@ -889,7 +909,7 @@ const ACTION_TITLE_BY_PLACE: Record<string, string> = {
   unsure: 'What happened around that time?',
 }
 
-function ClueView({ search, settings, question, index, total, onAnswer, onSave, onComplete, onBack, optionalPlaces, onToggleExclude }: { search: ActiveSearch; settings: Settings; question: ClueQuestion; index: number; total: number; onAnswer: (value: string) => void; onSave: (value: string) => void; onComplete: (value: string) => void; onBack: () => void; optionalPlaces: import('./types').SearchStop[]; onToggleExclude: (id: string) => void }) {
+function ClueView({ search, settings, question, index, total, onAnswer, onSave, onComplete, onQuickStart, onBack, optionalPlaces, onToggleExclude }: { search: ActiveSearch; settings: Settings; question: ClueQuestion; index: number; total: number; onAnswer: (value: string) => void; onSave: (value: string) => void; onComplete: (value: string) => void; onQuickStart: (value: string | null) => void; onBack: () => void; optionalPlaces: import('./types').SearchStop[]; onToggleExclude: (id: string) => void }) {
   const [selectedValue, setSelectedValue] = useState<string | null>(() => search.answers[question.id] ?? null)
   const [moreOpen, setMoreOpen] = useState(false)
   const selectionTimer = useRef<number | null>(null)
@@ -980,6 +1000,14 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
           <h1 ref={headingRef} id="view-heading" tabIndex={-1}>{title}</h1>
           <p>{question.helper}</p>
         </div>
+        {index > 0 && search.answers.itemDetail && <div className="clue-quick-start">
+          <button type="button" className="button button--secondary button--wide" onClick={() => {
+            if (selectionTimer.current !== null) window.clearTimeout(selectionTimer.current)
+            selectionTimer.current = null
+            onQuickStart(selectedValue)
+          }}>Start with likely places<Icon name="forward" size={18} /></button>
+          <p>Use what we know so far. You can add clues during the search.</p>
+        </div>}
         <div className="choice-group" role="group" aria-labelledby="view-heading">
           <div className="choice-list">{primaryOptions.map(renderOption)}</div>
           {extraOptions.length > 0 && <button type="button" className="choice-more" aria-expanded={moreOpen} aria-controls="more-clue-options" onClick={() => setMoreOpen((open) => !open)}>{moreOpen ? 'Show fewer choices' : 'More possibilities or not sure'}<Icon name={moreOpen ? 'close' : 'forward'} size={16} /></button>}
