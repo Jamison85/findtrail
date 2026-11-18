@@ -112,6 +112,25 @@ try {
   await context.close()
   assert.deepEqual(errors, [], 'no browser runtime errors')
   console.log('FindTrail search flow browser QA passed.')
+} catch (error) {
+  for (const context of browser?.contexts() ?? []) {
+    for (const page of context.pages()) {
+      if (page.isClosed()) continue
+      await page.screenshot({ path: `${output}/failure-${page.viewportSize()?.width ?? 'unknown'}.png`, fullPage: true }).catch(() => {})
+      console.error('Failed-page state:', await page.evaluate(() => ({
+        heading: document.querySelector('h1')?.textContent,
+        motion: document.documentElement.dataset.motion,
+        reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        spot: (() => {
+          const element = document.querySelector('.spot-row')
+          if (!element) return null
+          const style = getComputedStyle(element)
+          return { rect: element.getBoundingClientRect().toJSON(), transform: style.transform, animation: style.animation }
+        })(),
+      })).catch(() => null))
+    }
+  }
+  throw error
 } finally {
   if (browser) await browser.close()
   server.kill('SIGTERM')

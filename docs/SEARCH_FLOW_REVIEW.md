@@ -10,6 +10,8 @@
 
 The approved Night Orchard palette and existing search structure are retained. No new dependency, account, data format or remote data collection is introduced. The service-worker version changes so installed users can receive the new build. The separate Reset proposals in PRs #72 and #73 are not included.
 
+Browser review also surfaced repeated checklist movement at a pointer boundary. Checklist hover feedback now changes the surface without moving its hit area; pressed feedback is retained.
+
 ## Verification
 
 - Baseline: `npm run check`, 109 tests passed with TypeScript and production build.
