@@ -96,7 +96,7 @@ try {
   await page.getByRole('textbox', { name: 'Exact place' }).fill('Blue bowl by the door')
   await page.getByRole('checkbox', { name: /make this the usual spot/i }).check()
   await visitScreen(page, '.found-view', 'found-390')
-  await page.getByRole('button', { name: 'Save spot' }).click()
+  await page.getByRole('button', { name: 'Save this spot' }).click()
   await page.getByRole('button', { name: 'Find another item' }).click()
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await page.getByRole('heading', { name: 'Blue bowl by the door' }).waitFor()

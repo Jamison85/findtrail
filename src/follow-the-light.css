@@ -1,6 +1,8 @@
 /* FindTrail's shared surfaces, highlights and press feedback. */
 :root {
   color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
   --paper: #111b18;
   --paper-deep: #15231e;
   --white: #1c2d25;
@@ -26,7 +28,7 @@ body { color: var(--ink); }
 .app-shell { background: var(--paper); box-shadow: 0 24px 90px #060b08a0; }
 .app-content--with-nav { min-height: calc(100dvh - var(--nav-height)); }
 h1, h2 { letter-spacing: -.035em; }
-h1 { font-family: Georgia, 'Times New Roman', serif; }
+h1 { font-family: var(--font-display); }
 p { color: var(--ink-soft); }
 button { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline-color: #f4cb8c; }
@@ -108,6 +110,7 @@ input::placeholder { color: var(--ink-soft); }
 .item-button:nth-child(odd) { border-right: 1px solid #52655880; }
 .item-button:nth-child(n+3) { border-top: 1px solid #52655880; }
 .item-button__icon { width: 26px; height: 28px; flex: 0 0 26px; color: #e4d4b6; }
+.item-button__icon > svg { width: 23px; height: 23px; }
 .item-button strong { font-size: .94rem; line-height: 1.22; white-space: normal; text-align: left; }
 .item-button:hover, .item-button.is-active, .item-button:active { background: #344d3e; box-shadow: none; transform: none; }
 .item-button:focus-visible { outline-offset: -4px; }
@@ -138,34 +141,42 @@ input::placeholder { color: var(--ink-soft); }
 
 /* One raised checklist row identifies the next unchecked spot. */
 .trail-view { padding-bottom: calc(115px + env(safe-area-inset-bottom)); }
-.trail-route { margin-bottom: 17px; }
-.trail-route__meta strong { color: var(--moss); }
-.trail-progress { height: 5px; background: #3b5144; box-shadow: none; }
+.trail-topbar .icon-button { border-color: var(--line); background: #1b2b23; box-shadow: none; }
+.trail-identity__item { color: var(--ink); font-size: .9rem; }
+.trail-route { margin-bottom: clamp(20px, 3dvh, 29px); }
+.trail-route__meta strong { color: var(--moss); font-variant-numeric: tabular-nums; }
+.trail-progress { height: 3px; background: #3b5144; box-shadow: none; }
 .trail-progress span { background: var(--gold); box-shadow: none; }
 .trail-view > article.stop-card { padding: 0; overflow: visible; border: 0; border-radius: 0; color: var(--ink); background: transparent; box-shadow: none; }
 .trail-view > article.stop-card::before { display: none; }
 .stop-card__heading { grid-template-columns: minmax(0, 1fr); }
-.trail-view article .stop-card__copy h1 { max-width: none; color: var(--ink); font-size: clamp(1.9rem, 8vw, 2.65rem); line-height: 1.1; }
+.trail-view article .stop-card__copy h1 { max-width: 19ch; color: var(--ink); font-family: inherit; font-weight: 680; font-size: clamp(1.95rem, 8vw, 2.7rem); line-height: 1.08; overflow-wrap: anywhere; }
 .stop-card__instruction { color: #d4dfd6; font-size: .96rem; }
-.spot-list__heading { color: var(--ink); }
+.spot-list__heading { margin: clamp(17px, 2.6dvh, 26px) 0 8px; color: var(--ink); }
 .spot-list { gap: 0; }
 .spot-row { position: relative; min-height: 54px; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; padding-inline: 12px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--ink); background: transparent; box-shadow: none; }
 .spot-row__label { font-size: .97rem; }
 .spot-row__check { width: 23px; height: 23px; border-radius: 5px; border-color: #93a99a; color: transparent; background: transparent; }
 .spot-row.is-checked { color: var(--ink-soft); border-bottom-color: var(--line); background: transparent; box-shadow: none; }
 .spot-row.is-checked .spot-row__check { color: #12231a; border-color: #a9c3a6; background: #a9c3a6; }
-.spot-row.is-next { z-index: 1; border-bottom-color: transparent; border-left: 3px solid var(--gold); border-radius: 9px; padding-left: 9px; background: linear-gradient(135deg, #384d3c, #263c30); box-shadow: inset 0 1px 0 #b7d4b547, 0 4px 8px #0b1410a0; }
+.spot-row.is-next { z-index: 1; border-bottom-color: transparent; border-left: 3px solid var(--gold); border-radius: 10px; padding-left: 9px; background: linear-gradient(135deg, #3d5441, #263c30); box-shadow: inset 0 1px 0 #b7d4b547, 0 4px 8px #0b1410a0; }
+.spot-row.is-next .spot-row__check { border-color: var(--gold); }
 .spot-row:active { color: var(--ink); background: #283e33; box-shadow: inset 0 1px 5px #0b141060; transform: none; }
-.trail-reason summary { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink-soft); cursor: pointer; list-style: none; }
-.trail-reason summary::-webkit-details-marker { display: none; }
-.trail-reason[open] summary svg { transform: rotate(90deg); }
-.trail-reason p { padding-bottom: 8px; font-size: .86rem; }
 .trail-action-dock { border-top: 1px solid var(--line); background: #15231ff5; box-shadow: inset 0 1px 0 #f4efe60b, 0 -8px 22px #080f0d70; backdrop-filter: blur(12px); }
 .trail-action-dock__main { grid-template-columns: 1.22fr 1fr; gap: 10px; }
 .trail-action-dock .button { padding-inline: 9px; border-radius: 12px; font-size: .9rem; }
 .trail-reset-button { padding-inline: 4px; color: var(--clay-text); }
+.trail-tools { max-width: 31rem; margin: 18px auto 0; }
+.trail-tools__toggle { display: grid; width: 100%; min-height: 46px; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink-soft); background: var(--paper-deep); font-size: .875rem; font-weight: 650; text-align: left; }
+.trail-tools__toggle[aria-expanded='true'] { color: var(--ink); background: #22382d; }
+.trail-tools__toggle > svg:last-child { transform: rotate(90deg); transition: transform .14s ease; }
+.trail-tools__toggle[aria-expanded='true'] > svg:last-child { transform: rotate(-90deg); }
+.trail-tools__panel:not([hidden]) { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-top: 6px; background: var(--paper-deep); }
+.trail-tools__reason { font-size: .86rem; }
+.trail-tools__reason strong { display: block; color: var(--ink); }
+.trail-tools__panel .trail-utilities, .trail-tools__panel .place-shortcuts, .trail-tools__panel .voice-notice { width: 100%; margin: 0; }
+.trail-tools__panel .text-button { text-align: left; }
 .trail-utilities .voice-tool { background: #263c30; color: var(--ink); }
-.trail-edit-clues { display: block; margin: 2px auto; }
 
 .widen-hero__mark, .end-view__mark, .widen-status, .recovery-status { color: var(--ink); background: var(--evergreen); }
 .widen-preview li, .recovery-step, .recovery-choice { background: #203328; border-color: var(--line); }
@@ -175,12 +186,24 @@ input::placeholder { color: var(--ink-soft); }
 .skipped-places__list button { color: var(--ink); }
 
 .found-view, .complete-view { background: radial-gradient(ellipse 78% 23rem at 89% 0, #41402c 0%, transparent 95%), var(--paper); }
-.found-identity > span, .found-local { color: var(--ink-soft); background: #2e4235; border-color: var(--line); }
-.found-intro { display: grid; align-items: end; padding: 20px 0; }
-.found-intro h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: clamp(2rem, 8vw, 2.8rem); overflow-wrap: anywhere; }
-.found-intro h1 svg { flex: none; color: var(--gold); }
-.found-view--keys .found-intro { min-height: 185px; padding: 18px 13px; border-radius: 13px; isolation: isolate; background: linear-gradient(0deg, #16231df5 0%, #16231d68 42%, transparent 89%), url('/findtrail-entryway.webp') 65% 61% / cover; }
+.found-topbar { grid-template-columns: 44px 1fr; }
+.found-local { justify-self: end; color: var(--ink-soft); background: #2e4235; border-color: var(--line); }
+.found-intro { display: grid; min-height: 132px; align-items: end; padding: 20px 16px; border: 1px solid #6f644a80; border-radius: 16px; isolation: isolate; background: radial-gradient(ellipse at 20% 100%, #4c3c28, #26372d 74%); }
+.found-intro h1 { display: flex; align-items: center; gap: 12px; margin: 0; font-size: clamp(1.85rem, 7.4vw, 2.8rem); text-wrap: pretty; overflow-wrap: anywhere; }
+.found-intro__seal { position: relative; display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border: 1px solid #e3bb7b80; border-radius: 50%; color: var(--gold); background: #362f23; box-shadow: inset 0 1px 0 #e3bb7b3b; }
+.found-intro__seal::after { position: absolute; inset: -12px; pointer-events: none; content: ''; border: 1px solid #e3bb7b; border-radius: 50%; opacity: 0; }
+.found-view--keys .found-intro { min-height: 185px; background: linear-gradient(0deg, #16231df5 0%, #16231d68 42%, transparent 89%), url('/findtrail-entryway.webp') 65% 61% / cover; }
+@keyframes found-light {
+  0% { opacity: 0; transform: scale(.6); }
+  28% { opacity: .55; }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion='reduced']) .found-intro__seal::after { animation: found-light .65s ease-out; }
+}
+:root[data-motion='full'] .found-intro__seal::after { animation: found-light .65s ease-out; }
 .found-capture { padding: 15px; }
+.found-capture__heading h2 { font-family: inherit; font-size: 1.12rem; font-weight: 700; line-height: 1.25; letter-spacing: -.015em; }
 .found-memory-options { margin-block: 5px; }
 .complete-learning, .found-learning, .complete-mark { color: var(--ink); background: #304b3b; border-color: var(--line); }
 .found-capture input, .found-optional, .found-capture .location-chips .chip { color: var(--ink); background: #182b21; border-color: #53675b; }

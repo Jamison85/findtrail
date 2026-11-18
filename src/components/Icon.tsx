@@ -12,10 +12,10 @@ export function Icon({ name, size = 24, className }: IconProps) {
   const paths: Record<IconName, ReactNode> = {
     trail: <><path d="M4 19c2.8-4.8 5.8-1.8 8.2-6.5C14.5 8.2 17 9 20 4" /><circle cx="4" cy="19" r="1.6" /><circle cx="20" cy="4" r="1.6" /></>,
     keys: <><circle cx="8" cy="15" r="4" /><path d="m11 12 7-7m-2 2 2 2m-5 1 2 2" /></>,
-    wallet: <><rect x="3" y="6" width="18" height="13" rx="3" /><path d="M3 9.5h18m-5 4h2" /></>,
+    wallet: <><path d="M19 8V6H6a3 3 0 0 0 0 6h13a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V9" /><path d="M21 14h-4" /></>,
     money: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="12" cy="12" r="3" /><path d="M7 8H5v2m12-2h2v2M7 16H5v-2m12 2h2v-2" /></>,
     phone: <><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10 18.5h4" /></>,
-    medicine: <><path d="M8 3h8v4H8zM7 7h10v14H7z" /><path d="M9.5 13h5m-2.5-2.5v5" /></>,
+    medicine: <><rect x="7" y="3" width="10" height="4" rx="1" /><path d="M8 7v2l-1 1v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9l-1-1V7m-6 8h4m-2-2v4" /></>,
     glasses: <><circle cx="7" cy="14" r="4" /><circle cx="17" cy="14" r="4" /><path d="M11 14h2M3 13l1-5m17 5-1-5" /></>,
     remote: <><rect x="7.5" y="2.5" width="9" height="19" rx="3" /><circle cx="12" cy="7" r="1.5" /><path d="M10 12h4m-4 3h4m-4 3h2" /></>,
     other: <><path d="M12 3v18M3 12h18" /><circle cx="12" cy="12" r="9" /></>,
