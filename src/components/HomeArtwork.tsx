@@ -6,8 +6,8 @@ export function HomeArtwork() {
       <img
         src={artworkUrl}
         alt=""
-        width="1536"
-        height="1024"
+        width="1200"
+        height="800"
         fetchPriority="high"
         draggable="false"
       />

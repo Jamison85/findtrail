@@ -57,6 +57,7 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
   const stop = currentStepTitle ? search.stops[search.currentIndex] : undefined
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
   const ready = Boolean(value.trim())
+  const foundLabel = search.itemId === 'other' ? search.itemLabel : `your ${search.itemLabel.toLocaleLowerCase()}`
 
   return (
     <section className={`view found-view found-view--${search.itemId}`} aria-labelledby="view-heading">
@@ -70,7 +71,7 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
       </header>
 
       <div className="found-intro">
-        <h1 id="view-heading" tabIndex={-1}><Icon name="check" size={28} /> Found {search.itemLabel.toLocaleLowerCase()}.</h1>
+        <h1 id="view-heading" tabIndex={-1}><Icon name="check" size={28} /> Found {foundLabel}.</h1>
       </div>
 
       <section className="found-capture" aria-labelledby="found-location-heading">
@@ -172,7 +173,7 @@ export function CompleteView({ summary, durationLabel, onHome, onAnother }: Comp
           <span><Icon name={summary.savedAsHome ? 'home' : 'trail'} size={19} /></span>
           <p>
             <strong>{summary.savedAsHome ? 'Home spot saved.' : 'Added to found history.'}</strong>
-            <small>{summary.savedAsHome ? 'FindTrail will check here first next time.' : 'This found place may appear earlier next time.'}</small>
+            <small>{summary.savedAsHome ? 'FindTrail can suggest this spot next time.' : 'This found place may appear earlier next time.'}</small>
           </p>
         </div>
 

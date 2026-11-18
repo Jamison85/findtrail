@@ -175,6 +175,7 @@ input::placeholder { color: var(--ink-soft); }
 .skipped-places__list button { color: var(--ink); }
 
 .found-view, .complete-view { background: radial-gradient(ellipse 78% 23rem at 89% 0, #41402c 0%, transparent 95%), var(--paper); }
+.found-identity > span, .found-local { color: var(--ink-soft); background: #2e4235; border-color: var(--line); }
 .found-intro { display: grid; align-items: end; padding: 20px 0; }
 .found-intro h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: clamp(2rem, 8vw, 2.8rem); overflow-wrap: anywhere; }
 .found-intro h1 svg { flex: none; color: var(--gold); }

@@ -39,7 +39,7 @@ describe('FoundView', () => {
   it('makes the exact found place the only required detail', () => {
     render(<FoundView {...baseProps} value="" />)
 
-    expect(screen.getByRole('heading', { name: 'Found keys.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Found your keys.' })).toBeInTheDocument()
     expect(screen.getByText('Help improve the trail')).toBeInTheDocument()
     expect(screen.getByText('Help improve the trail').closest('details')).not.toHaveAttribute('open')
     expect(screen.getByRole('button', { name: 'Save spot' })).toBeDisabled()
@@ -84,7 +84,7 @@ describe('FoundView', () => {
     expect(screen.getByRole('heading', { name: 'Found and remembered.' })).toBeInTheDocument()
     expect(screen.getByText('Entry tray')).toBeInTheDocument()
     expect(screen.getByText('Home spot saved.')).toBeInTheDocument()
-    expect(screen.getByText('FindTrail will check here first next time.')).toBeInTheDocument()
+    expect(screen.getByText('FindTrail can suggest this spot next time.')).toBeInTheDocument()
     expect(screen.getByText('Places visited')).toBeInTheDocument()
   })
 })

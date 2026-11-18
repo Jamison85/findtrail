@@ -19,7 +19,7 @@
   ],
   "screenshots": [
     { "src": "./screenshots/home.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "Choose a missing item from FindTrail’s calm home screen" },
-    { "src": "./screenshots/trail.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "Follow one focused search stop at a time" }
+    { "src": "./screenshots/trail.png", "sizes": "390x848", "type": "image/png", "form_factor": "narrow", "label": "Follow one focused search stop at a time" }
   ],
   "shortcuts": [
     { "name": "Start a search", "short_name": "Find something", "url": "./?start=1", "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }] },
