@@ -1,0 +1,42 @@
+name: Search flow browser checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/sw.js'
+      - 'scripts/search-flow-qa.mjs'
+      - '.github/workflows/search-flow-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-search-flow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install isolated browser tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/findtrail-browser" playwright@1.58.2
+          "$RUNNER_TEMP/findtrail-browser/node_modules/.bin/playwright" install chromium --with-deps
+      - name: Check quick start, rerouting and checkpoint recovery
+        run: node scripts/search-flow-qa.mjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/findtrail-browser/node_modules/playwright/index.mjs
+      - name: Preserve mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: findtrail-search-flow-screenshots
+          path: qa/search-flow/
+          if-no-files-found: ignore

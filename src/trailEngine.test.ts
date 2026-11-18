@@ -16,6 +16,43 @@ const savedHome: SavedItem = {
 }
 
 describe('buildTrail', () => {
+  it('fills rebuilt passes with unchecked areas and retains completed work in backups', () => {
+    const stops = buildTrail('keys', 'Keys', {}, [])
+    const completed = stops.slice(0, 3)
+    const search = {
+      ...createActiveSearch('keys', 'Keys'), stops,
+      checkedSpots: Object.fromEntries(completed.map((stop) => [stop.id, [...stop.spots]])),
+      skippedStops: ['bags'],
+    }
+    const rebuilt = rebuildSearch(search, { itemDetail: 'house', lastAction: 'changed' }, [], [])
+    for (const stop of completed) expect(rebuilt.stops.map((area) => area.id)).not.toContain(stop.id)
+    expect(getFocusedStops(rebuilt.stops)).toHaveLength(3)
+    expect(getWiderStops(rebuilt.stops)).toHaveLength(3)
+    expect(allSearchStops(rebuilt).map((stop) => stop.id)).toEqual(expect.arrayContaining(completed.map((stop) => stop.id)))
+    expect(rebuilt.skippedStops).toEqual(['bags'])
+    const backup = parseBackup(serializeBackup({ version: 3, history: [], savedItems: [], settings: DEFAULT_SETTINGS, activeSearch: rebuilt }))
+    expect(backup.ok && backup.data.activeSearch?.checkedSpots).toEqual(search.checkedSpots)
+    expect(visitedAreaCount(rebuilt)).toBe(3)
+  })
+
+  it('retains safety guidance even if its checklist was completed before changing clues', () => {
+    const stops = buildTrail('money', 'Card', { itemDetail: 'card' }, [])
+    const search = { ...createActiveSearch('money', 'Card'), stops, checkedSpots: { 'card-safety': [...stops[0].spots] } }
+    const rebuilt = rebuildSearch(search, { itemDetail: 'card', lastPlace: 'work' }, [], [])
+    expect(rebuilt.stops[rebuilt.currentIndex].id).toBe('card-safety')
+  })
+
+  it('offers the final sweep when every ordinary area is already checked', () => {
+    const stops = buildTrail('keys', 'Keys', {}, [], [], [], true)
+    const search = { ...createActiveSearch('keys', 'Keys'), stops,
+      checkedSpots: Object.fromEntries(stops.filter((stop) => stop.kind !== 'final').map((stop) => [stop.id, [...stop.spots]])),
+    }
+    const rebuilt = rebuildSearch(search, {}, [], [])
+    expect(rebuilt.stops).toHaveLength(1)
+    expect(rebuilt.stops[0].kind).toBe('final')
+    expect(rebuilt.currentIndex).toBe(0)
+  })
+
   it('preserves checked spots and skipped areas across changed clues and backup restore', () => {
     const search = { ...createActiveSearch('keys', 'Keys'), stops: buildTrail('keys', 'Keys', {}, []), checkedSpots: { pockets: ['Current pants'], car: ['Driver-seat gap'] }, skippedStops: ['bags'] }
     const rebuilt = rebuildSearch(search, { itemDetail: 'house', lastPlace: 'work', lastAction: 'changed' }, [], [])
