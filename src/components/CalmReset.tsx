@@ -82,8 +82,8 @@ export function CalmReset({ search, returnScreen, motion, onResume, onBegin }: C
         <div className="reset-journey__message">
           {!ready ? <>
             <span className="eyebrow">A moment to reset</span>
-            <h1 ref={openingHeading} id="view-heading" tabIndex={-1}>You haven’t lost your place.</h1>
-            <p>Your search is saved. Let the noise settle for a moment.</p>
+            <h1 ref={openingHeading} id="view-heading" tabIndex={-1}>{search ? 'You haven’t lost your place.' : 'Take a moment.'}</h1>
+            <p>{search ? 'Your search is saved. Let the noise settle for a moment.' : 'Let the noise settle. Begin when you are ready.'}</p>
             <button className="reset-journey__skip" onClick={reveal}>{paused ? 'Show my next step' : 'I’m ready for one step'} <Icon name="forward" size={17} /></button>
           </> : <>
             <span className="eyebrow">The next useful thing</span>
