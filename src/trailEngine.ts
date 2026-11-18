@@ -154,6 +154,18 @@ function savedHomeStop(savedItems: SavedItem[], itemId: ItemId, itemLabel: strin
   }
 }
 
+export function firstSavedSpot(savedItems: SavedItem[], itemId: ItemId, itemLabel: string): SearchStop | null {
+  // These items can require safety guidance before any location is suggested.
+  if (itemId === 'medicine' || itemId === 'money' || itemId === 'wallet') return null
+  const home = savedHomeStop(savedItems, itemId, itemLabel)
+  return home ? { ...home, spots: home.spots.slice(0, 1) } : null
+}
+
+export function isFirstSavedSpot(search: ActiveSearch): boolean {
+  return search.resumeScreen === 'trail' && search.stops.length === 1
+    && search.stops[0].kind === 'home' && !search.answers.itemDetail
+}
+
 export function buildTrail(itemId: ItemId, itemLabel: string, answers: Record<string, string>, history: FoundEntry[], savedItems: SavedItem[] = [], excludedStopIds: string[] = [], fullRoute = false): SearchStop[] {
   const item = ITEM_BY_ID[itemId]
   const orderedIds: string[] = []

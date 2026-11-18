@@ -9,12 +9,13 @@ import { HomeArtwork } from './components/HomeArtwork'
 import { Icon } from './components/Icon'
 import { canShowIOSInstallInstructions, IOSInstallCoach } from './components/IOSInstallCoach'
 import { Onboarding } from './components/Onboarding'
+import { SavedSpotView } from './components/SavedSpotView'
 import { SettingsView } from './components/SettingsView'
 import { StillMissingView } from './components/StillMissingView'
 import { TrailView } from './components/TrailView'
 import { WidenSearchView } from './components/WidenSearchView'
-import { ITEMS, ITEM_BY_ID, STOPS } from './data'
-import { buildTrail, compactActiveSearch, freshPlaces, getFocusedStops, getWiderStartIndex, isFocusedPassComplete, rebuildSearch, startFreshPass } from './trailEngine'
+import { ITEM_BY_ID, STOPS } from './data'
+import { buildTrail, compactActiveSearch, firstSavedSpot, freshPlaces, getFocusedStops, getWiderStartIndex, isFirstSavedSpot, isFocusedPassComplete, rebuildSearch, startFreshPass } from './trailEngine'
 import { createActiveSearch, itemIdentity, readDataState, preserveRecovery, STORAGE_KEY, parseBackup, saveData, serializeBackup } from './storage'
 import { allSearchStops, skippedPlaces, unfinishedPlaces, visitedAreaCount } from './searchProgress'
 import { trapDialogFocus } from './modalFocus'
@@ -68,6 +69,15 @@ function shouldReduceMotion(settings: Settings): boolean {
     || (settings.motion === 'system' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
 }
 
+function searchCheckpoint(search: ActiveSearch | null): Screen {
+  if (!search) return 'home'
+  if (search.foundDraft) return 'found'
+  if (search.resumeScreen === 'clues' || !search.stops.length) return 'clues'
+  if (search.reviewingSkippedFrom) return 'trail'
+  if (search.widenReady) return 'widen'
+  return search.resumeScreen === 'end' ? 'end' : 'trail'
+}
+
 export default function App() {
   const [initialLoad, setInitialLoad] = useState(() => readDataState())
   const [data, setData] = useState<PersistedData>(() => {
@@ -84,7 +94,7 @@ export default function App() {
   const [saveAsHome, setSaveAsHome] = useState(initialLoad.data.activeSearch?.foundDraft?.saveAsHome ?? false)
   const [pinCustomItem, setPinCustomItem] = useState(initialLoad.data.activeSearch?.foundDraft?.pinCustomItem ?? true)
   const [foundSummary, setFoundSummary] = useState<FoundSummary | null>(null)
-  const [returnScreen, setReturnScreen] = useState<Screen>(initialLoad.data.activeSearch?.resetReturn ?? 'home')
+  const [returnScreen, setReturnScreen] = useState<Screen>(() => initialLoad.data.activeSearch?.resetReturn ?? searchCheckpoint(initialLoad.data.activeSearch))
   const [pauseOffer, setPauseOffer] = useState(false)
   const [storageError, setStorageError] = useState(false)
   const [online, setOnline] = useState(() => navigator.onLine)
@@ -104,6 +114,7 @@ export default function App() {
   const onboardingWasOpen = useRef(onboardingOpen)
 
   const active = data.activeSearch
+  const firstSpot = active && isFirstSavedSpot(active) ? active.stops[0] : null
   const activeItem = active ? ITEM_BY_ID[active.itemId] : null
   const newPlaces = active ? freshPlaces(active, data.history, data.savedItems) : []
   const optionalPlaces = active ? buildTrail(active.itemId, active.itemLabel, active.answers, data.history, data.savedItems, [], true)
@@ -236,7 +247,7 @@ export default function App() {
       const focusPicker = screen === 'home' && focusItemPickerOnHome.current
       focusItemPickerOnHome.current = false
       window.setTimeout(() => {
-        document.getElementById(focusPicker ? 'item-picker-heading' : 'view-heading')?.focus({ preventScroll: true })
+        document.getElementById('view-heading')?.focus({ preventScroll: true })
         if (focusPicker) {
           const picker = document.getElementById('item-picker')
           picker?.classList.add('is-reentry')
@@ -256,7 +267,7 @@ export default function App() {
 
   function navigate(next: Screen) {
     if (next === 'calm') {
-      openReset(active?.resumeScreen === 'end' ? 'end' : active?.widenReady ? 'widen' : active?.stops.length ? 'trail' : active ? 'clues' : 'home')
+      openReset(searchCheckpoint(active))
       return
     }
     setHistoryEntryId(null)
@@ -283,13 +294,34 @@ export default function App() {
     const item = ITEM_BY_ID[itemId]
     const itemLabel = label?.trim() || item.shortLabel
     if (data.activeSearch && !window.confirm(`Replace the current ${data.activeSearch.itemLabel} search with a new one?`)) return
-    setData((current) => ({ ...current, activeSearch: createActiveSearch(itemId, itemLabel) }))
+    const savedSpot = firstSavedSpot(data.savedItems, itemId, itemLabel)
+    const nextSearch = createActiveSearch(itemId, itemLabel)
+    if (savedSpot) {
+      nextSearch.stops = [savedSpot]
+      nextSearch.resumeScreen = 'trail'
+    }
+    setData((current) => ({ ...current, activeSearch: nextSearch }))
     setClueIndex(0)
     setFoundSummary(null)
     setFoundLocation('')
     setPauseOffer(false)
     setCustomOpen(false)
     setCustomName('')
+    setScreen(savedSpot ? 'trail' : 'clues')
+  }
+
+  function searchBeyondSavedSpot() {
+    if (!firstSpot) return
+    updateActive((current) => ({
+      ...current,
+      stops: [],
+      previousStops: allSearchStops(current),
+      checkedSpots: { ...current.checkedSpots, [firstSpot.id]: firstSpot.spots },
+      excludedStopIds: [...(current.excludedStopIds ?? []), firstSpot.id],
+      resumeScreen: 'clues',
+      resetReturn: 'clues',
+    }))
+    setClueIndex(0)
     setScreen('clues')
   }
 
@@ -504,7 +536,7 @@ export default function App() {
     }
     const stop = screen === 'trail' ? active?.stops[active.currentIndex] : undefined
     const checked = stop ? active?.checkedSpots[stop.id] ?? [] : []
-    setFoundLocation(checked.at(-1) ?? '')
+    setFoundLocation(firstSpot?.spots[0] ?? checked.at(-1) ?? '')
     setFoundInCurrentArea(null)
     setFoundReturnScreen(screen === 'widen' || screen === 'end' ? screen : 'trail')
     setSaveAsHome(false)
@@ -726,14 +758,18 @@ export default function App() {
       {storageConflict && <div className="storage-banner storage-banner--recovery" role="alert"><span>Another tab changed your saved data. This tab has not overwritten it.</span><button onClick={exportBackup}>Export this tab</button><button onClick={loadNewerData}>Load newer data</button></div>}
       {storageError && !recoveryNeeded && !storageConflict && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
-        {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} onIntro={() => setOnboardingOpen(true)} />}
+        {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} onIntro={() => setOnboardingOpen(true)} onSettings={() => navigate('settings')} />}
         {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onQuickStart={startWithCurrentClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
-        {screen === 'trail' && active && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => openReset('trail')} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
+        {screen === 'trail' && active && firstSpot && <SavedSpotView itemLabel={active.itemLabel} spot={firstSpot.spots[0]} onBack={() => setScreen('home')} onReset={() => openReset('trail')} onFound={openFound} onContinue={searchBeyondSavedSpot} />}
+        {screen === 'trail' && active && !firstSpot && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => openReset('trail')} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => openReset('widen')} onHome={() => setScreen('home')} />}
         {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
-        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} motion={data.settings.motion} onResume={() => { if (active && returnScreen === 'clues') { const questions = ITEM_BY_ID[active.itemId].questions; const next = questions.findIndex((question) => !active.answers[question.id]); setClueIndex(next < 0 ? questions.length - 1 : next) } setScreen(active ? returnScreen : 'home') }} onBegin={() => { focusItemPickerOnHome.current = true; setScreen('home') }} />}
+        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} onResume={() => {
+          if (active && (returnScreen === 'clues' || returnScreen === 'found')) resumeSearch()
+          else setScreen(active ? returnScreen : 'home')
+        }} />}
         {screen === 'settings' && <SettingsView data={data} offlineReady={offlineReady} offlineError={offlineError} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
         {screen === 'end' && active && <StillMissingView search={active} freshPlaceCount={newPlaces.length} onFreshPlaces={tryFreshPlaces} onEditClues={editClues} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => openReset('end')} onRestart={repeatCurrentRoute} onHome={() => setScreen('home')} />}
       </main>
@@ -755,6 +791,7 @@ interface HomeViewProps {
   onDiscard: () => void
   onOpenHistory: (id: string) => void
   onIntro?: () => void
+  onSettings: () => void
 }
 
 function resumeDescription(search: ActiveSearch): string {
@@ -763,12 +800,15 @@ function resumeDescription(search: ActiveSearch): string {
   if (search.reviewingSkippedFrom) return `Review: ${search.stops[search.currentIndex]?.title ?? 'an unfinished place'}.`
   if (search.widenReady) return 'Your first pass is saved. Choose whether to search wider.'
   if (search.resumeScreen === 'end') return 'Your route is saved. Choose your next move.'
+  if (isFirstSavedSpot(search)) return `Next: ${search.stops[0].spots[0]}.`
   const stop = search.stops[search.currentIndex]
   if (!stop) return 'Your search is saved.'
   return `Next: ${stop.title}.`
 }
 
-function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, onStart, onResume, onDiscard, onOpenHistory, onIntro }: HomeViewProps) {
+const HOME_ITEM_ORDER: ItemId[] = ['keys', 'wallet', 'phone', 'glasses', 'medicine', 'money', 'remote', 'other']
+
+function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, onStart, onResume, onDiscard, onOpenHistory, onIntro, onSettings }: HomeViewProps) {
   const latest = data.history[0]
   const pinnedItems = data.savedItems.filter((item) => item.itemId === 'other' && item.pinned)
   const [departingItemId, setDepartingItemId] = useState<ItemId | null>(null)
@@ -813,7 +853,7 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
     <section className={data.activeSearch ? 'view home-view home-view--active' : 'view home-view'} aria-labelledby="view-heading">
       <header className="brand-header">
         <div className="brand-lockup"><BrandMark className="brand-mark" /><strong>FindTrail</strong></div>
-        <span className="local-pill"><Icon name="lock" size={13} />Private on this device</span>
+        <button className="icon-button home-settings" onClick={onSettings} aria-label="Settings"><Icon name="settings" /></button>
       </header>
 
       <div className="home-main">
@@ -833,22 +873,19 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
             </article>
           ) : (
             <div className="hero-copy">
-              <h1 id="view-heading" tabIndex={-1}>Let’s find it.</h1>
-              <p>One place at a time. We’ll help you find what’s missing.</p>
+              <h1 id="view-heading" tabIndex={-1}>What’s missing?</h1>
+              <p>Pick an item to start.</p>
             </div>
           )}
         </section>
 
-        <div id="item-picker" className="item-picker">
-          <div className="section-heading">
-            <h2 id="item-picker-heading" tabIndex={-1}>What went missing?</h2>
-            {onIntro && <button className="text-button" onClick={onIntro}>How it works</button>}
-          </div>
+        <div id="item-picker" className="item-picker" role="group" aria-label="Items to find">
+          {data.activeSearch && <h2 className="section-heading">Start another search</h2>}
           {pinnedItems.length > 0 && <div className="pinned-items" role="group" aria-label="Pinned items">
             {pinnedItems.map((item) => <button key={item.id} className="pinned-item" onClick={() => onStart('other', item.itemLabel)}><Icon name="pin" size={15} /><span>{item.itemLabel}</span></button>)}
           </div>}
           <div className="item-grid">
-            {ITEMS.map((item) => {
+            {HOME_ITEM_ORDER.map((id) => ITEM_BY_ID[id]).map((item) => {
               const itemClass = [
                 'item-button',
                 item.id === 'other' && customOpen ? 'is-active' : '',
@@ -865,18 +902,14 @@ function HomeView({ data, customOpen, customName, setCustomOpen, setCustomName, 
           </div>
         </div>
 
-        {!data.activeSearch && (latest ? (
+        {!data.activeSearch && latest && (
           <button className="recent-card" onClick={() => onOpenHistory(latest.id)} aria-label={`Open ${latest.itemLabel}, found at ${latest.foundLocation}, in history`}>
             <span className="recent-card__icon"><Icon name="history" size={23} /></span>
             <span className="recent-card__copy"><small>Last found</small><strong>{latest.itemLabel}</strong><span>{latest.foundLocation}</span></span>
             <span className="recent-card__arrow"><Icon name="forward" size={20} /></span>
           </button>
-        ) : (
-          <div className="recent-card recent-card--empty">
-            <span className="recent-card__icon"><Icon name="trail" size={23} /></span>
-            <span className="recent-card__copy"><small>Your first trail</small><strong>Ready when you are.</strong><span>Recent finds will appear here.</span></span>
-          </div>
-        ))}
+        )}
+        {onIntro && <button className="text-button home-help" onClick={onIntro}>How it works</button>}
       </div>
 
       {customOpen && (

@@ -1,8 +1,8 @@
-const artworkUrl = `${import.meta.env.BASE_URL}home-memory-trail.webp`
+const artworkUrl = `${import.meta.env.BASE_URL}findtrail-entryway.webp`
 
 export function HomeArtwork() {
   return (
-    <div className="home-artwork" role="img" aria-label="A warmly lit room with a winding path between everyday places">
+    <div className="home-artwork" aria-hidden="true">
       <img
         src={artworkUrl}
         alt=""

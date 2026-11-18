@@ -39,10 +39,10 @@ describe('FoundView', () => {
   it('makes the exact found place the only required detail', () => {
     render(<FoundView {...baseProps} value="" />)
 
-    expect(screen.getByRole('heading', { name: 'There it is.' })).toBeInTheDocument()
-    expect(screen.getByText('Remember more for next time')).toBeInTheDocument()
-    expect(screen.getByText('Remember more for next time').closest('details')).not.toHaveAttribute('open')
-    expect(screen.getByRole('button', { name: 'Save this found place' })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: 'Found keys.' })).toBeInTheDocument()
+    expect(screen.getByText('Help improve the trail')).toBeInTheDocument()
+    expect(screen.getByText('Help improve the trail').closest('details')).not.toHaveAttribute('open')
+    expect(screen.getByRole('button', { name: 'Save spot' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Entry table or hook' }))
     expect(baseProps.onChange).toHaveBeenCalledWith('Entry table or hook')
@@ -52,13 +52,12 @@ describe('FoundView', () => {
     render(<FoundView {...baseProps} value="Entry table or hook" />)
 
     expect(screen.getByLabelText('Exact place')).toHaveValue('Entry table or hook')
-    expect(screen.getByText('Ready')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Entry table or hook' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Save this found place' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Save spot' })).toBeEnabled()
 
-    fireEvent.click(screen.getByText('Remember more for next time'))
+    fireEvent.click(screen.getByText('Help improve the trail'))
     expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for keys/i }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /make this the usual spot for keys/i }))
     expect(baseProps.onSaveAsHome).toHaveBeenCalledWith(true)
     fireEvent.click(screen.getByRole('button', { name: 'Yes, this step' }))
     expect(baseProps.onFoundInCurrentArea).toHaveBeenCalledWith(true)

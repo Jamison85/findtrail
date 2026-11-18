@@ -2,7 +2,7 @@
 
 FindTrail is a calm, local-first progressive web app for finding misplaced items. It turns a frantic whole-house search into one useful place at a time, remembers where items were found, and gently promotes likely locations during future searches.
 
-Version 2.13 is in review on the implementation branch. Home now opens immediately, with the introduction available through **How it works**. The approved Night Orchard and Mineral Ember palette is applied across the existing screens. Activity clues lead the short trail when relevant; a dead phone does not suggest ringing. Reset has one feather descent and one water impact while the three breathing cycles continue. Interrupted searches, unfinished areas, Found drafts, backups, and offline access retain their existing local data format. This branch has not been deployed.
+Version 2.14 brings a compact item picker, a clear highlight on the next unchecked spot, and buttons that sink visibly when pressed. The lake Reset shows your next spot and lets you return immediately. When you save the usual spot for an item, FindTrail can offer it before the clue questions next time. Items that can need safety guidance still start with the relevant questions. Search progress, saved spots, found drafts and backups keep their existing local data format.
 
 ## Search improvements
 
@@ -35,7 +35,7 @@ npm run dev
 npm run check
 ```
 
-See [docs/QA_REPORT_2.13.md](docs/QA_REPORT_2.13.md) for this branch’s evidence, the [2.12 QA report](docs/QA_REPORT.md) for historical validation, and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for the remaining approval steps.
+The pull request's browser checks cover mobile layouts, Reset, saved spots and offline use. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for the release checks.
 
 ## Deployment
 

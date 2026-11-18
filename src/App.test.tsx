@@ -25,13 +25,13 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
 
-    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'What’s missing?' })).toBeInTheDocument()
     await waitFor(() => expect(window.location.search).toBe(''))
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await waitFor(() => expect(window.history.state.findtrailScreen).toBe('settings'))
     act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { findtrailScreen: 'home' } })))
-    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'What’s missing?' })).toBeInTheDocument()
   })
 
 
@@ -40,47 +40,52 @@ describe('FindTrail app', () => {
     localStorage.removeItem(ONBOARDING_STORAGE_KEY)
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'What’s missing?' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'How it works' }))
     expect(screen.getByRole('heading', { name: 'You lost something. Start with what you know.' })).toHaveFocus()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
 
-    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'A warmly lit room with a winding path between everyday places' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'What’s missing?' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork img')).toHaveAttribute('src', expect.stringContaining('findtrail-entryway.webp'))
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1')
   })
 
   it('keeps the home artwork static instead of implying search checkpoints', () => {
     render(<App />)
-    expect(screen.getByRole('img', { name: 'A warmly lit room with a winding path between everyday places' })).toBeInTheDocument()
+    expect(document.querySelector('.home-artwork img')).toHaveAttribute('src', expect.stringContaining('findtrail-entryway.webp'))
     expect(document.querySelector('.home-artwork__trail')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('findtrail:home-trail-played')).toBeNull()
   })
 
-  it('hands the selected item smoothly into a focused trail', async () => {
-    const transitionWait = { timeout: 6000 }
-    render(<App />)
-    expect(screen.getByText('Private on this device')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Let’s find it.' })).toBeInTheDocument()
-    const keysButton = screen.getByRole('button', { name: /keys/i })
-    fireEvent.click(keysButton)
-    expect(keysButton).toHaveClass('is-departing')
-    expect(screen.queryByText('Car keys')).not.toBeInTheDocument()
-    fireEvent.click(await screen.findByText('Car keys', {}, transitionWait))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Where do you last remember having them?' })).toHaveFocus(), transitionWait)
-    fireEvent.click(screen.getByRole('button', { name: /At home/i }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'At home, what happened next?' })).toHaveFocus(), transitionWait)
-    const doorway = screen.getByRole('button', { name: /Went through a doorway/i })
-    fireEvent.click(doorway)
-    expect(doorway).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.queryByRole('heading', { name: 'The landing zone' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Build my search trail' }))
-    expect(await screen.findByRole('heading', { name: 'The landing zone' }, transitionWait)).toBeInTheDocument()
-    expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuetext', 'Place 1 of 3 in the focused pass')
-  }, 10000)
+  it('hands the selected item smoothly into a focused trail', () => {
+    vi.useFakeTimers()
+    try {
+      render(<App />)
+      expect(screen.getByRole('heading', { name: 'What’s missing?' })).toBeInTheDocument()
+      const keysButton = screen.getByRole('button', { name: /keys/i })
+      fireEvent.click(keysButton)
+      expect(keysButton).toHaveClass('is-departing')
+      expect(screen.queryByText('Car keys')).not.toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(170))
+      fireEvent.click(screen.getByText('Car keys'))
+      act(() => vi.advanceTimersByTime(220))
+      expect(screen.getByRole('heading', { name: 'Where do you last remember having them?' })).toHaveFocus()
+      fireEvent.click(screen.getByRole('button', { name: /At home/i }))
+      act(() => vi.advanceTimersByTime(220))
+      expect(screen.getByRole('heading', { name: 'At home, what happened next?' })).toHaveFocus()
+      const doorway = screen.getByRole('button', { name: /Went through a doorway/i })
+      fireEvent.click(doorway)
+      expect(doorway).toHaveAttribute('aria-pressed', 'true')
+      fireEvent.click(screen.getByRole('button', { name: 'Build my search trail' }))
+      expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
+      expect(screen.getByText('Check one spot at a time')).toBeInTheDocument()
+      expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuetext', 'Place 1 of 3 in the focused pass')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 
   it('accepts a custom item name', () => {
     render(<App />)
@@ -126,20 +131,21 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Entry tray' } })
-    fireEvent.click(screen.getByText('Remember more for next time'))
-    fireEvent.click(screen.getByRole('checkbox', { name: /make this the home spot for work badge/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /make this the usual spot for work badge/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save spot' }))
     fireEvent.click(screen.getByRole('button', { name: 'Find another item' }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'What went missing?' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'What’s missing?' })).toHaveFocus())
     expect(document.getElementById('item-picker')).toHaveClass('is-reentry')
 
     const pinned = screen.getByRole('group', { name: 'Pinned items' })
     fireEvent.click(within(pinned).getByRole('button', { name: 'Work badge' }))
+    expect(screen.getByRole('heading', { name: 'Entry tray' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep searching' }))
     fireEvent.click(screen.getByText('Carried in a hand'))
-    fireEvent.click(await screen.findByText('At home'))
-    await buildTrailFromDoorway()
-    expect(await screen.findByRole('heading', { name: 'Its saved home' })).toBeInTheDocument()
-    expect(screen.getByText(/start at entry tray/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Start with likely places' }))
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!).activeSearch
+    expect(saved.checkedSpots['home-other-work-badge']).toEqual(['Entry tray'])
+    expect(saved.stops.some((stop: { kind: string }) => stop.kind === 'home')).toBe(false)
   })
 
   it('returns to the same trail after a reset', async () => {
@@ -157,8 +163,8 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByText('At home'))
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
-    expect(screen.getByRole('heading', { name: 'One place. One step.' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Optional breathing cue' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Breathing cue' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
@@ -185,7 +191,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Optional breathing cue' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Breathing cue' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
@@ -209,7 +215,6 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Entry table or hook' }))
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
     expect(screen.getByLabelText('Exact place')).toHaveValue('Entry table or hook')
-    expect(screen.getByText('Ready')).toBeInTheDocument()
   })
 
   it('learns a search area only after the finder confirms it', async () => {
@@ -223,8 +228,8 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(screen.getByRole('button', { name: 'Found it' }))
     fireEvent.change(screen.getByLabelText('Exact place'), { target: { value: 'Blue bowl' } })
-    expect(screen.getByText('Remember more for next time').closest('details')).not.toHaveAttribute('open')
-    fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
+    expect(screen.getByText('Help improve the trail').closest('details')).not.toHaveAttribute('open')
+    fireEvent.click(screen.getByRole('button', { name: 'Save spot' }))
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
     expect(saved.history[0].foundLocation).toBe('Blue bowl')
     expect(saved.history[0].foundStopId).toBeUndefined()
@@ -470,7 +475,7 @@ describe('FindTrail app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'I found it after all' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Exact place' }), { target: { value: 'Under the mail' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save this found place' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save spot' }))
     expect(screen.getByText('Places visited').nextElementSibling).toHaveTextContent('2')
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).history[0].stopsChecked).toBe(2)
   })
@@ -486,8 +491,7 @@ describe('FindTrail app', () => {
 
   it('fills the first-use home state without pretending there is history', () => {
     render(<App />)
-    expect(screen.getByText('Your first trail')).toBeInTheDocument()
-    expect(screen.getByText('Ready when you are.')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Items to find' })).getAllByRole('button')).toHaveLength(8)
     expect(screen.queryByText('Last found')).not.toBeInTheDocument()
   })
 

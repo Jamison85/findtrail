@@ -1,9 +1,9 @@
-const VERSION = 'findtrail-follow-light-2026-11-18'
+const VERSION = 'findtrail-dawn-2.14'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
 const scoped = (path) => `${BASE_PATH}${path}` || '/'
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/home-memory-trail.webp'].map(scoped)
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/findtrail-entryway.webp', '/findtrail-lake-dawn.webp'].map(scoped)
 
 async function waterVideoResponse(request) {
   const cached = await caches.match(request.url, { ignoreVary: true })

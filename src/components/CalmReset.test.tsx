@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { ActiveSearch } from '../types'
 import { CalmReset } from './CalmReset'
 
@@ -11,36 +11,25 @@ const search: ActiveSearch = {
 }
 
 describe('CalmReset', () => {
-  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
-
-  it('reveals the next unchecked spot and returns without changing the search', () => {
-    vi.useFakeTimers()
+  it('shows the next unchecked spot and lets you return immediately', () => {
     const resume = vi.fn()
     const original = JSON.stringify(search)
-    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={resume} onBegin={vi.fn()} />)
-    expect(screen.getByRole('heading', { name: 'You haven’t lost your place.' })).toBeInTheDocument()
-    expect(screen.queryByText('Shoe shelf')).not.toBeInTheDocument()
-    act(() => vi.advanceTimersByTime(4200))
-    expect(screen.getByText('Shoe shelf')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Return to this place' }))
+    render(<CalmReset search={search} returnScreen="trail" onResume={resume} />)
+    expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
+    expect(screen.getByText('Shoe shelf')).toBeVisible()
+    expect(screen.queryByText('Entry hook')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     expect(resume).toHaveBeenCalledOnce()
     expect(JSON.stringify(search)).toBe(original)
   })
 
-  it('offers the next step immediately with reduced motion and a way to begin without a search', () => {
-    const begin = vi.fn()
-    render(<CalmReset search={null} returnScreen="home" motion="reduced" onResume={vi.fn()} onBegin={begin} />)
-    expect(screen.getByText('One thing to find.')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Optional breathing cue' }))
-    expect(screen.getByText(/There is no pace to keep/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Begin a search' }))
-    expect(begin).toHaveBeenCalledOnce()
-  })
-
-  it('lets someone reveal the step without waiting for the transition', () => {
-    vi.useFakeTimers()
-    render(<CalmReset search={search} returnScreen="trail" motion="full" onResume={vi.fn()} onBegin={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /I’m ready for one step/ }))
-    expect(screen.getByText('Shoe shelf')).toBeInTheDocument()
+  it('shows an optional breathing cue and a home exit without a search', () => {
+    const resume = vi.fn()
+    render(<CalmReset search={null} returnScreen="home" onResume={resume} />)
+    expect(screen.queryByText('Your search is saved.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Breathing cue' }))
+    expect(screen.getByText(/at your own pace/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
+    expect(resume).toHaveBeenCalledOnce()
   })
 })

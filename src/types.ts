@@ -13,6 +13,7 @@ export type IconName =
   | 'remote'
   | 'other'
   | 'home'
+  | 'search'
   | 'history'
   | 'calm'
   | 'settings'
