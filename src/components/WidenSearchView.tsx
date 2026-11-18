@@ -57,14 +57,14 @@ export function WidenSearchView({ search, onWiden, onReviewSkipped, onFound, onR
           <span className="widen-panel__number">2</span>
           <div><small>Next pass</small><h2 id="widen-heading">Search a little wider</h2></div>
         </header>
-        <p>These are the next three useful places. You will still see only one place at a time.</p>
+        <p>This pass has {widerStops.length} useful {widerStops.length === 1 ? 'place' : 'places'}. You will still see only one place at a time.</p>
         <ol className="widen-preview" aria-label={`Next places to check for ${search.itemLabel}`}>
           {widerStops.map((stop, index) => (
             <li key={stop.id}><span>{index + 1}</span><strong>{stop.title}</strong></li>
           ))}
         </ol>
         <button className="button button--primary button--wide" onClick={onWiden}>
-          Search these {widerStops.length} places<Icon name="forward" size={18} />
+          {widerStops.length === 1 ? 'Search this place' : `Search these ${widerStops.length} places`}<Icon name="forward" size={18} />
         </button>
       </section>
 
