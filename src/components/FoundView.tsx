@@ -53,7 +53,6 @@ function FoundToggle({ label, detail, checked, onChange }: FoundToggleProps) {
 }
 
 export function FoundView({ search, currentStepTitle, value, foundInCurrentArea, saveAsHome, pinCustomItem, onChange, onFoundInCurrentArea, onSaveAsHome, onPinCustomItem, onSave, onDone, onBack }: FoundViewProps) {
-  const item = ITEM_BY_ID[search.itemId]
   const stop = currentStepTitle ? search.stops[search.currentIndex] : undefined
   const options = getFoundSuggestions(search.itemId, stop).slice(0, 5)
   const ready = Boolean(value.trim())
@@ -63,15 +62,14 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
     <section className={`view found-view found-view--${search.itemId}`} aria-labelledby="view-heading">
       <header className="found-topbar">
         <button className="icon-button" onClick={onBack} aria-label="Back to search"><Icon name="back" /></button>
-        <div className="found-identity">
-          <span><Icon name={item.icon} size={18} /></span>
-          <div><small>Found</small><strong>{search.itemLabel}</strong></div>
-        </div>
         <span className="found-local"><Icon name="lock" size={13} />Local only</span>
       </header>
 
       <div className="found-intro">
-        <h1 id="view-heading" tabIndex={-1}><Icon name="check" size={28} /> Found {foundLabel}.</h1>
+        <h1 id="view-heading" tabIndex={-1}>
+          <span className="found-intro__seal" aria-hidden="true"><Icon name="check" size={24} /></span>
+          <span>Found {foundLabel}.</span>
+        </h1>
       </div>
 
       <section className="found-capture" aria-labelledby="found-location-heading">
@@ -140,7 +138,7 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
         )}
 
         <button className="button button--primary button--wide found-save" onClick={onSave} disabled={!ready}>
-          Save spot
+          Save this spot
         </button>
         {onDone && <button className="text-button found-done" onClick={onDone}>Done without saving</button>}
       </section>

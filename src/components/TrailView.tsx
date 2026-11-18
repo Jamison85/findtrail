@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createRecognition, speak, stopSpeaking } from '../speech'
 import { getTrailStage, isFocusedPassComplete, isWiderPassComplete } from '../trailEngine'
 import type { ActiveSearch, Settings } from '../types'
@@ -26,7 +26,6 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const checked = checkedSpotsAt(search, stop)
   const nextSpot = stop.spots.find((spot) => !checked.includes(spot))
   const checkedHere = search.checkedSpots[stop.id] ?? []
-  const totalChecked = Object.values(search.checkedSpots).reduce((total, spots) => total + spots.length, 0)
   const isLastStop = search.currentIndex === search.stops.length - 1
   const areaChecked = checked.length === stop.spots.length
   const [listening, setListening] = useState(false)
@@ -35,6 +34,8 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const [voiceStatus, setVoiceStatus] = useState('')
   const [voiceNoticeOpen, setVoiceNoticeOpen] = useState(false)
   const [voiceNoticeAccepted, setVoiceNoticeAccepted] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const toolsId = useId()
   const [departing, setDeparting] = useState(false)
   const recognitionRef = useRef<ReturnType<typeof createRecognition>>(null)
   const voiceNoticeRef = useRef<HTMLDivElement>(null)
@@ -49,6 +50,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
   const focusedPassComplete = isFocusedPassComplete(search.stops, search.currentIndex)
   const widerPassComplete = isWiderPassComplete(search.stops, search.currentIndex)
   const reviewDestination = search.reviewingSkippedFrom
+  const showPlaceCount = !reviewDestination && (stage.name === 'focused' || stage.name === 'wider')
   const returnLabel = reviewDestination === 'widen' ? 'Return to wider search' : 'Return to next moves'
   const nextLabel = reviewDestination
     ? checked.length ? returnLabel : 'Keep this place skipped'
@@ -139,6 +141,15 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
     beginListening()
   }
 
+  function toggleSearchTools() {
+    if (toolsOpen) {
+      recognitionRef.current?.stop()
+      setListening(false)
+      setVoiceNoticeOpen(false)
+    }
+    setToolsOpen(!toolsOpen)
+  }
+
   function beginListening() {
     setVoiceError('')
     const recognition = createRecognition((command) => {
@@ -168,8 +179,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
       <header className="topbar trail-topbar">
         <button className="icon-button" onClick={onBack} aria-label={reviewDestination ? `Back to ${reviewDestination === 'widen' ? 'wider search' : 'next moves'}` : 'Return home'}><Icon name="back" /></button>
         <div className="trail-identity">
-          <span className="trail-identity__item"><Icon name={search.itemId} size={15} />{search.itemLabel}</span>
-          <strong>{stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total}`}</strong>
+          <span className="trail-identity__item"><Icon name={search.itemId} size={16} />{search.itemLabel}</span>
         </div>
         <button className="trail-reset-button" onClick={onCalm} disabled={departing} aria-label="I need a reset">Reset</button>
       </header>
@@ -177,7 +187,7 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
       <div className="trail-route">
         <div className="trail-route__meta">
           <span>{reviewDestination ? 'Checking a skipped place' : stage.label}</span>
-          <strong>{totalChecked ? `${totalChecked} ${totalChecked === 1 ? 'spot' : 'spots'} checked` : 'No spots checked yet'}</strong>
+          {showPlaceCount && <strong>Place {stage.current} of {stage.total}</strong>}
         </div>
         <div className="trail-progress" role="progressbar" aria-label={`${stage.label} progress`} aria-valuemin={1} aria-valuemax={stage.total} aria-valuenow={stage.current} aria-valuetext={stage.name === 'safety' || stage.name === 'final' ? stage.label : `Place ${stage.current} of ${stage.total} in the ${stage.label.toLocaleLowerCase()}`}>
           <span style={{ width: `${progress}%` }} />
@@ -206,29 +216,35 @@ export function TrailView({ search, settings, offerReset, onDismissReset, onBack
             )
           })}
         </div>
-        {stop.reason && <details className="trail-reason">
-          <summary>Why this place?<Icon name="forward" size={16} /></summary>
-          <p>{stop.reason}</p>
-        </details>}
         <p className="sr-only" aria-live="polite">{checked.length} of {stop.spots.length} spots checked in this area.</p>
         {areaChecked && <p className="area-complete"><Icon name="check" size={16} />This area is fully checked. Move on when you’re ready.</p>}
         {(search.itemId === 'phone' || stop.id === 'attached-phone') && <DeviceFinderLinks />}
-        {stop.kind !== 'safety' && stop.kind !== 'final' && <div className="place-shortcuts" aria-label="Adjust this search place">
-          {onAlreadyChecked && !areaChecked && <button className="text-button" onClick={onAlreadyChecked} disabled={departing}>Already checked this whole area</button>}
-          {onExcludePlace && <button className="text-button" onClick={onExcludePlace} disabled={departing}>This place doesn’t apply</button>}
-        </div>}
       </article>
 
       {offerReset && <div className="trail-pause-offer" role="status"><span><strong>Want a breathing reset?</strong><small>Your place is saved.</small></span><button onClick={onCalm}>Take reset</button><button onClick={onDismissReset}>Not now</button></div>}
 
-      <div className="trail-utilities" aria-label="Search assistance">
-        <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>
-        <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined} aria-label={voiceSupported ? (listening ? 'Stop voice command' : 'Use voice command') : 'Voice commands are unavailable in this browser'}>
-          <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Voice command'}
+      <div className="trail-tools">
+        <button className="trail-tools__toggle" aria-expanded={toolsOpen} aria-controls={toolsId} onClick={toggleSearchTools}>
+          <Icon name="settings" size={17} /> <span>Search tools</span><Icon name="forward" size={16} />
         </button>
+        <div id={toolsId} className="trail-tools__panel" hidden={!toolsOpen}>
+          {stop.reason && <p className="trail-tools__reason"><strong>Why this place?</strong> {stop.reason}</p>}
+          <div className="trail-utilities" role="group" aria-label="Search assistance">
+            <button className="voice-tool" onClick={readCurrent}><Icon name="volume" size={18} /> Read aloud</button>
+            <button className={listening ? 'voice-tool is-listening' : 'voice-tool'} onClick={toggleListening} disabled={!voiceSupported} title={!voiceSupported ? 'Not supported by this browser' : undefined} aria-label={voiceSupported ? (listening ? 'Stop voice command' : 'Use voice command') : 'Voice commands are unavailable in this browser'}>
+              <Icon name="voice" size={18} /> {listening ? 'Listening…' : 'Voice command'}
+            </button>
+          </div>
+          {voiceNoticeOpen && <div ref={voiceNoticeRef} tabIndex={-1} className="voice-notice" role="group" aria-label="Voice command privacy"><p>Your browser may send microphone audio to its speech provider. Voice commands may need a connection. FindTrail saves no recording. Say “next”, “found it”, or “repeat”.</p><button className="button button--secondary" onClick={() => setVoiceNoticeOpen(false)}>Keep using touch</button><button className="button button--primary" onClick={() => { setVoiceNoticeAccepted(true); setVoiceNoticeOpen(false); beginListening() }}>Use browser voice command</button></div>}
+          <div className="place-shortcuts" role="group" aria-label="Adjust this search">
+            <button className="text-button" onClick={onEditClues} disabled={departing}>Edit clues</button>
+            {stop.kind !== 'safety' && stop.kind !== 'final' && <>
+              {onAlreadyChecked && !areaChecked && <button className="text-button" onClick={onAlreadyChecked} disabled={departing}>Already checked this whole area</button>}
+              {onExcludePlace && <button className="text-button" onClick={onExcludePlace} disabled={departing}>This place doesn’t apply</button>}
+            </>}
+          </div>
+        </div>
       </div>
-      <button className="text-button trail-edit-clues" onClick={onEditClues}>Clues</button>
-      {voiceNoticeOpen && <div ref={voiceNoticeRef} tabIndex={-1} className="voice-notice" role="group" aria-label="Voice command privacy"><p>Your browser may send microphone audio to its speech provider. Voice commands may need a connection. FindTrail saves no recording. Say “next”, “found it”, or “repeat”.</p><button className="button button--secondary" onClick={() => setVoiceNoticeOpen(false)}>Keep using touch</button><button className="button button--primary" onClick={() => { setVoiceNoticeAccepted(true); setVoiceNoticeOpen(false); beginListening() }}>Use browser voice command</button></div>}
       {(heard || voiceError || voiceStatus) && <p className={voiceError ? 'voice-status is-error' : 'voice-status'} aria-live="polite">{voiceError || voiceStatus || `Heard: “${heard}”`}</p>}
 
       <div className="sticky-actions trail-action-dock">

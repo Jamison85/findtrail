@@ -42,7 +42,7 @@ describe('FoundView', () => {
     expect(screen.getByRole('heading', { name: 'Found your keys.' })).toBeInTheDocument()
     expect(screen.getByText('Help improve the trail')).toBeInTheDocument()
     expect(screen.getByText('Help improve the trail').closest('details')).not.toHaveAttribute('open')
-    expect(screen.getByRole('button', { name: 'Save spot' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save this spot' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Entry table or hook' }))
     expect(baseProps.onChange).toHaveBeenCalledWith('Entry table or hook')
@@ -53,7 +53,7 @@ describe('FoundView', () => {
 
     expect(screen.getByLabelText('Exact place')).toHaveValue('Entry table or hook')
     expect(screen.getByRole('button', { name: 'Entry table or hook' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Save spot' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Save this spot' })).toBeEnabled()
 
     fireEvent.click(screen.getByText('Help improve the trail'))
     expect(screen.getByRole('button', { name: 'No, found another way' })).toHaveAttribute('aria-pressed', 'true')

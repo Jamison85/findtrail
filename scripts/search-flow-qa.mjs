@@ -75,8 +75,9 @@ try {
     await capture(page, `trail-${width}`)
 
     // Mark a whole area and rebuild with the same clues. It must not reappear.
+    await page.getByRole('button', { name: 'Search tools' }).click()
     await page.getByRole('button', { name: 'Already checked this whole area' }).click()
-    await page.getByRole('button', { name: 'Clues', exact: true }).click()
+    await page.getByRole('button', { name: 'Edit clues', exact: true }).click()
     await page.getByRole('button', { name: 'House keys', exact: true }).click()
     await page.getByRole('button', { name: 'Start with likely places' }).click()
     const rerouted = await saved(page)
