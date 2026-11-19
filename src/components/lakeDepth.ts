@@ -1,4 +1,4 @@
-import { COVE_SHORELINE, lakeFog, type LakeMotion } from './breathingLake'
+import { COVE_FOLIAGE, COVE_SHORELINE, lakeFog, type LakeMotion } from './breathingLake'
 import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 const vertexSource = `
@@ -31,6 +31,19 @@ float shoreAt(float x) {
   float nearBank = ${COVE_SHORELINE.left} - ${COVE_SHORELINE.leftSlope} * smoothstep(.10, .53, photoX);
   float bank = mix(nearBank, ${COVE_SHORELINE.distant}, smoothstep(${COVE_SHORELINE.leftStart}, ${COVE_SHORELINE.leftEnd}, photoX));
   return (bank - uCrop.w) / uCrop.y;
+}
+
+vec3 leafFlutter(vec2 point, vec2 center, vec2 radius, float delay, float strength, float phase) {
+  float age = uWaveTime - delay;
+  if (age <= 0.0) return vec3(0.0);
+  float tip = 1.0 - smoothstep(.26, 1.0, length((point - center) / radius));
+  if (tip < .01) return vec3(0.0);
+  float release = 1.0 - smoothstep(${(GUIDED_EXHALE_SECONDS - 1.04).toFixed(2)}, ${(GUIDED_EXHALE_SECONDS - .28).toFixed(2)}, uWaveTime);
+  float envelope = smoothstep(0.0, .55, age) * release;
+  float gust = envelope * strength;
+  float bend = .56 * sin(age * 4.2 + phase) + .29 * sin(age * 7.9 + phase * 1.9) + .15 * sin(age * 13.3);
+  float flutter = .38 * sin(age * 8.4 + phase) + .20 * sin(age * 15.4 - phase);
+  return vec3(gust * tip * vec2(.25 + bend, .22 * bend + .36 * flutter), tip * envelope);
 }
 
 // Sample the same air on both sides of the water plane. Samples below it
@@ -77,6 +90,16 @@ void main() {
   vec3 color = vec3(0.0);
   float opacity = 0.0;
   float shoreline = shoreAt(uv.x);
+
+  if (uWaveTime >= 0.0 && uWaveTime < ${GUIDED_EXHALE_SECONDS.toFixed(1)} && uv.y < shoreline) {
+    vec2 point = uv * uCrop.xy + uCrop.zw;
+    vec3 leaves = vec3(0.0);
+${COVE_FOLIAGE.map(({ x, y, width, height, delay, strength, phase }) => `    leaves += leafFlutter(point, vec2(${x}, ${y}), vec2(${width}, ${height}), ${delay}, ${strength}, ${phase});`).join('\n')}
+    if (leaves.z > .001) {
+      color = photograph(uv - leaves.xy / uCrop.xy);
+      opacity = min(1.0, leaves.z);
+    }
+  }
 
   if (uWaveTime >= 0.0 && uv.y > shoreline) {
     // The photographed shore is a finite distance from the lens. An optical
