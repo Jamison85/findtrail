@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ActiveSearch, Screen } from '../types'
 import { Icon } from './Icon'
 import { clearNextStep } from './clearNextStep'
-import { RESET_CYCLES } from './resetTiming'
+import { GUIDED_EXHALE_SECONDS, RESET_CYCLES, RIPPLE_TAIL_SECONDS } from './resetTiming'
 import { createBreathingLake } from './breathingLake'
 import { createLakeDepth } from './lakeDepth'
 
@@ -23,9 +23,8 @@ const phaseLabels = {
 
 const BREATHE_IN_SECONDS = 6
 const HOLD_SECONDS = 2
-const BREATHE_OUT_SECONDS = 8
 const EXHALE_START = BREATHE_IN_SECONDS + HOLD_SECONDS
-const CYCLE_SECONDS = EXHALE_START + BREATHE_OUT_SECONDS
+const CYCLE_SECONDS = EXHALE_START + GUIDED_EXHALE_SECONDS
 const TOTAL_SECONDS = CYCLE_SECONDS * RESET_CYCLES
 const LAKE_IMAGE = `${import.meta.env.BASE_URL}findtrail-lake-cove.webp`
 const LAKE_WATERLINE = .493
@@ -40,6 +39,7 @@ const phaseDetails = {
 export function CalmReset({ search, returnScreen, reducedMotion = false, onResume }: CalmResetProps) {
   const [phase, setPhase] = useState<keyof typeof phaseLabels>('idle')
   const [running, setRunning] = useState(false)
+  const [replay, setReplay] = useState(0)
   const lake = useRef<HTMLImageElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
   const depth = useRef<HTMLCanvasElement>(null)
@@ -56,15 +56,15 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     let fallback: ReturnType<typeof createBreathingLake> | undefined
     let initialized = false
     const effect: ReturnType<typeof createBreathingLake> = {
-      draw(motion, progress) {
+      draw(motion, progress, waveTime) {
         if (motion && !initialized) {
           renderer = createLakeDepth(photo, depthLayer, LAKE_WATERLINE)
           initialized = true
         }
-        if (renderer?.available()) renderer.draw(motion, progress)
+        if (renderer?.available()) renderer.draw(motion, progress, waveTime)
         else if (motion) {
           fallback ??= createBreathingLake(photo, fallbackLayer)
-          fallback.draw(motion, progress)
+          fallback.draw(motion, progress, waveTime)
         } else fallback?.draw(null)
       },
       dispose() {
@@ -86,7 +86,8 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     let lastPhase: keyof typeof phaseLabels | undefined
 
     function draw(now: number) {
-      const seconds = Math.max(0, Math.min(TOTAL_SECONDS, (now - startedAt) / 1000))
+      const end = TOTAL_SECONDS + (reducedMotion ? 0 : RIPPLE_TAIL_SECONDS)
+      const seconds = Math.max(0, Math.min(end, (now - startedAt) / 1000))
       elapsed.current = seconds
       const cycle = seconds % CYCLE_SECONDS
       const finished = seconds >= TOTAL_SECONDS
@@ -96,16 +97,20 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
         setPhase(nextPhase)
       }
 
-      if (reducedMotion || finished) scene.current?.draw(null)
-      else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS)
+      const previousWave = seconds >= CYCLE_SECONDS && cycle < RIPPLE_TAIL_SECONDS ? GUIDED_EXHALE_SECONDS + cycle : undefined
+      if (reducedMotion || seconds >= end) scene.current?.draw(null)
+      else if (finished) scene.current?.draw('tail', 0, GUIDED_EXHALE_SECONDS + seconds - TOTAL_SECONDS)
+      else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS, previousWave)
       else if (nextPhase === 'hold') scene.current?.draw('hold')
-      else scene.current?.draw('exhale', (cycle - EXHALE_START) / BREATHE_OUT_SECONDS)
-      if (finished) setRunning(false)
+      else scene.current?.draw('exhale', (cycle - EXHALE_START) / GUIDED_EXHALE_SECONDS, cycle - EXHALE_START)
+      if (seconds >= end) setRunning(false)
       else frame = requestAnimationFrame(draw)
     }
 
     function pauseWhenHidden() {
-      if (document.hidden) setRunning(false)
+      if (!document.hidden) return
+      if (elapsed.current >= TOTAL_SECONDS) scene.current?.draw(null)
+      setRunning(false)
     }
 
     frame = requestAnimationFrame(draw)
@@ -114,16 +119,17 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       cancelAnimationFrame(frame)
       document.removeEventListener('visibilitychange', pauseWhenHidden)
     }
-  }, [reducedMotion, running])
+  }, [reducedMotion, running, replay])
 
   function toggleBreathing() {
-    if (running) {
+    if (running && phase !== 'complete') {
       setRunning(false)
       return
     }
     if (phase === 'idle' || phase === 'complete') {
       elapsed.current = 0
       setPhase('inhale')
+      if (running) setReplay((value) => value + 1)
     }
     setRunning(true)
   }

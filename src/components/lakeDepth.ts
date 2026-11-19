@@ -1,4 +1,5 @@
 import type { LakeMotion } from './breathingLake'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 const vertexSource = `
 attribute vec2 aPosition;
@@ -16,6 +17,7 @@ uniform float uAspect;
 uniform float uHorizon;
 uniform float uProgress;
 uniform float uPhase;
+uniform float uWaveTime;
 
 const float focal = .78;
 const float cameraHeight = 1.23;
@@ -24,28 +26,31 @@ vec3 photograph(vec2 uv) {
   return texture2D(uPhoto, clamp(uv * uCrop.xy + uCrop.zw, .001, .999)).rgb;
 }
 
-// Looking through near and far samples of the same volume lets shore-level
-// mist grow naturally as it comes closer instead of scaling a screen overlay.
-float fogVolume(vec3 ray, float progress) {
+// Sample the same air on both sides of the water plane. Samples below it
+// are seen in reflection, with a weaker contribution than the air itself.
+vec2 fogVolume(vec3 ray, float progress) {
   float drift = smoothstep(0.0, 1.0, progress);
-  float center = mix(24.0, 4.4, drift);
-  float span = mix(7.0, 2.55, drift);
-  float extinction = 0.0;
-  for (int i = 0; i < 12; i++) {
-    float offset = (float(i) + .5) / 12.0 * 2.0 - 1.0;
+  float center = mix(29.0, 7.4, drift);
+  float span = mix(9.8, 3.7, drift);
+  vec2 extinction = vec2(0.0);
+  for (int i = 0; i < 16; i++) {
+    float offset = (float(i) + .5) / 16.0 * 2.0 - 1.0;
     float z = center + offset * span;
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
-    float profile = smoothstep(-.04, .07, p.y) * (1.0 - smoothstep(.11, .48, p.y));
-    if (profile > .001) {
-      vec2 uv = vec2(p.x * .14 + p.y * .16, z * .115 + p.y * .21);
-      float wisps = texture2D(uNoise, uv + vec2(-drift * .28, drift * .58)).r;
-      float detail = texture2D(uNoise, uv * 2.2 + vec2(p.y * .63, -drift * .13)).r;
-      float density = smoothstep(.29, .75, .78 * wisps + .22 * detail);
-      float across = 1.0 - smoothstep(1.4, 7.5, abs(p.x + .28 + .05 * z));
-      extinction += profile * density * across * (1.0 - offset * offset) * .109;
+    float altitude = abs(p.y);
+    if (altitude < .54) {
+      vec2 flow = vec2(p.x * .032 + altitude * .045 - .018 * drift, offset * .125 + altitude * .23);
+      float thread = texture2D(uNoise, flow + vec2(.61, .27)).r;
+      float detail = texture2D(uNoise, flow * vec2(2.5, 1.4) + vec2(altitude * .15, .33)).r;
+      float low = 1.0 - smoothstep(.035, .26, altitude);
+      float upper = smoothstep(.065, .23, altitude) * (1.0 - smoothstep(.23, .52, altitude));
+      float density = low * smoothstep(.29, .76, thread) + upper * .42 * smoothstep(.44, .89, detail);
+      float across = 1.0 - smoothstep(1.3, 6.7, abs(p.x - .48 + .032 * z));
+      float reflection = 1.0 - smoothstep(-.033, .033, p.y);
+      extinction += vec2(1.0 - reflection, reflection) * density * across * (1.0 - offset * offset) * .079;
     }
   }
-  return 1.0 - exp(-extinction);
+  return 1.0 - exp(-extinction * vec2(1.0, .42));
 }
 
 void main() {
@@ -55,27 +60,30 @@ void main() {
   vec3 color = vec3(0.0);
   float opacity = 0.0;
 
-  if (uPhase > 1.5 && ray.y < -.018) {
+  if (uWaveTime >= 0.0 && ray.y < -.018) {
     // Cast the camera ray into a horizontal world-space water plane. The same
     // wavelength covers fewer pixels with distance, and the front widens in 3D.
     vec2 world = (ray.xz * (-cameraHeight / ray.y));
-    vec2 radial = world - vec2(.14, 2.85);
+    vec2 radial = world - vec2(.14, 3.74);
     float distance = length(radial);
-    float front = .15 + 20.2 * pow(uProgress, 1.55);
-    float wake = distance - front;
-    float width = mix(2.1, 6.2, uProgress);
-    float envelope = 1.0 - smoothstep(.025, width, abs(wake));
-    float strength = smoothstep(0.0, .19, uProgress) * (1.0 - smoothstep(.73, 1.0, uProgress));
+    // Evaluate when the crest at this point left the source. New crests form
+    // there throughout the exhale while older ones continue outward.
+    float emitted = uWaveTime - distance / 2.08;
+    float feed = smoothstep(0.0, .40, emitted) * (1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + .18).toFixed(2)}, emitted));
+    float settle = 1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + RIPPLE_TAIL_SECONDS).toFixed(1)}, uWaveTime);
+    float outward = smoothstep(-.40, .66, radial.y);
+    float falloff = (1.0 - .64 * smoothstep(1.8, 19.0, distance)) * smoothstep(.04, .34, distance);
     float waterEdge = smoothstep(.024, .076, uv.y - uHorizon);
     float silhouette = smoothstep(.005, .10, canvas.x) * smoothstep(.005, .12, 1.0 - canvas.x);
     float bandEdge = smoothstep(.01, .16, canvas.y);
-    float variance = texture2D(uNoise, world * .19).r;
-    float weight = envelope * strength * waterEdge * bandEdge * silhouette;
+    float weight = feed * settle * outward * falloff * waterEdge * bandEdge * silhouette;
     if (weight > .002) {
       vec2 direction = normalize(radial + vec2(.001));
-      float wave = sin(7.4 * wake + world.x * .39 + variance * 1.55);
-      float detail = sin(16.2 * wake - world.x * .61 + variance * .78);
-      vec2 slope = (wave * .0052 + detail * .0014) * direction * weight;
+      float variance = texture2D(uNoise, world * .062).r;
+      float crest = emitted * 8.1 + variance * .78;
+      float wave = sin(crest + world.x * .09);
+      float detail = sin(crest * 1.82 - world.x * .39);
+      vec2 slope = (wave * .0061 + detail * .0013) * direction * weight;
       slope.x += detail * .0022 * weight;
       vec3 normal = normalize(vec3(-slope.x, 1.0, -slope.y));
       vec3 reflected = reflect(ray, normal);
@@ -91,13 +99,22 @@ void main() {
     }
   }
 
-  float mist = uPhase < 1.5 ? smoothstep(0.0, .20, uProgress) : 1.0 - smoothstep(0.0, .28, uProgress);
+  float mist = uPhase < .5 ? 0.0 : uPhase < 1.5 ? smoothstep(0.0, .22, uProgress) : 1.0 - smoothstep(0.0, .25, uProgress);
   if (mist > .001 && ray.y < -.012) {
     float drift = uPhase < 1.5 ? uProgress : 1.0;
-    float fog = fogVolume(ray, drift) * mist;
-    fog *= smoothstep(0.0, .12, canvas.y) * smoothstep(.0, .09, 1.0 - canvas.y);
-    fog *= smoothstep(.021, .061, uv.y - uHorizon);
-    vec3 light = mix(vec3(.71, .73, .74), vec3(.91, .84, .72), smoothstep(.15, .69, uv.x));
+    vec2 streams = fogVolume(ray, drift) * mist;
+    streams *= smoothstep(0.0, .12, canvas.y) * smoothstep(.0, .09, 1.0 - canvas.y);
+    streams *= smoothstep(.016, .043, uv.y - uHorizon);
+    float fog = streams.x + streams.y * (1.0 - streams.x);
+    // Match the sky's cool fill and warm opening in the photograph. The
+    // reflected mist gathers colour from the water and is softer and darker.
+    vec3 warm = photograph(vec2(.74, uHorizon - .148));
+    vec3 cool = photograph(vec2(.82, uHorizon - .288));
+    float sunlight = smoothstep(.16, .78, uv.x) * (1.0 - drift * .31);
+    vec3 local = photograph(uv);
+    vec3 direct = mix(mix(cool, warm, sunlight), local, .12);
+    vec3 reflected = mix(direct * .91, local, .38);
+    vec3 light = (direct * streams.x + reflected * streams.y * (1.0 - streams.x)) / max(.00001, fog);
     color = (color * opacity * (1.0 - fog) + light * fog) / max(.00001, opacity * (1.0 - fog) + fog);
     opacity = opacity * (1.0 - fog) + fog;
   }
@@ -176,6 +193,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
   const aspect = gl.getUniformLocation(program, 'uAspect')
   const phase = gl.getUniformLocation(program, 'uPhase')
   const progress = gl.getUniformLocation(program, 'uProgress')
+  const waveTime = gl.getUniformLocation(program, 'uWaveTime')
   let needsResize = true
   let uploaded = false
   let lost = false
@@ -212,7 +230,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
 
   return {
     available: () => !lost && !gl.isContextLost(),
-    draw(motion: LakeMotion | null, fraction = 0) {
+    draw(motion: LakeMotion | null, fraction = 0, elapsedWave = -1) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -225,8 +243,9 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
       }
       if (motion === 'hold' && canvas.dataset.motionPhase === motion && !needsResize) return
       if (needsResize && !resize(gl)) return
-      gl.uniform1f(phase, motion === 'exhale' ? 2 : 1)
+      gl.uniform1f(phase, motion === 'tail' ? 0 : motion === 'exhale' ? 2 : 1)
       gl.uniform1f(progress, motion === 'hold' ? 1 : fraction)
+      gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       canvas.dataset.motionPhase = motion
     },

@@ -60,6 +60,8 @@ describe('CalmReset', () => {
       expect(lake).toHaveAttribute('data-motion-phase', 'exhale')
       advance(8000)
       expect(screen.getByRole('status')).toHaveTextContent('Reset complete')
+      expect(lake).toHaveAttribute('data-motion-phase', 'tail')
+      advance(1400)
       expect(lake).not.toHaveAttribute('data-motion-phase')
       expect(screen.getByRole('button', { name: 'Breathe again' })).toBeEnabled()
     } finally {

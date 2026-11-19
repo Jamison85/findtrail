@@ -1,4 +1,6 @@
-export type LakeMotion = 'inhale' | 'hold' | 'exhale'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_TAIL_SECONDS } from './resetTiming'
+
+export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
 export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasElement) {
   const context = typeof CanvasRenderingContext2D === 'undefined'
@@ -10,7 +12,7 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
   observer?.observe(canvas)
 
   return {
-    draw(motion: LakeMotion | null, progress = 0) {
+    draw(motion: LakeMotion | null, progress = 0, waveTime = -1) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -22,12 +24,10 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
       lake ??= sampleLake(photo, canvas, context)
       if (!lake) return
       lake.overlay.data.fill(0)
+      if (waveTime >= 0) paintWaves(lake, waveTime)
       if (motion === 'inhale' || motion === 'hold') {
         paintMist(lake, motion === 'hold' ? 1 : progress)
-      } else {
-        paintWaves(lake, progress)
-        if (progress < .25) paintMist(lake, 1, 1 - smooth(progress / .25))
-      }
+      } else if (motion === 'exhale' && progress < .25) paintMist(lake, 1, 1 - smooth(progress / .25))
       context.putImageData(lake.overlay, 0, 0)
     },
     dispose() {
@@ -102,11 +102,11 @@ for (const { width, height, weight, seed } of MIST_LAYERS) {
   }
 }
 
-function paintMist({ width, height, overlay }: LakeSurface, progress: number, fade = 1) {
+function paintMist({ width, height, source, overlay }: LakeSurface, progress: number, fade = 1) {
   const drift = smooth(progress)
   const opacity = smooth(progress / .22) * fade
-  const center = .11 + drift * .69
-  const depth = .13 + drift * .22
+  const center = .08 + drift * .30
+  const depth = .08 + drift * .10
   const spread = .48 + drift * .36
   for (let y = 0; y < height; y++) {
     const level = y / height
@@ -129,33 +129,33 @@ function paintMist({ width, height, overlay }: LakeSurface, progress: number, fa
       const cloud = Math.max(0, (texture - .19) / .81) ** 1.7
       const edges = smooth(Math.min(across, 1 - across) / .16)
       const pixel = (y * width + x) * 4
-      const mist = 166 * body * cloud * edges
+      const mist = 112 * body * cloud * edges
       const water = overlay.data[pixel + 3] * (1 - mist / 255)
       const total = mist + water
       if (total === 0) continue
-      overlay.data[pixel] = (237 * mist + overlay.data[pixel] * water) / total
-      overlay.data[pixel + 1] = (218 * mist + overlay.data[pixel + 1] * water) / total
-      overlay.data[pixel + 2] = (184 * mist + overlay.data[pixel + 2] * water) / total
+      overlay.data[pixel] = ((173 + source[pixel] * .18) * mist + overlay.data[pixel] * water) / total
+      overlay.data[pixel + 1] = ((162 + source[pixel + 1] * .18) * mist + overlay.data[pixel + 1] * water) / total
+      overlay.data[pixel + 2] = ((150 + source[pixel + 2] * .18) * mist + overlay.data[pixel + 2] * water) / total
       overlay.data[pixel + 3] = total
     }
   }
 }
 
-function paintWaves({ width, height, source, overlay }: LakeSurface, progress: number) {
-  const travel = .04 + .98 * (1 - (1 - progress) ** 1.26)
-  const strength = smooth(progress / .19) * (1 - smooth((progress - .72) / .28))
+function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: number) {
+  const settling = 1 - smooth((seconds - GUIDED_EXHALE_SECONDS) / RIPPLE_TAIL_SECONDS)
 
   for (let y = 0; y < height; y++) {
     const depth = 1 - y / height
-    const taper = strength * smooth(depth / .18) * smooth((1 - depth) / .30)
+    if (depth < .22) continue
+    const taper = settling * smooth((depth - .22) / .15) * smooth((1 - depth) / .30)
     for (let x = 0; x < width; x++) {
       const across = x / width - .5
-      // Broader fronts reach farther across the cove as they travel away.
-      const distance = depth + across ** 2 * .46 / (depth + .40) + across * .045 - travel
-      const envelope = Math.max(0, 1 - Math.abs(distance) / .33) ** 1.4
+      const distance = Math.hypot((depth - .22) / Math.max(.12, 1 - depth) * 3.8, across * 3.0)
+      const emitted = seconds - distance / 2.08
+      const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18)) * (1 - .64 * smooth(distance / 19))
       if (envelope < .008) continue
-      const slope = Math.sin(distance * (68 + depth * 22) - 7 * progress + across * 2)
-      const texture = Math.sin(distance * 117 - progress * 13 + across * 18) * .24
+      const slope = Math.sin(emitted * 8.1 + across * 1.6)
+      const texture = Math.sin(emitted * 14.74 - across * 6.0) * .24
       const push = (slope + texture) * taper * envelope
       const reflectedY = Math.min(height - 1, Math.max(0, y + push * (8 - 3 * depth)))
       const near = Math.floor(reflectedY)
