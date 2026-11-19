@@ -1,4 +1,4 @@
-const VERSION = 'findtrail-dawn-2.14-gust-through-the-cove'
+const VERSION = 'findtrail-dawn-2.15-inhale-clouds'
 const STATIC_CACHE = `${VERSION}-static`
 const RUNTIME_CACHE = `${VERSION}-runtime`
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '')
