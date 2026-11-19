@@ -164,7 +164,7 @@ describe('FindTrail app', () => {
     await buildTrailFromDoorway()
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Breathing cue' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start breathing' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
@@ -191,7 +191,7 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
 
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Breathing cue' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start breathing' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))

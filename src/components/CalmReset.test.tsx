@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { ActiveSearch } from '../types'
 import { CalmReset } from './CalmReset'
@@ -27,9 +27,46 @@ describe('CalmReset', () => {
     const resume = vi.fn()
     render(<CalmReset search={null} returnScreen="home" onResume={resume} />)
     expect(screen.queryByText('Your search is saved.')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Breathing cue' }))
-    expect(screen.getByText(/at your own pace/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Start breathing' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Breathe in')
     fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
     expect(resume).toHaveBeenCalledOnce()
+  })
+
+  it('starts the ripple at each exhale boundary and keeps the final ripple visible', () => {
+    vi.useFakeTimers()
+    try {
+      const view = render(<CalmReset search={search} returnScreen="trail" onResume={vi.fn()} />)
+      const ripple = view.container.querySelector('canvas')
+      const drop = view.container.querySelector('.reset-water__drop')
+      const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms))
+      fireEvent.click(screen.getByRole('button', { name: 'Start breathing' }))
+      advance(1000)
+      fireEvent.click(screen.getByRole('button', { name: 'Pause breathing' }))
+      advance(15000)
+      expect(screen.getByRole('status')).toHaveTextContent('Breathing paused')
+      expect(ripple).not.toHaveAttribute('data-rippling')
+      fireEvent.click(screen.getByRole('button', { name: 'Resume breathing' }))
+      advance(10950)
+      expect(screen.getByRole('status')).toHaveTextContent('Breathe out')
+      expect(drop).toHaveStyle({ opacity: '1' })
+      expect(ripple).not.toHaveAttribute('data-rippling')
+      advance(150)
+      expect(screen.getByRole('status')).toHaveTextContent('Breathe in')
+      expect(drop).toHaveStyle({ opacity: '0' })
+      expect(ripple).toHaveAttribute('data-rippling')
+      advance(3000)
+      expect(ripple).not.toHaveAttribute('data-rippling')
+      advance(9000)
+      expect(ripple).toHaveAttribute('data-rippling')
+      advance(12000)
+      expect(screen.getByRole('status')).toHaveTextContent('Three breaths complete.')
+      expect(ripple).toHaveAttribute('data-rippling')
+      advance(2400)
+      expect(ripple).not.toHaveAttribute('data-rippling')
+      expect(screen.getByRole('button', { name: 'Breathe again' })).toBeEnabled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
