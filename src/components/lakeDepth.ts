@@ -17,6 +17,7 @@ uniform float uAspect;
 uniform float uHorizon;
 uniform vec4 uFog;
 uniform float uFogLift;
+uniform float uFogTime;
 uniform float uWaveTime;
 
 const float focal = .78;
@@ -37,9 +38,12 @@ float shoreAt(float x) {
 // are seen in reflection, with a weaker contribution than the air itself.
 vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway) {
   float drift = smoothstep(0.0, 1.0, progress);
-  float center = mix(31.0, 4.5, drift);
-  float span = mix(10.4, 3.85, drift);
+  float center = mix(31.0, 5.25, drift);
+  float span = mix(13.4, 4.85, drift);
   float ceiling = height * mix(3.10, 4.48, drift);
+  vec2 lowFlow = vec2(-.009, .0055) * uFogTime;
+  vec2 highFlow = vec2(.004, -.011) * uFogTime;
+  vec2 wispFlow = vec2(.016, .011) * uFogTime;
   vec2 extinction = vec2(0.0);
   for (int i = 0; i < 24; i++) {
     float offset = (float(i) + .5) / 24.0 * 2.0 - 1.0;
@@ -47,24 +51,28 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
     float altitude = abs(p.y);
     if (altitude < ceiling + uFogLift) {
-      // Higher strands and the front of the bank catch the crosswind first.
-      float crosswind = sway * (.99 + .34 * sin(2.1 * offset - .85 * altitude) + .15 * altitude);
+      float crosswind = sway * (.70 + .28 * sin(2.1 * offset - .85 * altitude) + .12 * altitude);
       float plumeX = p.x - crosswind;
-      vec2 flow = vec2(plumeX * .027 + altitude * .039 - .025 * drift, offset * .105 + altitude * .078);
-      float billows = texture2D(uNoise, flow + vec2(.62, .26)).r;
-      float threads = texture2D(uNoise, flow * vec2(2.9, 1.7) + vec2(altitude * .10, .33)).r;
-      float curl = texture2D(uNoise, flow * vec2(1.21, 2.4) + vec2(.19, .78)).r;
-      float roof = ceiling * mix(.39, 1.0, .73 * billows + .27 * curl);
-      float lifted = altitude - uFogLift;
-      float core = 1.0 - smoothstep(roof * .13, roof * .66, lifted);
-      core *= smoothstep(-.37, .13, lifted);
-      float rising = smoothstep(roof * .23, roof * .51, lifted) * (1.0 - smoothstep(roof * .63, roof, lifted));
-      float floorMist = .20 * (1.0 - smoothstep(.02, roof * .47, altitude));
-      float density = (.8 * core + floorMist) * smoothstep(.23, .71, .76 * billows + .24 * threads);
-      density += rising * 1.21 * smoothstep(.28, .80, .61 * curl + .39 * threads);
-      float across = 1.0 - smoothstep(1.8, mix(8.1, 6.2, drift), abs(plumeX - .47 + .019 * z));
+      // The low bank and lifted strands move at different speeds. Each also
+      // bends the smaller wisps so their edges roll and break apart over time.
+      vec2 flow = vec2(plumeX * .033 + altitude * .026, offset * .154 + altitude * .069);
+      float bank = texture2D(uNoise, flow + vec2(.62, .26) + lowFlow).r;
+      float curl = texture2D(uNoise, flow * vec2(1.35, 1.72) + vec2(.19, .78) + highFlow).r;
+      vec2 eddy = vec2(curl - .5, bank - .5);
+      float threads = texture2D(uNoise, flow * vec2(2.6, 2.15) + eddy * .12 + vec2(altitude * .057, .33) + wispFlow).r;
+      float roof = ceiling * mix(.32, 1.0, .62 * bank + .38 * curl);
+      float lifted = altitude - uFogLift * mix(.55, 1.16, bank) + .45 * eddy.x;
+      float core = smoothstep(-.39, .13, lifted) * (1.0 - smoothstep(roof * .12, roof * .65, lifted));
+      float rising = smoothstep(roof * .22, roof * .49, lifted) * (1.0 - smoothstep(roof * .62, roof, lifted));
+      float floorMist = .28 * (1.0 - smoothstep(.035, max(.16, roof * .38), altitude));
+      float density = (.74 * core + floorMist) * smoothstep(.30, .74, .72 * bank + .28 * threads);
+      density += rising * 1.08 * smoothstep(.34, .78, .59 * curl + .41 * threads);
+      float across = 1.0 - smoothstep(1.35, mix(8.5, 6.25, drift), abs(plumeX - .44 + .025 * z + .96 * eddy.x));
+      float depth = offset + eddy.x * .46;
+      float lengthwise = smoothstep(-1.0, -.38, depth) * (1.0 - smoothstep(.24, 1.0, depth));
+      lengthwise *= 1.0 - smoothstep(.76, 1.0, abs(offset));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
-      extinction += vec2(1.0 - reflection, reflection) * density * across * (1.0 - offset * offset) * .168;
+      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * .182;
     }
   }
   return 1.0 - exp(-extinction * vec2(1.0, .15) * amount);
@@ -105,7 +113,7 @@ void main() {
     if (weight > .002) {
       float shallows = mix(.27, 1.0, smoothstep(.0018, .057, (uv.y - shoreline) * uCrop.y));
       vec2 direction = normalize(vec2(fan.x * curve, fan.y - .09 * fan.x) + vec2(.001));
-      float variance = texture2D(uNoise, world * .062).r;
+      float variance = texture2D(uNoise, clamp(world * .062, .015625, .984375)).r;
       float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78;
       float wave = sin(crest + world.x * .09);
       float detail = sin(crest * 1.82 - world.x * .39);
@@ -212,6 +220,8 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
     return seed >>> 24
   })
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, size, size, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, noise)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.uniform1i(gl.getUniformLocation(program, 'uNoise'), 1)
@@ -223,6 +233,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
   const aspect = gl.getUniformLocation(program, 'uAspect')
   const fog = gl.getUniformLocation(program, 'uFog')
   const fogLift = gl.getUniformLocation(program, 'uFogLift')
+  const fogTime = gl.getUniformLocation(program, 'uFogTime')
   const waveTime = gl.getUniformLocation(program, 'uWaveTime')
   let needsResize = true
   let uploaded = false
@@ -260,7 +271,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
 
   return {
     available: () => !lost && !gl.isContextLost(),
-    draw(motion: LakeMotion | null, fraction = 0, elapsedWave = -1, entry = 1) {
+    draw(motion: LakeMotion | null, fraction = 0, elapsedWave = -1, seconds = 0) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -271,11 +282,11 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, photo)
         uploaded = true
       }
-      if (motion === 'hold' && canvas.dataset.motionPhase === motion && !needsResize) return
       if (needsResize && !resize(gl)) return
-      const mist = lakeFog(motion, fraction, entry)
+      const mist = lakeFog(motion, fraction, seconds / 1.2)
       gl.uniform4f(fog, mist.distance, mist.amount, mist.height, mist.sway)
       gl.uniform1f(fogLift, mist.lift)
+      gl.uniform1f(fogTime, seconds)
       gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       canvas.dataset.motionPhase = motion

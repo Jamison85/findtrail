@@ -60,16 +60,16 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     let initialized = false
     const effect: ResetScene = {
       drawClouds: clouds.draw,
-      draw(motion, progress, waveTime, entry) {
+      draw(motion, progress, waveTime, seconds) {
         wind.draw(motion === 'exhale' ? waveTime : undefined)
         if (motion && !initialized) {
           renderer = createLakeDepth(photo, depthLayer, LAKE_WATERLINE)
           initialized = true
         }
-        if (renderer?.available()) renderer.draw(motion, progress, waveTime, entry)
+        if (renderer?.available()) renderer.draw(motion, progress, waveTime, seconds)
         else if (motion) {
           fallback ??= createBreathingLake(photo, fallbackLayer)
-          fallback.draw(motion, progress, waveTime, entry)
+          fallback.draw(motion, progress, waveTime, seconds)
         } else fallback?.draw(null)
       },
       dispose() {
@@ -110,10 +110,10 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       const cloudPosition = finished ? RESET_CYCLES : nextBreath - 1 + inhaled * inhaled * (3 - 2 * inhaled)
       scene.current?.drawClouds(cloudPosition)
       if (reducedMotion || seconds >= end) scene.current?.draw(null)
-      else if (finished) scene.current?.draw('tail', (seconds - TOTAL_SECONDS) / RIPPLE_TAIL_SECONDS, GUIDED_EXHALE_SECONDS + seconds - TOTAL_SECONDS)
-      else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS, previousWave, seconds / 1.2)
-      else if (nextPhase === 'hold') scene.current?.draw('hold')
-      else scene.current?.draw('exhale', (cycle - EXHALE_START) / GUIDED_EXHALE_SECONDS, cycle - EXHALE_START)
+      else if (finished) scene.current?.draw('tail', (seconds - TOTAL_SECONDS) / RIPPLE_TAIL_SECONDS, GUIDED_EXHALE_SECONDS + seconds - TOTAL_SECONDS, seconds)
+      else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS, previousWave, seconds)
+      else if (nextPhase === 'hold') scene.current?.draw('hold', 0, -1, seconds)
+      else scene.current?.draw('exhale', (cycle - EXHALE_START) / GUIDED_EXHALE_SECONDS, cycle - EXHALE_START, seconds)
       if (seconds >= end) setRunning(false)
       else frame = requestAnimationFrame(draw)
     }

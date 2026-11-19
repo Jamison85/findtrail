@@ -122,11 +122,27 @@ try {
     const gl = canvas.getContext('webgl')
     if (!gl || !canvas.dataset.motionPhase) return null
     const data = new Uint8Array(width * height * 4)
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data)
+    const program = gl.getParameter(gl.CURRENT_PROGRAM)
+    const wave = gl.getUniformLocation(program, 'uWaveTime')
+    const waves = gl.getUniform(program, wave)
+    // Read the fog separately so a new wave cannot look like a density jump.
+    if (waves >= 0) {
+      gl.uniform1f(wave, -1)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    try {
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data)
+    } finally {
+      if (waves >= 0) {
+        gl.uniform1f(wave, waves)
+        gl.drawArrays(gl.TRIANGLES, 0, 3)
+      }
+    }
     let opacity = 0
     let depth = 0
     let aboveWater = 0
     let nearWater = 0
+    const tiles = Array(48).fill(0)
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const alpha = data[(y * width + x) * 4 + 3]
@@ -134,11 +150,13 @@ try {
         depth += alpha * (height - 1 - y)
         if ((height - 1 - y) / height < .34) aboveWater += alpha
         if ((height - 1 - y) / height > .54) nearWater += alpha
+        tiles[Math.floor(y * 6 / height) * 8 + Math.floor(x * 8 / width)] += alpha
       }
     }
     const area = width * height
-    return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area }
+    return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area, tiles: tiles.map((tile) => tile * tiles.length / area) }
   })
+  const fogChange = (before, after) => cloudChange(before.tiles, after.tiles)
   const waveSample = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
     const gl = canvas.getContext('webgl')
@@ -176,19 +194,26 @@ try {
   assert.ok(mistNear.nearWater > mistFar.nearWater + 2, 'the base of the fog moves toward the viewer as the top rises')
   assert.ok(mistNear.aboveWater > mistFar.aboveWater + 2, 'inhale builds visible fog above the water')
   await capture(page, 'reset-inhale-390')
-  await page.clock.fastForward(2200)
+  await page.clock.fastForward(1560)
+  const endInhale = await fogSample()
+  await page.clock.fastForward(90)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Hold gently')
   const held = await fogSample()
   const heldClouds = await cloudFrame()
-  assert.ok(held.amount < mistNear.amount * .60, 'the fog thins as it reaches the foreground')
-  await page.clock.fastForward(800)
-  assert.deepEqual(await fogSample(), held, 'mist hangs still during the brief hold')
+  assert.ok(held.amount > mistNear.amount * .62, 'the fog remains clearly visible during the hold')
+  assert.ok(fogChange(endInhale, held) < 1.4, 'the fog flows continuously into the hold')
+  await page.clock.fastForward(1450)
+  const heldLater = await fogSample()
+  assert.ok(fogChange(held, heldLater) > .18, 'individual wisps keep moving during the hold')
+  assert.ok(heldLater.amount > held.amount * .73, 'the bank remains visible as the wisps move')
   assert.deepEqual(await cloudFrame(), heldClouds, 'the clouds hold their new position')
-  await page.clock.fastForward(1500)
+  await page.clock.fastForward(450)
+  const endHold = await fogSample()
+  await page.clock.fastForward(100)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
   assert.deepEqual(await cloudFrame(), heldClouds, 'exhale leaves the clouds in place')
-  const returnMist = await fogSample()
-  assert.ok(returnMist.aboveWater > held.aboveWater + 1, 'the released fog rolls back out above the water with the ripples')
+  assert.ok(fogChange(endHold, await fogSample()) < 1.4, 'the fog starts retreating without a jump')
+  await page.clock.fastForward(850)
   const first = await waveSample()
   assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
   assert.ok(await breezeIn([.41, .31, .50, .367]) > 10, 'the exposed branch moves in the breeze')

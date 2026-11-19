@@ -13,8 +13,12 @@ const search: ActiveSearch = {
 
 describe('CalmReset', () => {
   it('gathers the released fog into the next inhale without a jump', () => {
-    expect(lakeFog('exhale', 0)).toEqual(lakeFog('hold', 0))
+    const heldFog = lakeFog('hold', 0)
+    expect(lakeFog('inhale', 1)).toEqual(heldFog)
+    expect(lakeFog('exhale', 0)).toEqual(heldFog)
     expect(lakeFog('exhale', 1)).toEqual(lakeFog('inhale', 0))
+    expect(heldFog.amount).toBeGreaterThan(lakeFog('inhale', .65).amount * .72)
+    expect(lakeFog('exhale', .10).amount - heldFog.amount).toBeLessThan(.08)
     expect(lakeFog('exhale', .25).amount).toBeGreaterThan(lakeFog('exhale', 1).amount)
     expect(lakeFog('inhale', .5).sway).toBeGreaterThan(0)
     expect(lakeFog('exhale', .5).sway).toBeLessThan(0)
