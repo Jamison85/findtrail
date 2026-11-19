@@ -1,4 +1,5 @@
 import { GUIDED_EXHALE_SECONDS } from './resetTiming'
+import { COVE_SHORELINE } from './breathingLake'
 
 // Crops follow individual crowns, with the weight falling to zero at the
 // branch roots. Only exposed silhouettes need the sky behind them sampled.
@@ -9,29 +10,29 @@ const branches = [
   { left: .043, right: .285, top: .286, bottom: .397, anchor: .071, sky: null, delay: .34, phase: 1.7, bend: .011 },
   { left: .399, right: .542, top: .296, bottom: .386, anchor: .414, sky: .576, delay: .59, phase: .7, bend: .014 },
   { left: .462, right: .563, top: .393, bottom: .454, anchor: .482, sky: .583, delay: .82, phase: 2.4, bend: .011 },
-  { left: .701, right: .844, top: .422, bottom: .471, anchor: .710, sky: null, delay: 1.36, phase: 1.8, bend: .005 },
-  { left: .851, right: 1, top: .391, bottom: .465, anchor: .857, sky: null, delay: 1.68, phase: 3.1, bend: .0045 },
+  { left: .701, right: .844, top: .422, bottom: .471, anchor: .826, sky: null, delay: 1.36, phase: 1.8, bend: -.005 },
+  { left: .851, right: 1, top: .391, bottom: .465, anchor: .985, sky: null, delay: 1.68, phase: 3.1, bend: -.0045 },
 ]
 
 const leaves = [
-  { start: .26, duration: 3.0, x: .281, y: .138, travel: .541, fall: .112, size: .020, turn: .6, color: '#9d4a23' },
-  { start: .48, duration: 3.8, x: .416, y: .172, travel: .449, fall: .066, size: .012, turn: 2.4, color: '#b87637' },
-  { start: .82, duration: 2.72, x: .478, y: .351, travel: .217, fall: .048, size: .012, turn: .8, color: '#b85727' },
-  { start: .98, duration: 3.6, x: .236, y: .356, travel: .564, fall: .215, size: .026, turn: 2.2, color: '#ae592a' },
-  { start: 1.32, duration: 2.82, x: .448, y: .282, travel: .378, fall: .059, size: .011, turn: 4.1, color: '#916438' },
-  { start: 1.62, duration: 2.73, x: .766, y: .439, travel: .264, fall: .015, size: .0065, turn: 2.8, color: '#a77946' },
-  { start: 1.89, duration: 3.66, x: .347, y: .156, travel: .625, fall: .175, size: .022, turn: 3.1, color: '#bd712f' },
-  { start: 2.23, duration: 3.02, x: .495, y: .372, travel: .255, fall: .036, size: .010, turn: 2.7, color: '#d18638' },
-  { start: 2.57, duration: 2.75, x: .481, y: .320, travel: .378, fall: .092, size: .013, turn: 1.5, color: '#a45c2b' },
-  { start: 2.92, duration: 3.68, x: .248, y: .373, travel: .793, fall: .158, size: .023, turn: .9, color: '#bc682b' },
-  { start: 3.31, duration: 2.7, x: .895, y: .409, travel: .213, fall: .026, size: .007, turn: 3.4, color: '#b4834b' },
-  { start: 3.54, duration: 2.46, x: .516, y: .415, travel: .190, fall: .045, size: .009, turn: 4.1, color: '#8f502a' },
-  { start: 4.01, duration: 3.57, x: .399, y: .157, travel: .635, fall: .142, size: .016, turn: 4.9, color: '#a85926' },
-  { start: 4.36, duration: 3.37, x: .191, y: .328, travel: .652, fall: .285, size: .025, turn: 3.3, color: '#8b4026' },
-  { start: 4.78, duration: 2.75, x: .404, y: .254, travel: .445, fall: .101, size: .011, turn: 2.8, color: '#c08042' },
-  { start: 5.31, duration: 2.12, x: .483, y: .341, travel: .210, fall: .038, size: .011, turn: 1.9, color: '#bb6830' },
-  { start: 5.74, duration: 2.17, x: .302, y: .175, travel: .619, fall: .143, size: .019, turn: 1.4, color: '#bc702f' },
-  { start: 6.12, duration: 1.80, x: .523, y: .418, travel: .316, fall: .061, size: .009, turn: 4.2, color: '#a76333' },
+  { start: .26, duration: 3.0, x: .281, y: .138, reach: 1.80, drop: .080, size: .020, turn: .6, color: '#9d4a23' },
+  { start: .48, duration: 3.8, x: .416, y: .172, reach: 1.45, drop: .038, size: .012, turn: 2.4, color: '#b87637' },
+  { start: .82, duration: 2.72, x: .478, y: .351, reach: 1.30, drop: .031, size: .012, turn: .8, color: '#b85727' },
+  { start: .98, duration: 3.6, x: .236, y: .356, reach: 2.10, drop: .097, size: .026, turn: 2.2, color: '#ae592a' },
+  { start: 1.32, duration: 2.82, x: .448, y: .282, reach: 1.55, drop: .041, size: .011, turn: 4.1, color: '#916438' },
+  { start: 1.62, duration: 2.73, x: .766, y: .439, reach: 1.22, drop: .020, size: .0065, turn: 2.8, color: '#a77946' },
+  { start: 1.89, duration: 3.66, x: .347, y: .156, reach: 2.45, drop: .085, size: .022, turn: 3.1, color: '#bd712f' },
+  { start: 2.23, duration: 3.02, x: .495, y: .372, reach: 1.30, drop: .026, size: .010, turn: 2.7, color: '#d18638' },
+  { start: 2.57, duration: 2.75, x: .481, y: .320, reach: 1.72, drop: .038, size: .013, turn: 1.5, color: '#a45c2b' },
+  { start: 2.92, duration: 3.68, x: .229, y: .570, reach: 2.38, drop: .026, size: .023, turn: .9, color: '#bc682b' },
+  { start: 3.31, duration: 2.7, x: .895, y: .409, reach: 1.44, drop: .022, size: .007, turn: 3.4, color: '#b4834b' },
+  { start: 3.54, duration: 2.46, x: .516, y: .415, reach: 1.35, drop: .030, size: .009, turn: 4.1, color: '#8f502a' },
+  { start: 4.01, duration: 3.57, x: .399, y: .157, reach: 2.28, drop: .078, size: .016, turn: 4.9, color: '#a85926' },
+  { start: 4.36, duration: 3.37, x: .191, y: .328, reach: 1.95, drop: .060, size: .025, turn: 3.3, color: '#8b4026' },
+  { start: 4.78, duration: 2.75, x: .404, y: .254, reach: 1.66, drop: .045, size: .011, turn: 2.8, color: '#c08042' },
+  { start: 5.31, duration: 2.12, x: .483, y: .341, reach: 1.45, drop: .033, size: .011, turn: 1.9, color: '#bb6830' },
+  { start: 5.74, duration: 2.17, x: .302, y: .175, reach: 2.10, drop: .069, size: .019, turn: 1.4, color: '#bc702f' },
+  { start: 6.12, duration: 1.80, x: .523, y: .418, reach: 1.28, drop: .026, size: .009, turn: 4.2, color: '#a76333' },
 ]
 
 function ease(value: number) {
@@ -80,7 +81,8 @@ function preparePlate(photo: HTMLImageElement, canvas: HTMLCanvasElement, contex
       const featherY = ease((photoY - branch.top) / .012) * ease((branch.bottom - photoY) / .013)
       for (let col = 0; col < layer.width; col++) {
         const photoX = (x + col - left) / photoWidth
-        reach[row * layer.width + col] = ease((photoX - branch.anchor) / .091) * towardTips * featherY * ease((branch.right - photoX) / .014)
+        const edge = branch.bend > 0 ? branch.right - photoX : photoX - branch.left
+        reach[row * layer.width + col] = ease((photoX - branch.anchor) * Math.sign(branch.bend) / .091) * towardTips * featherY * ease(edge / .014)
       }
     }
     return [{ branch, x, y, layer, reach }]
@@ -103,7 +105,7 @@ function drawBranches(context: CanvasRenderingContext2D, plate: WindPlate, time:
     const lift = .25 * Math.sin(age * 2.65 + branch.phase + .8) + .14 * Math.sin(age * 5.2 + branch.phase)
     const skyX = branch.sky === null ? -1 : Math.max(0, Math.min(width - 1, Math.round(left + branch.sky * photoWidth)))
     const dx = branch.bend * photoWidth * strength * swing
-    const dy = branch.bend * .8 * photoHeight * strength * lift
+    const dy = Math.abs(branch.bend) * .8 * photoHeight * strength * lift
     layer.data.fill(0)
 
     for (let row = 0; row < layer.height; row++) {
@@ -150,20 +152,25 @@ function drawBranches(context: CanvasRenderingContext2D, plate: WindPlate, time:
 
 function drawLeaves(scene: CanvasRenderingContext2D, foreground: CanvasRenderingContext2D, plate: WindPlate, time: number) {
   const { left, top, photoWidth, photoHeight } = plate
+  const { outlet, vanishing } = COVE_SHORELINE
   for (const leaf of leaves) {
     const age = time - leaf.start
     const progress = age / leaf.duration
     if (progress <= 0 || progress >= 1) continue
     const context = leaf.size >= .016 ? foreground : scene
-    const flutter = Math.sin(leaf.turn + age * 6.3)
-    const x = left + photoWidth * (leaf.x + leaf.travel * progress ** .89 + .012 * flutter * Math.sin(progress * Math.PI))
-    const y = top + photoHeight * (leaf.y + leaf.fall * progress ** 1.45 - .023 * Math.sin(progress * Math.PI) + .005 * flutter)
-    const size = leaf.size * photoWidth * (1 - .27 * progress)
+    const flutter = Math.sin(leaf.turn + age * 5.0)
+    const carry = 1 - (1 - progress) ** 1.65
+    const perspective = 1 / (1 + carry * leaf.reach)
+    const wake = Math.sin(progress * Math.PI) * perspective
+    const x = left + photoWidth * (outlet + (leaf.x - outlet) * perspective + flutter * wake * .020)
+    const y = top + photoHeight * (vanishing + (leaf.y - vanishing + leaf.drop * progress ** 1.6) * perspective
+      - wake * (.024 - .011 * flutter))
+    const size = leaf.size * photoWidth * perspective
     context.save()
     context.translate(x, y)
     context.rotate(leaf.turn + age * 2.5 + .65 * flutter)
     context.scale(size, size * (.29 + .50 * Math.abs(Math.cos(leaf.turn + age * 4.0))))
-    context.globalAlpha = .86 * ease(progress / .12) * (1 - ease((progress - .80) / .20))
+    context.globalAlpha = .82 * ease(progress / .10) * (1 - ease((progress - .69) / .31)) * (.64 + .36 * perspective)
     context.fillStyle = leaf.color
     context.beginPath()
     context.moveTo(-.63, .12)

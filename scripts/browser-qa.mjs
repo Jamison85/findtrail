@@ -157,6 +157,20 @@ try {
     return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area, tiles: tiles.map((tile) => tile * tiles.length / area) }
   })
   const fogChange = (before, after) => frameChange(before.tiles, after.tiles)
+  const firstLeafCenter = () => nearLeaves.evaluate((canvas) => {
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+    let x = 0
+    let y = 0
+    let weight = 0
+    for (let i = 3; i < pixels.length; i += 4) {
+      const index = (i - 3) / 4
+      const alpha = pixels[i]
+      x += index % canvas.width * alpha
+      y += Math.floor(index / canvas.width) * alpha
+      weight += alpha
+    }
+    return [x / weight / canvas.width, y / weight / canvas.height]
+  })
   const waveSample = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
     const gl = canvas.getContext('webgl')
@@ -208,6 +222,7 @@ try {
   assert.ok(heldLater.tiles.some((value, index) => value > held.tiles[index] + 2)
     && heldLater.tiles.some((value, index) => value < held.tiles[index] - 2), 'the fog shifts between parts of the image')
   assert.ok(heldLater.amount > held.amount * .73, 'the bank remains visible as the wisps move')
+  assert.ok(Math.abs(heldLater.depth - held.depth) < .04, 'the bank stays in roughly the same place during the hold')
   assert.deepEqual(await cloudFrame(), heldClouds, 'the clouds hold their new position')
   await page.clock.fastForward(450)
   const endHold = await fogSample()
@@ -215,7 +230,12 @@ try {
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
   assert.deepEqual(await cloudFrame(), heldClouds, 'exhale leaves the clouds in place')
   assert.ok(fogChange(endHold, await fogSample()) < 1.4, 'the fog starts retreating without a jump')
-  await page.clock.fastForward(850)
+  await page.clock.fastForward(430)
+  const leafLift = await firstLeafCenter()
+  await page.clock.fastForward(420)
+  const leafReceding = await firstLeafCenter()
+  const distanceToOpening = ([x, y]) => Math.hypot(x - .62, y - .441)
+  assert.ok(distanceToOpening(leafReceding) < distanceToOpening(leafLift) - .025, 'leaves travel into the cove in perspective')
   const first = await waveSample()
   assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
   assert.ok(await breezeIn([.41, .31, .50, .367]) > 10, 'the exposed branch moves in the breeze')
@@ -229,12 +249,12 @@ try {
     const motion = current.source.color.reduce((sum, shade, index) => sum + Math.abs(shade - previous.source.color[index]), 0) / current.source.color.length
     assert.ok(current.source.coverage > 40 && motion > .45, `fresh ripples remain visible in the source area at second ${second} (change ${motion})`)
     if (second === 3) {
-      assert.ok(await breezeIn([.56, .32, .74, .417]) > 2, 'a loose leaf travels into the open cove')
-      assert.ok(await breezeIn([.56, .15, .91, .28], nearLeaves) > 8, 'close leaves cross the upper opening')
+      assert.ok(await breezeIn([.509, .312, .564, .418]) > 2, 'a loose leaf travels into the open cove')
+      assert.ok(await breezeIn([.46, .275, .535, .38], nearLeaves) > 6, 'close leaves recede toward the opening')
       assert.ok(await breezeIn([.85, .405, .99, .448]) > 15, 'the breeze travels to the opposite bank')
       await capture(page, 'reset-leaves-390')
     }
-    if (second === 4) assert.ok(await breezeIn([.62, .49, .83, .55], nearLeaves) > 5, 'a foreground leaf passes over the water')
+    if (second === 4) assert.ok(await breezeIn([.36, .481, .46, .534], nearLeaves) > 5, 'a foreground leaf passes out over the water')
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
@@ -276,6 +296,7 @@ try {
   assert.equal(shoreline.dryBank, 0, 'the shoreline confines wave motion to the lake')
   const regathered = await fogSample()
   assert.ok(regathered.amount > 2 && regathered.nearWater < 1, 'released fog gathers by the distant water')
+  assert.ok(regathered.amount < endHold.amount * .24, 'nearby fog fades across the exhale')
   await capture(page, 'reset-outward-waves-390')
   await page.clock.fastForward(400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
