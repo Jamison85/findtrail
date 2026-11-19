@@ -93,8 +93,9 @@ try {
   const leaveForHome = page.getByRole('button', { name: 'Back to home' })
   assert.ok(await continueTrail.isVisible() && await leaveForHome.isVisible(), 'both exits stay available during breathing')
   const surface = page.locator('.reset-journey__water--depth')
-  const wind = page.locator('.reset-journey__wind')
-  const breezeIn = (bounds) => wind.evaluate((canvas, [left, top, right, bottom]) => {
+  const wind = page.locator('.reset-journey__wind--scene')
+  const nearLeaves = page.locator('.reset-journey__wind--near')
+  const breezeIn = (bounds, layer = wind) => layer.evaluate((canvas, [left, top, right, bottom]) => {
     const x = Math.round(canvas.width * left)
     const y = Math.round(canvas.height * top)
     const width = Math.round(canvas.width * right) - x
@@ -173,6 +174,7 @@ try {
   const first = await waveSample()
   assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
   assert.ok(await breezeIn([.41, .31, .50, .367]) > 10, 'the exposed branch moves in the breeze')
+  assert.ok(await breezeIn([.17, .118, .36, .192]) > 15, 'the gust moves the upper canopy too')
   assert.equal(await breezeIn([.12, .43, .30, .48]), 0, 'the cliff face stays still')
   await capture(page, 'reset-exhale-390')
   let previous = first
@@ -183,8 +185,11 @@ try {
     assert.ok(current.source.coverage > 40 && motion > .45, `fresh ripples remain visible in the source area at second ${second} (change ${motion})`)
     if (second === 3) {
       assert.ok(await breezeIn([.56, .32, .74, .417]) > 2, 'a loose leaf travels into the open cove')
+      assert.ok(await breezeIn([.56, .15, .91, .28], nearLeaves) > 8, 'close leaves cross the upper opening')
+      assert.ok(await breezeIn([.85, .405, .99, .448]) > 15, 'the breeze travels to the opposite bank')
       await capture(page, 'reset-leaves-390')
     }
+    if (second === 4) assert.ok(await breezeIn([.62, .49, .83, .55], nearLeaves) > 5, 'a foreground leaf passes over the water')
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
@@ -230,6 +235,7 @@ try {
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 2 of 3')
   assert.equal(await wind.getAttribute('data-active'), null, 'the branches settle with the next inhale')
+  assert.equal(await nearLeaves.getAttribute('data-active'), null, 'loose leaves clear by the next inhale')
   assert.ok(Math.abs((await fogSample()).aboveWater - regathered.aboveWater) < 1.5, 'gathered fog carries smoothly into the next inhale')
   await page.clock.fastForward(16000)
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 3 of 3')

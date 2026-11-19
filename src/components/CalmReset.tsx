@@ -38,6 +38,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const [replay, setReplay] = useState(0)
   const lake = useRef<HTMLImageElement>(null)
   const breeze = useRef<HTMLCanvasElement>(null)
+  const nearLeaves = useRef<HTMLCanvasElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
   const depth = useRef<HTMLCanvasElement>(null)
   const scene = useRef<ReturnType<typeof createBreathingLake>>(null)
@@ -45,11 +46,11 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
-    if (reducedMotion || !lake.current || !breeze.current || !water.current || !depth.current) return
+    if (reducedMotion || !lake.current || !breeze.current || !nearLeaves.current || !water.current || !depth.current) return
     const photo = lake.current
     const fallbackLayer = water.current
     const depthLayer = depth.current
-    const wind = createCoveWind(photo, breeze.current)
+    const wind = createCoveWind(photo, breeze.current, nearLeaves.current)
     let renderer: ReturnType<typeof createLakeDepth> = null
     let fallback: ReturnType<typeof createBreathingLake> | undefined
     let initialized = false
@@ -145,9 +146,10 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     <section className="view reset-journey" aria-labelledby="view-heading">
       <div className="reset-journey__scene" aria-hidden="true">
         <img ref={lake} className="reset-journey__lake" src={LAKE_IMAGE} alt="" />
-        <canvas ref={breeze} className="reset-journey__wind" />
+        <canvas ref={breeze} className="reset-journey__wind reset-journey__wind--scene" />
         <canvas ref={depth} className="reset-journey__water reset-journey__water--depth" />
         <canvas ref={water} className="reset-journey__water reset-journey__water--fallback" />
+        <canvas ref={nearLeaves} className="reset-journey__wind reset-journey__wind--near" />
       </div>
       <div className="reset-journey__layout">
         <header className="reset-journey__top">
