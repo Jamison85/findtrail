@@ -1,5 +1,5 @@
 import { lakeFog, type LakeMotion } from './breathingLake'
-import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 const vertexSource = `
 attribute vec2 aPosition;
@@ -15,7 +15,7 @@ uniform vec2 uBuffer;
 uniform vec2 uBand;
 uniform float uAspect;
 uniform float uHorizon;
-uniform vec3 uFog;
+uniform vec4 uFog;
 uniform float uWaveTime;
 
 const float focal = .78;
@@ -27,7 +27,7 @@ vec3 photograph(vec2 uv) {
 
 // Sample the same air on both sides of the water plane. Samples below it
 // are seen in reflection, with a weaker contribution than the air itself.
-vec2 fogVolume(vec3 ray, float progress, float height, float amount) {
+vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway) {
   float drift = smoothstep(0.0, 1.0, progress);
   float center = mix(31.0, 4.5, drift);
   float span = mix(10.4, 3.85, drift);
@@ -39,7 +39,10 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount) {
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
     float altitude = abs(p.y);
     if (altitude < ceiling) {
-      vec2 flow = vec2(p.x * .027 + altitude * .039 - .025 * drift, offset * .105 + altitude * .078);
+      // Higher strands and the front of the bank catch the crosswind first.
+      float crosswind = sway * (.99 + .34 * sin(2.1 * offset - .85 * altitude) + .15 * altitude);
+      float plumeX = p.x - crosswind;
+      vec2 flow = vec2(plumeX * .027 + altitude * .039 - .025 * drift, offset * .105 + altitude * .078);
       float billows = texture2D(uNoise, flow + vec2(.62, .26)).r;
       float threads = texture2D(uNoise, flow * vec2(2.9, 1.7) + vec2(altitude * .10, .33)).r;
       float curl = texture2D(uNoise, flow * vec2(1.21, 2.4) + vec2(.19, .78)).r;
@@ -48,7 +51,7 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount) {
       float rising = smoothstep(roof * .23, roof * .51, altitude) * (1.0 - smoothstep(roof * .63, roof, altitude));
       float density = .8 * core * smoothstep(.23, .71, .76 * billows + .24 * threads);
       density += rising * 1.21 * smoothstep(.28, .80, .61 * curl + .39 * threads);
-      float across = 1.0 - smoothstep(1.8, mix(8.1, 6.2, drift), abs(p.x - .47 + .019 * z));
+      float across = 1.0 - smoothstep(1.8, mix(8.1, 6.2, drift), abs(plumeX - .47 + .019 * z));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
       extinction += vec2(1.0 - reflection, reflection) * density * across * (1.0 - offset * offset) * .168;
     }
@@ -73,15 +76,16 @@ void main() {
     float distance = length(fan);
     // Evaluate when the crest at this point left the source. New crests form
     // there throughout the exhale while older ones continue outward.
-    float travel = distance / ${RIPPLE_SPEED.toFixed(2)} + ${RIPPLE_DRAG} * distance * distance;
+    float travel = distance / ${RIPPLE_SPEED.toFixed(2)}
+      + ${RIPPLE_DRAG} * distance * distance / (1.0 + ${RIPPLE_DRAG_FALLOFF} * distance);
     float emitted = uWaveTime - travel;
     float feed = smoothstep(0.0, .40, emitted) * (1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + .18).toFixed(2)}, emitted));
     float settle = 1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + RIPPLE_TAIL_SECONDS).toFixed(1)}, uWaveTime);
     float angle = fan.y / max(.001, distance);
-    float spread = mix(.70, -.15, smoothstep(.2, 8.4, distance));
+    float spread = mix(.70, -.26, smoothstep(.2, 6.9, distance));
     float outward = smoothstep(spread, spread + .29, angle);
-    float falloff = (1.0 - .77 * smoothstep(1.15, 16.4, distance)) * smoothstep(.025, .17, distance);
-    float waterEdge = smoothstep(.017, .039, uv.y - uHorizon);
+    float falloff = (1.0 - .77 * smoothstep(1.15, 25.0, distance)) * smoothstep(.025, .17, distance);
+    float waterEdge = smoothstep(.012, .027, uv.y - uHorizon);
     float bandEdge = smoothstep(.01, .16, canvas.y);
     float weight = feed * settle * outward * falloff * waterEdge * bandEdge;
     if (weight > .002) {
@@ -108,7 +112,7 @@ void main() {
 
   if (uFog.y > .001) {
     float approach = uFog.x;
-    vec2 streams = fogVolume(ray, approach, uFog.z, uFog.y);
+    vec2 streams = fogVolume(ray, approach, uFog.z, uFog.y, uFog.w);
     streams *= smoothstep(0.0, .14, canvas.y) * smoothstep(.0, .11, 1.0 - canvas.y);
     float opening = smoothstep(.29 - approach * .14, .64 - approach * .18, uv.x);
     float aboveShore = 1.0 - smoothstep(-.014, .103, uv.y - uHorizon);
@@ -252,7 +256,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
       if (motion === 'hold' && canvas.dataset.motionPhase === motion && !needsResize) return
       if (needsResize && !resize(gl)) return
       const mist = lakeFog(motion, fraction, entry)
-      gl.uniform3f(fog, mist.distance, mist.amount, mist.height)
+      gl.uniform4f(fog, mist.distance, mist.amount, mist.height, mist.sway)
       gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       canvas.dataset.motionPhase = motion
