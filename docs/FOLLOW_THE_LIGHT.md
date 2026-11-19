@@ -20,7 +20,7 @@ Deep pine surfaces, warm brass controls and entryway photography tie together th
 
 - Main actions have brass faces and secondary actions have pine faces. Both sink slightly while pressed.
 - The experience stays readable at 320px, large text, reduced motion, and offline.
-- Reset leaves checklist progress intact. The return button and the next spot are available immediately. The optional guide uses six seconds to inhale, two to hold gently and eight to exhale. Mist drifts closer on the inhale. Fresh ripples spread outward for the entire exhale, and the next inhale follows immediately.
+- Reset leaves checklist progress intact. The return button and the next spot are available immediately. The optional guide uses six seconds to inhale, two to hold gently and eight to exhale. Fog rises over the cove and thins as it approaches. A lighter wisp drifts back out with the continuous ripples, and the next inhale follows immediately.
 - Saved spots and found history live on the device and use the existing storage format.
 
 For items that can need safety guidance, the clue questions still come first.

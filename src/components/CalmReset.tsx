@@ -32,7 +32,7 @@ const phaseDetails = {
   idle: 'Watch the mist and the reflection.',
   inhale: 'Mist drifts toward you.',
   hold: '',
-  exhale: 'Ripples move away from you.',
+  exhale: 'Ripples carry the mist away.',
   complete: '',
 }
 
