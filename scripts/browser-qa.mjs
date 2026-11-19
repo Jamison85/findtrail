@@ -93,6 +93,17 @@ try {
   const leaveForHome = page.getByRole('button', { name: 'Back to home' })
   assert.ok(await continueTrail.isVisible() && await leaveForHome.isVisible(), 'both exits stay available during breathing')
   const surface = page.locator('.reset-journey__water--depth')
+  const wind = page.locator('.reset-journey__wind')
+  const breezeIn = (bounds) => wind.evaluate((canvas, [left, top, right, bottom]) => {
+    const x = Math.round(canvas.width * left)
+    const y = Math.round(canvas.height * top)
+    const width = Math.round(canvas.width * right) - x
+    const height = Math.round(canvas.height * bottom) - y
+    const pixels = canvas.getContext('2d').getImageData(x, y, width, height).data
+    let visible = 0
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 32) visible++
+    return visible
+  }, bounds)
   const fogSample = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
     const gl = canvas.getContext('webgl')
@@ -141,6 +152,7 @@ try {
   await page.clock.runFor(40)
   await page.clock.fastForward(2060)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in')
+  assert.equal(await wind.getAttribute('data-active'), null, 'the breeze waits for the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 1 of 3')
   const mistFar = await fogSample()
   await page.clock.fastForward(2300)
@@ -160,11 +172,8 @@ try {
   assert.ok(returnMist.aboveWater > held.aboveWater + 1, 'the released fog rolls back out above the water with the ripples')
   const first = await waveSample()
   assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
-  const trees = { nearby: [.08, .27, .052, .158], distant: [.85, .98, .21, .26], rock: [.10, .27, .28, .31] }
-  const earlyBreeze = await measureMotion(trees)
-  assert.ok(earlyBreeze.nearby > 15, 'the near foliage reacts to the exhale')
-  assert.equal(earlyBreeze.distant, 0, 'the breeze takes longer to reach the opposite bank')
-  assert.equal(earlyBreeze.rock, 0, 'the bank stays stationary beneath the leaves')
+  assert.ok(await breezeIn([.41, .31, .50, .367]) > 10, 'the exposed branch moves in the breeze')
+  assert.equal(await breezeIn([.12, .43, .30, .48]), 0, 'the cliff face stays still')
   await capture(page, 'reset-exhale-390')
   let previous = first
   for (let second = 2; second <= 8; second++) {
@@ -172,46 +181,46 @@ try {
     const current = await waveSample()
     const motion = current.source.color.reduce((sum, shade, index) => sum + Math.abs(shade - previous.source.color[index]), 0) / current.source.color.length
     assert.ok(current.source.coverage > 40 && motion > .45, `fresh ripples remain visible in the source area at second ${second} (change ${motion})`)
-    if (second === 3) assert.ok((await measureMotion(trees)).distant > 15, 'leaves on the far bank catch the breeze')
+    if (second === 3) {
+      assert.ok(await breezeIn([.56, .32, .74, .417]) > 2, 'a loose leaf travels into the open cove')
+      await capture(page, 'reset-leaves-390')
+    }
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
-  function measureMotion(zones) {
-    return surface.evaluate((canvas, zones) => {
-      const gl = canvas.getContext('webgl')
-      const program = gl.getParameter(gl.CURRENT_PROGRAM)
-      const wave = gl.getUniformLocation(program, 'uWaveTime')
-      const time = gl.getUniform(program, wave)
-      const { width, height } = canvas
-      const readFrame = () => {
-        const pixels = new Uint8Array(width * height * 4)
-        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-        return pixels
-      }
-      const active = readFrame()
-      let still
-      try {
-        gl.uniform1f(wave, -1)
-        gl.drawArrays(gl.TRIANGLES, 0, 3)
-        still = readFrame()
-      } finally {
-        gl.uniform1f(wave, time)
-        gl.drawArrays(gl.TRIANGLES, 0, 3)
-      }
-      const change = (left, right, top, bottom) => {
-        let peak = 0
-        for (let y = Math.round(height * top); y < height * bottom; y++) {
-          for (let x = Math.round(width * left); x < width * right; x++) {
-            const i = ((height - 1 - y) * width + x) * 4
-            peak = Math.max(peak, Math.abs(active[i] - still[i]), Math.abs(active[i + 3] - still[i + 3]))
-          }
+  const shoreline = await surface.evaluate((canvas) => {
+    const gl = canvas.getContext('webgl')
+    const program = gl.getParameter(gl.CURRENT_PROGRAM)
+    const wave = gl.getUniformLocation(program, 'uWaveTime')
+    const time = gl.getUniform(program, wave)
+    const { width, height } = canvas
+    const readFrame = () => {
+      const pixels = new Uint8Array(width * height * 4)
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+      return pixels
+    }
+    const active = readFrame()
+    let still
+    try {
+      gl.uniform1f(wave, -1)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      still = readFrame()
+    } finally {
+      gl.uniform1f(wave, time)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    const change = (left, right, top, bottom) => {
+      let peak = 0
+      for (let y = Math.round(height * top); y < height * bottom; y++) {
+        for (let x = Math.round(width * left); x < width * right; x++) {
+          const i = ((height - 1 - y) * width + x) * 4
+          peak = Math.max(peak, Math.abs(active[i] - still[i]), Math.abs(active[i + 3] - still[i + 3]))
         }
-        return peak
       }
-      return Object.fromEntries(Object.entries(zones).map(([key, bounds]) => [key, change(...bounds)]))
-    }, zones)
-  }
-  const shoreline = await measureMotion({ farWater: [.57, .88, .332, .343], dryBank: [.12, .38, .333, .342] })
+      return peak
+    }
+    return { farWater: change(.57, .88, .332, .343), dryBank: change(.12, .38, .333, .342) }
+  })
   assert.ok(shoreline.farWater > 10, 'crests visibly reach the far waterline')
   assert.equal(shoreline.dryBank, 0, 'the shoreline confines wave motion to the lake')
   const regathered = await fogSample()
@@ -220,7 +229,7 @@ try {
   await page.clock.fastForward(400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 2 of 3')
-  assert.equal((await measureMotion(trees)).nearby, 0, 'the branches settle before the next inhale')
+  assert.equal(await wind.getAttribute('data-active'), null, 'the branches settle with the next inhale')
   assert.ok(Math.abs((await fogSample()).aboveWater - regathered.aboveWater) < 1.5, 'gathered fog carries smoothly into the next inhale')
   await page.clock.fastForward(16000)
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 3 of 3')

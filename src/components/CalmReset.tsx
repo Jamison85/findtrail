@@ -5,6 +5,7 @@ import { clearNextStep } from './clearNextStep'
 import { GUIDED_EXHALE_SECONDS, RESET_CYCLES, RIPPLE_TAIL_SECONDS } from './resetTiming'
 import { createBreathingLake } from './breathingLake'
 import { createLakeDepth } from './lakeDepth'
+import { createCoveWind } from './coveWind'
 
 interface CalmResetProps {
   search: ActiveSearch | null
@@ -36,6 +37,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const [running, setRunning] = useState(false)
   const [replay, setReplay] = useState(0)
   const lake = useRef<HTMLImageElement>(null)
+  const breeze = useRef<HTMLCanvasElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
   const depth = useRef<HTMLCanvasElement>(null)
   const scene = useRef<ReturnType<typeof createBreathingLake>>(null)
@@ -43,15 +45,17 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
-    if (reducedMotion || !lake.current || !water.current || !depth.current) return
+    if (reducedMotion || !lake.current || !breeze.current || !water.current || !depth.current) return
     const photo = lake.current
     const fallbackLayer = water.current
     const depthLayer = depth.current
+    const wind = createCoveWind(photo, breeze.current)
     let renderer: ReturnType<typeof createLakeDepth> = null
     let fallback: ReturnType<typeof createBreathingLake> | undefined
     let initialized = false
     const effect: ReturnType<typeof createBreathingLake> = {
       draw(motion, progress, waveTime, entry) {
+        wind.draw(motion === 'exhale' ? waveTime : undefined)
         if (motion && !initialized) {
           renderer = createLakeDepth(photo, depthLayer, LAKE_WATERLINE)
           initialized = true
@@ -63,6 +67,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
         } else fallback?.draw(null)
       },
       dispose() {
+        wind.dispose()
         renderer?.dispose()
         fallback?.dispose()
       },
@@ -140,6 +145,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     <section className="view reset-journey" aria-labelledby="view-heading">
       <div className="reset-journey__scene" aria-hidden="true">
         <img ref={lake} className="reset-journey__lake" src={LAKE_IMAGE} alt="" />
+        <canvas ref={breeze} className="reset-journey__wind" />
         <canvas ref={depth} className="reset-journey__water reset-journey__water--depth" />
         <canvas ref={water} className="reset-journey__water reset-journey__water--fallback" />
       </div>
