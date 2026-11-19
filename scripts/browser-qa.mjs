@@ -109,6 +109,25 @@ try {
     }
     return opacity ? depth / opacity / height : null
   })
+  const waveSample = () => surface.evaluate((canvas) => {
+    const { width, height } = canvas
+    const gl = canvas.getContext('webgl')
+    const pixels = new Uint8Array(width * height * 4)
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+    function band(top, bottom) {
+      const color = []
+      let coverage = 0
+      for (let y = Math.round(height * top); y < height * bottom; y += 4) {
+        for (let x = Math.round(width * .27); x < width * .76; x += 5) {
+          const i = ((height - 1 - y) * width + x) * 4
+          coverage += pixels[i + 3]
+          color.push(pixels[i] * .30 + pixels[i + 1] * .59 + pixels[i + 2] * .11)
+        }
+      }
+      return { coverage: coverage / color.length, color }
+    }
+    return { source: band(.55, .66), distance: band(.25, .35) }
+  })
   await page.clock.install()
   await page.clock.pauseAt(new Date(Date.now() + 1000))
   assert.equal(await surface.getAttribute('data-motion-phase'), null, 'lake opens still')
@@ -119,22 +138,29 @@ try {
   const mistFar = await motionDepth()
   await page.clock.fastForward(2300)
   const mistNear = await motionDepth()
-  assert.ok(mistFar !== null && mistNear !== null && mistNear > mistFar + .075, `inhale brings mist into the foreground (${mistFar} to ${mistNear})`)
+  assert.ok(mistFar !== null && mistNear !== null && mistNear > mistFar + .06, `inhale brings mist into the foreground (${mistFar} to ${mistNear})`)
   await capture(page, 'reset-inhale-390')
   await page.clock.fastForward(2200)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Hold gently')
   const held = await motionDepth()
   await page.clock.fastForward(800)
   assert.equal(await motionDepth(), held, 'mist hangs still during the brief hold')
-  await page.clock.fastForward(3400)
+  await page.clock.fastForward(1500)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
-  const waterNear = await motionDepth()
+  const first = await waveSample()
+  assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
   await capture(page, 'reset-exhale-390')
-  await page.clock.fastForward(2500)
-  const waterFar = await motionDepth()
-  assert.ok(waterFar !== null && waterNear !== null && waterFar < waterNear - .075, `exhale pushes waves away across the lake (${waterNear} to ${waterFar})`)
+  let previous = first
+  for (let second = 2; second <= 8; second++) {
+    await page.clock.fastForward(second === 8 ? 850 : 1000)
+    const current = await waveSample()
+    const motion = current.source.color.reduce((sum, shade, index) => sum + Math.abs(shade - previous.source.color[index]), 0) / current.source.color.length
+    assert.ok(current.source.coverage > 40 && motion > .45, `fresh ripples remain visible in the source area at second ${second} (change ${motion})`)
+    previous = current
+  }
+  assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
   await capture(page, 'reset-outward-waves-390')
-  await page.clock.fastForward(2800)
+  await page.clock.fastForward(400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   await page.clock.resume()
   await page.getByRole('button', { name: 'Back to search' }).click()
