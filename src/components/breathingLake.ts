@@ -4,14 +4,6 @@ export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
 // Photo coordinates for this cove, before the image is cropped to the screen.
 export const COVE_SHORELINE = { distant: .4843, left: .4956, leftSlope: .0029, leftStart: .541, leftEnd: .563, vanishing: .441 }
-// Small foliage clusters in uncropped photo coordinates. The outer needles and
-// leaves move first, with a much weaker response on the opposite bank.
-export const COVE_FOLIAGE = [
-  { x: .166, y: .342, width: .085, height: .046, delay: .26, strength: .0070, phase: .7 },
-  { x: .452, y: .342, width: .062, height: .038, delay: .40, strength: .0092, phase: 2.2 },
-  { x: .517, y: .421, width: .040, height: .031, delay: .61, strength: .0074, phase: 3.9 },
-  { x: .896, y: .425, width: .104, height: .034, delay: 1.66, strength: .0039, phase: 1.6 },
-] as const
 const FOG_SETTLED_HEIGHT = .64
 const FOG_SWOLLEN_HEIGHT = 1.12
 const FOG_MAX_LIFT = .66
@@ -69,7 +61,6 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
       lake ??= sampleLake(photo, canvas, context)
       if (!lake) return
       lake.overlay.data.fill(0)
-      if (waveTime >= 0 && waveTime < GUIDED_EXHALE_SECONDS) paintFoliage(lake, waveTime)
       if (waveTime >= 0) paintWaves(lake, waveTime)
       const fog = lakeFog(motion, progress, entry)
       if (fog.amount > .001) paintMist(lake, fog)
@@ -187,47 +178,6 @@ function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnT
       overlay.data[pixel + 1] = ((162 + source[pixel + 1] * .18) * mist + overlay.data[pixel + 1] * water) / total
       overlay.data[pixel + 2] = ((150 + source[pixel + 2] * .18) * mist + overlay.data[pixel + 2] * water) / total
       overlay.data[pixel + 3] = total
-    }
-  }
-}
-
-function paintFoliage({ width, height, source, overlay, cropLeft, cropTop, cropWidth, cropHeight }: LakeSurface, time: number) {
-  const ending = 1 - smooth((time - (GUIDED_EXHALE_SECONDS - 1.04)) / .76)
-  for (const cluster of COVE_FOLIAGE) {
-    const age = time - cluster.delay
-    const envelope = smooth(age / .55) * ending
-    const gust = envelope * cluster.strength
-    if (!gust) continue
-
-    const bend = .56 * Math.sin(age * 4.2 + cluster.phase) + .29 * Math.sin(age * 7.9 + cluster.phase * 1.9) + .15 * Math.sin(age * 13.3)
-    const flutter = .38 * Math.sin(age * 8.4 + cluster.phase) + .20 * Math.sin(age * 15.4 - cluster.phase)
-    const cx = (cluster.x - cropLeft) / cropWidth * width
-    const cy = (cluster.y - cropTop) / cropHeight * height
-    const rx = cluster.width / cropWidth * width
-    const ry = cluster.height / cropHeight * height
-    const dx = gust * (.25 + bend) / cropWidth * width
-    const dy = gust * (.22 * bend + .36 * flutter) / cropHeight * height
-
-    for (let y = Math.max(0, Math.ceil(cy - ry)); y < Math.min(height, cy + ry); y++) {
-      for (let x = Math.max(0, Math.ceil(cx - rx)); x < Math.min(width, cx + rx); x++) {
-        const strength = 1 - smooth((Math.hypot((x - cx) / rx, (y - cy) / ry) - .26) / .74)
-        if (strength < .01) continue
-        const sx = Math.max(0, Math.min(width - 1, x - dx * strength))
-        const sy = Math.max(0, Math.min(height - 1, y - dy * strength))
-        const left = Math.floor(sx)
-        const top = Math.floor(sy)
-        const right = Math.min(left + 1, width - 1)
-        const bottom = Math.min(top + 1, height - 1)
-        const mx = sx - left
-        const my = sy - top
-        const pixel = (y * width + x) * 4
-        for (let channel = 0; channel < 3; channel++) {
-          const a = source[(top * width + left) * 4 + channel] * (1 - mx) + source[(top * width + right) * 4 + channel] * mx
-          const b = source[(bottom * width + left) * 4 + channel] * (1 - mx) + source[(bottom * width + right) * 4 + channel] * mx
-          overlay.data[pixel + channel] = a * (1 - my) + b * my
-        }
-        overlay.data[pixel + 3] = 255 * strength * envelope
-      }
     }
   }
 }
