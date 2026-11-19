@@ -1,21 +1,26 @@
-import { GUIDED_EXHALE_SECONDS, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
 const HELD_FOG = .18
+const FULL_FOG = 1.14
+const READY_FOG = .59
 
-export function lakeFog(motion: LakeMotion, progress: number) {
-  if (motion === 'tail') return { distance: 0, amount: 0, height: 1 }
+export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
+  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: 1 }
   if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: 1 }
-  if (motion === 'inhale') return {
-    distance: progress,
-    amount: smooth(progress / .25) * (1 - (1 - HELD_FOG) * smooth((progress - .71) / .29)),
-    height: 1,
+  if (motion === 'inhale') {
+    const gathered = READY_FOG + (FULL_FOG - READY_FOG) * smooth(progress / .40)
+    return {
+      distance: progress,
+      amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .71) / .29)),
+      height: 1,
+    }
   }
   return {
-    distance: 1 - .84 * smooth(progress / .91),
-    amount: (HELD_FOG + .25 * smooth(progress / .24)) * (1 - smooth((progress - .54) / .44)),
-    height: 1 - .34 * smooth(progress / .35),
+    distance: 1 - smooth(progress),
+    amount: HELD_FOG + .22 * smooth(progress / .32) + (READY_FOG - HELD_FOG - .22) * smooth((progress - .48) / .52),
+    height: 1 - .34 * Math.sin(Math.PI * progress),
   }
 }
 
@@ -29,7 +34,7 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
   observer?.observe(canvas)
 
   return {
-    draw(motion: LakeMotion | null, progress = 0, waveTime = -1) {
+    draw(motion: LakeMotion | null, progress = 0, waveTime = -1, entry = 1) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -42,7 +47,7 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
       if (!lake) return
       lake.overlay.data.fill(0)
       if (waveTime >= 0) paintWaves(lake, waveTime)
-      const fog = lakeFog(motion, progress)
+      const fog = lakeFog(motion, progress, entry)
       if (fog.amount > .001) paintMist(lake, fog)
       context.putImageData(lake.overlay, 0, 0)
     },
@@ -166,8 +171,11 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: nu
     for (let x = 0; x < width; x++) {
       const across = x / width - .5
       const distance = Math.hypot((depth - .22) / Math.max(.12, 1 - depth) * 3.8, across * 3.0)
-      const emitted = seconds - distance / RIPPLE_SPEED
-      const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18)) * (1 - .64 * smooth(distance / 19))
+      const emitted = seconds - distance / RIPPLE_SPEED - RIPPLE_DRAG * distance ** 2
+      const angle = (depth - .22) / Math.max(.12, 1 - depth) * 3.8 / Math.max(.001, distance)
+      const spread = .70 - .85 * smooth((distance - .20) / 8.2)
+      const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18))
+        * (1 - .77 * smooth((distance - 1.15) / 15.25)) * smooth((angle - spread) / .29)
       if (envelope < .008) continue
       const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6)
       const texture = Math.sin(emitted * RIPPLE_RATE * 1.82 - across * 6.0) * .24

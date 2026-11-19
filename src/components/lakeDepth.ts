@@ -1,5 +1,5 @@
 import { lakeFog, type LakeMotion } from './breathingLake'
-import { GUIDED_EXHALE_SECONDS, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 const vertexSource = `
 attribute vec2 aPosition;
@@ -31,7 +31,7 @@ vec2 fogVolume(vec3 ray, float progress, float height) {
   float drift = smoothstep(0.0, 1.0, progress);
   float center = mix(31.0, 4.5, drift);
   float span = mix(9.5, 3.5, drift);
-  float ceiling = height * mix(1.67, 3.48, drift);
+  float ceiling = height * mix(2.72, 3.80, drift);
   vec2 extinction = vec2(0.0);
   for (int i = 0; i < 24; i++) {
     float offset = (float(i) + .5) / 24.0 * 2.0 - 1.0;
@@ -67,23 +67,25 @@ void main() {
     // Cast the camera ray into a horizontal world-space water plane. The same
     // wavelength covers fewer pixels with distance, and the front widens in 3D.
     vec2 world = (ray.xz * (-cameraHeight / ray.y));
-    vec2 radial = world - vec2(.14, 3.74);
-    float distance = length(radial);
+    vec2 radial = world - vec2(.06, 3.74);
+    float curve = 1.18 + .22 * smoothstep(.04, 3.9, -radial.x);
+    vec2 fan = vec2(radial.x * curve - radial.y * .09, radial.y);
+    float distance = length(fan);
     // Evaluate when the crest at this point left the source. New crests form
     // there throughout the exhale while older ones continue outward.
-    float emitted = uWaveTime - distance / ${RIPPLE_SPEED.toFixed(2)};
+    float travel = distance / ${RIPPLE_SPEED.toFixed(2)} + ${RIPPLE_DRAG} * distance * distance;
+    float emitted = uWaveTime - travel;
     float feed = smoothstep(0.0, .40, emitted) * (1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + .18).toFixed(2)}, emitted));
     float settle = 1.0 - smoothstep(${GUIDED_EXHALE_SECONDS.toFixed(1)}, ${(GUIDED_EXHALE_SECONDS + RIPPLE_TAIL_SECONDS).toFixed(1)}, uWaveTime);
-    float angle = radial.y / max(.001, distance);
-    float spread = mix(.24, -.08, smoothstep(.45, 10.7, distance));
-    float outward = smoothstep(spread, spread + .54, angle) * smoothstep(-.12, .55, radial.y);
-    float falloff = (1.0 - .67 * smoothstep(1.5, 17.5, distance)) * smoothstep(.045, .31, distance);
-    float waterEdge = smoothstep(.024, .076, uv.y - uHorizon);
-    float silhouette = smoothstep(.005, .10, canvas.x) * smoothstep(.005, .12, 1.0 - canvas.x);
+    float angle = fan.y / max(.001, distance);
+    float spread = mix(.70, -.15, smoothstep(.2, 8.4, distance));
+    float outward = smoothstep(spread, spread + .29, angle);
+    float falloff = (1.0 - .77 * smoothstep(1.15, 16.4, distance)) * smoothstep(.025, .17, distance);
+    float waterEdge = smoothstep(.017, .039, uv.y - uHorizon);
     float bandEdge = smoothstep(.01, .16, canvas.y);
-    float weight = feed * settle * outward * falloff * waterEdge * bandEdge * silhouette;
+    float weight = feed * settle * outward * falloff * waterEdge * bandEdge;
     if (weight > .002) {
-      vec2 direction = normalize(radial + vec2(.001));
+      vec2 direction = normalize(vec2(fan.x * curve, fan.y - .09 * fan.x) + vec2(.001));
       float variance = texture2D(uNoise, world * .062).r;
       float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78;
       float wave = sin(crest + world.x * .09);
@@ -236,7 +238,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
 
   return {
     available: () => !lost && !gl.isContextLost(),
-    draw(motion: LakeMotion | null, fraction = 0, elapsedWave = -1) {
+    draw(motion: LakeMotion | null, fraction = 0, elapsedWave = -1, entry = 1) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -249,7 +251,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
       }
       if (motion === 'hold' && canvas.dataset.motionPhase === motion && !needsResize) return
       if (needsResize && !resize(gl)) return
-      const mist = lakeFog(motion, fraction)
+      const mist = lakeFog(motion, fraction, entry)
       gl.uniform3f(fog, mist.distance, mist.amount, mist.height)
       gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)

@@ -766,7 +766,7 @@ export default function App() {
         {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
-        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} reducedMotion={shouldReduceMotion(data.settings)} onResume={() => {
+        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} reducedMotion={shouldReduceMotion(data.settings)} onHome={() => navigate('home')} onResume={() => {
           if (active && (returnScreen === 'clues' || returnScreen === 'found')) resumeSearch()
           else setScreen(active ? returnScreen : 'home')
         }} />}
