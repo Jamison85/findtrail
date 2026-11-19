@@ -2,21 +2,30 @@ import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, R
 
 export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
+// Photo coordinates for this cove, before the image is cropped to the screen.
+export const COVE_SHORELINE = { distant: .4843, left: .4956, leftSlope: .0029, leftStart: .541, leftEnd: .563, vanishing: .441 }
+const FOG_SETTLED_HEIGHT = .64
+const FOG_SWOLLEN_HEIGHT = 1.12
+const FOG_MAX_LIFT = .66
 const HELD_FOG = .18
 const FULL_FOG = 2.05
 const RELEASED_FOG = 1.42
 const READY_FOG = .82
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
-  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: 1, sway: 0 }
-  if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: 1, sway: 0 }
+  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: FOG_SETTLED_HEIGHT, lift: 0, sway: 0 }
+  if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: FOG_SWOLLEN_HEIGHT, lift: FOG_MAX_LIFT, sway: 0 }
   const gust = 4 * progress * (1 - progress)
+  const swell = smooth(motion === 'inhale' ? progress : 1 - progress)
+  const height = FOG_SETTLED_HEIGHT + (FOG_SWOLLEN_HEIGHT - FOG_SETTLED_HEIGHT) * swell
+  const lift = FOG_MAX_LIFT * swell
   if (motion === 'inhale') {
     const gathered = READY_FOG + (FULL_FOG - READY_FOG) * smooth(progress / .40)
     return {
       distance: progress,
       amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .71) / .29)),
-      height: 1,
+      height,
+      lift,
       sway: gust,
     }
   }
@@ -24,7 +33,8 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
   return {
     distance: 1 - progress,
     amount: released + (READY_FOG - released) * smooth((progress - .52) / .48),
-    height: 1 + .19 * Math.sin(Math.PI * progress),
+    height,
+    lift,
     sway: gust > 0 ? -gust : 0,
   }
 }
@@ -82,6 +92,10 @@ function sampleLake(photo: HTMLImageElement, canvas: HTMLCanvasElement, context:
   context.drawImage(photo, left * resolution, top * resolution, imageWidth * resolution, imageHeight * resolution)
   return {
     width, height,
+    cropLeft: -left / imageWidth,
+    cropTop: -top / imageHeight,
+    cropWidth: frame.width / imageWidth,
+    cropHeight: frame.height / imageHeight,
     source: context.getImageData(0, 0, width, height).data,
     overlay: context.createImageData(width, height),
   }
@@ -130,7 +144,7 @@ for (const { width, height, weight, seed } of MIST_LAYERS) {
 
 function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnType<typeof lakeFog>) {
   const drift = smooth(fog.distance)
-  const center = .27 + drift * .25
+  const center = .27 + drift * .25 - fog.lift * .16
   const depth = (.12 + drift * .22) * fog.height
   const spread = .48 + drift * .36
   for (let y = 0; y < height; y++) {
@@ -168,27 +182,36 @@ function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnT
   }
 }
 
-function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: number) {
+function paintWaves({ width, height, source, overlay, cropLeft, cropTop, cropWidth, cropHeight }: LakeSurface, seconds: number) {
   const settling = 1 - smooth((seconds - GUIDED_EXHALE_SECONDS) / RIPPLE_TAIL_SECONDS)
+  const { distant, left, leftSlope, leftStart, leftEnd, vanishing } = COVE_SHORELINE
 
   for (let y = 0; y < height; y++) {
-    const depth = (1 - y / height) * (.49 / .36)
-    if (depth < .22 || depth >= 1) continue
-    const taper = settling * smooth((depth - .22) / .15) * smooth((1 - depth) / .30)
+    const photoY = cropTop + y / height * cropHeight
+    if (photoY <= distant) continue
+    const distanceForward = .9594 / (photoY - vanishing) - 3.14
+    if (distanceForward <= 0) continue
+    const taper = settling * smooth(distanceForward / .60)
     for (let x = 0; x < width; x++) {
       const across = x / width - .5
-      const distance = Math.hypot((depth - .22) / Math.max(.12, 1 - depth) * 3.8, across * 3.0)
+      const photoX = cropLeft + x / width * cropWidth
+      const nearBank = left - leftSlope * smooth((photoX - .10) / .43)
+      const waterline = nearBank + (distant - nearBank) * smooth((photoX - leftStart) / (leftEnd - leftStart))
+      const waterEdge = smooth((photoY - waterline) / .004)
+      if (waterEdge === 0) continue
+      const distance = Math.hypot(distanceForward, across * (3.0 + .23 * distanceForward))
       const travel = distance / RIPPLE_SPEED + RIPPLE_DRAG * distance ** 2 / (1 + RIPPLE_DRAG_FALLOFF * distance)
       const emitted = seconds - travel
-      const angle = (depth - .22) / Math.max(.12, 1 - depth) * 3.8 / Math.max(.001, distance)
+      const angle = distanceForward / distance
       const spread = .70 - .96 * smooth((distance - .20) / 6.7)
       const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18))
         * (1 - .77 * smooth((distance - 1.15) / 23.85)) * smooth((angle - spread) / .29)
       if (envelope < .008) continue
       const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6)
       const texture = Math.sin(emitted * RIPPLE_RATE * 1.82 - across * 6.0) * .24
-      const push = (slope + texture) * taper * envelope * 1.17
-      const reflectedY = Math.min(height - 1, Math.max(0, y + push * (8 - 3 * depth)))
+      const shallows = .27 + .73 * smooth((photoY - waterline - .0018) / .0552)
+      const push = (slope + texture) * taper * envelope * 1.17 * shallows
+      const reflectedY = Math.min(height - 1, Math.max(0, (waterline - cropTop) / cropHeight * height, y + push * 6))
       const near = Math.floor(reflectedY)
       const mix = reflectedY - near
       const a = (near * width + x) * 4
@@ -199,7 +222,7 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: nu
       overlay.data[pixel] = source[a] * (1 - mix) + source[b] * mix + light
       overlay.data[pixel + 1] = source[a + 1] * (1 - mix) + source[b + 1] * mix + light * .83
       overlay.data[pixel + 2] = source[a + 2] * (1 - mix) + source[b + 2] * mix + light * .61
-      overlay.data[pixel + 3] = 255 * edgeFade * Math.min(1, envelope * 3) * smooth(taper / .09)
+      overlay.data[pixel + 3] = 255 * edgeFade * waterEdge * Math.min(1, envelope * 3) * smooth(taper / .09)
     }
   }
 }

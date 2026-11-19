@@ -18,6 +18,10 @@ describe('CalmReset', () => {
     expect(lakeFog('exhale', .25).amount).toBeGreaterThan(lakeFog('exhale', 1).amount)
     expect(lakeFog('inhale', .5).sway).toBeGreaterThan(0)
     expect(lakeFog('exhale', .5).sway).toBeLessThan(0)
+    expect(lakeFog('inhale', .75).height).toBeGreaterThan(lakeFog('inhale', .25).height)
+    expect(lakeFog('inhale', .75).lift).toBeGreaterThan(lakeFog('inhale', .25).lift)
+    expect(lakeFog('exhale', .75).height).toBeLessThan(lakeFog('exhale', .25).height)
+    expect(lakeFog('exhale', .75).lift).toBeLessThan(lakeFog('exhale', .25).lift)
   })
 
   it('keeps both exits available while leaving the trail saved', () => {

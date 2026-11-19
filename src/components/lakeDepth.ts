@@ -1,4 +1,4 @@
-import { lakeFog, type LakeMotion } from './breathingLake'
+import { COVE_SHORELINE, lakeFog, type LakeMotion } from './breathingLake'
 import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 const vertexSource = `
@@ -16,6 +16,7 @@ uniform vec2 uBand;
 uniform float uAspect;
 uniform float uHorizon;
 uniform vec4 uFog;
+uniform float uFogLift;
 uniform float uWaveTime;
 
 const float focal = .78;
@@ -23,6 +24,13 @@ const float cameraHeight = 1.23;
 
 vec3 photograph(vec2 uv) {
   return texture2D(uPhoto, clamp(uv * uCrop.xy + uCrop.zw, .001, .999)).rgb;
+}
+
+float shoreAt(float x) {
+  float photoX = x * uCrop.x + uCrop.z;
+  float nearBank = ${COVE_SHORELINE.left} - ${COVE_SHORELINE.leftSlope} * smoothstep(.10, .53, photoX);
+  float bank = mix(nearBank, ${COVE_SHORELINE.distant}, smoothstep(${COVE_SHORELINE.leftStart}, ${COVE_SHORELINE.leftEnd}, photoX));
+  return (bank - uCrop.w) / uCrop.y;
 }
 
 // Sample the same air on both sides of the water plane. Samples below it
@@ -38,7 +46,7 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
     float z = center + offset * span;
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
     float altitude = abs(p.y);
-    if (altitude < ceiling) {
+    if (altitude < ceiling + uFogLift) {
       // Higher strands and the front of the bank catch the crosswind first.
       float crosswind = sway * (.99 + .34 * sin(2.1 * offset - .85 * altitude) + .15 * altitude);
       float plumeX = p.x - crosswind;
@@ -47,9 +55,12 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
       float threads = texture2D(uNoise, flow * vec2(2.9, 1.7) + vec2(altitude * .10, .33)).r;
       float curl = texture2D(uNoise, flow * vec2(1.21, 2.4) + vec2(.19, .78)).r;
       float roof = ceiling * mix(.39, 1.0, .73 * billows + .27 * curl);
-      float core = 1.0 - smoothstep(roof * .13, roof * .66, altitude);
-      float rising = smoothstep(roof * .23, roof * .51, altitude) * (1.0 - smoothstep(roof * .63, roof, altitude));
-      float density = .8 * core * smoothstep(.23, .71, .76 * billows + .24 * threads);
+      float lifted = altitude - uFogLift;
+      float core = 1.0 - smoothstep(roof * .13, roof * .66, lifted);
+      core *= smoothstep(-.37, .13, lifted);
+      float rising = smoothstep(roof * .23, roof * .51, lifted) * (1.0 - smoothstep(roof * .63, roof, lifted));
+      float floorMist = .20 * (1.0 - smoothstep(.02, roof * .47, altitude));
+      float density = (.8 * core + floorMist) * smoothstep(.23, .71, .76 * billows + .24 * threads);
       density += rising * 1.21 * smoothstep(.28, .80, .61 * curl + .39 * threads);
       float across = 1.0 - smoothstep(1.8, mix(8.1, 6.2, drift), abs(plumeX - .47 + .019 * z));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
@@ -65,12 +76,15 @@ void main() {
   vec3 ray = vec3((uv.x - .5) * uAspect, uHorizon - uv.y, focal);
   vec3 color = vec3(0.0);
   float opacity = 0.0;
+  float shoreline = shoreAt(uv.x);
 
-  if (uWaveTime >= 0.0 && ray.y < -.018) {
-    // Cast the camera ray into a horizontal world-space water plane. The same
-    // wavelength covers fewer pixels with distance, and the front widens in 3D.
-    vec2 world = (ray.xz * (-cameraHeight / ray.y));
-    vec2 radial = world - vec2(.06, 3.74);
+  if (uWaveTime >= 0.0 && uv.y > shoreline) {
+    // The photographed shore is a finite distance from the lens. An optical
+    // vanishing line above the banks keeps the last crests on that water.
+    float vanishing = (${COVE_SHORELINE.vanishing} - uCrop.w) / uCrop.y;
+    vec3 waterRay = vec3(ray.x, vanishing - uv.y, focal);
+    vec2 world = waterRay.xz * (-cameraHeight / waterRay.y);
+    vec2 radial = world - vec2(.06, 3.14);
     float curve = 1.18 + .22 * smoothstep(.04, 3.9, -radial.x);
     vec2 fan = vec2(radial.x * curve - radial.y * .09, radial.y);
     float distance = length(fan);
@@ -85,27 +99,30 @@ void main() {
     float spread = mix(.70, -.26, smoothstep(.2, 6.9, distance));
     float outward = smoothstep(spread, spread + .29, angle);
     float falloff = (1.0 - .77 * smoothstep(1.15, 25.0, distance)) * smoothstep(.025, .17, distance);
-    float waterEdge = smoothstep(.012, .027, uv.y - uHorizon);
+    float waterEdge = smoothstep(0.0, .004 / uCrop.y, uv.y - shoreline);
     float bandEdge = smoothstep(.01, .16, canvas.y);
     float weight = feed * settle * outward * falloff * waterEdge * bandEdge;
     if (weight > .002) {
+      float shallows = mix(.27, 1.0, smoothstep(.0018, .057, (uv.y - shoreline) * uCrop.y));
       vec2 direction = normalize(vec2(fan.x * curve, fan.y - .09 * fan.x) + vec2(.001));
       float variance = texture2D(uNoise, world * .062).r;
       float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78;
       float wave = sin(crest + world.x * .09);
       float detail = sin(crest * 1.82 - world.x * .39);
-      vec2 slope = (wave * .00625 + detail * .00145) * direction * weight;
-      slope.x += detail * .0025 * weight;
+      vec2 slope = (wave * .00625 + detail * .00145) * direction * weight * shallows;
+      slope.x += detail * .0025 * weight * shallows;
       vec3 normal = normalize(vec3(-slope.x, 1.0, -slope.y));
-      vec3 reflected = reflect(ray, normal);
+      vec3 reflected = reflect(waterRay, normal);
       vec2 imageRay = reflected.xy / reflected.z;
-      vec2 sampleAt = vec2(.5 + imageRay.x * focal / uAspect, uHorizon + imageRay.y * focal);
+      vec2 sampleAt = vec2(.5 + imageRay.x * focal / uAspect, vanishing + imageRay.y * focal);
       vec2 offset = clamp(sampleAt - uv, vec2(-.008, -.010), vec2(.008, .010));
-      color = photograph(uv + offset);
-      float flatAngle = max(.0, -normalize(ray).y);
-      float surfaceAngle = max(.0, dot(-normalize(ray), normal));
+      vec2 disturbed = uv + offset;
+      disturbed.y = max(disturbed.y, shoreAt(disturbed.x));
+      color = photograph(disturbed);
+      float flatAngle = max(.0, -normalize(waterRay).y);
+      float surfaceAngle = max(.0, dot(-normalize(waterRay), normal));
       float fresnel = pow(1.0 - surfaceAngle, 5.0) - pow(1.0 - flatAngle, 5.0);
-      color += vec3(.47, .43, .37) * fresnel + weight * wave * vec3(.028, .023, .018);
+      color += vec3(.47, .43, .37) * fresnel + weight * shallows * wave * vec3(.028, .023, .018);
       opacity = smoothstep(.001, .145, weight);
     }
   }
@@ -205,6 +222,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
   const horizon = gl.getUniformLocation(program, 'uHorizon')
   const aspect = gl.getUniformLocation(program, 'uAspect')
   const fog = gl.getUniformLocation(program, 'uFog')
+  const fogLift = gl.getUniformLocation(program, 'uFogLift')
   const waveTime = gl.getUniformLocation(program, 'uWaveTime')
   let needsResize = true
   let uploaded = false
@@ -257,6 +275,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
       if (needsResize && !resize(gl)) return
       const mist = lakeFog(motion, fraction, entry)
       gl.uniform4f(fog, mist.distance, mist.amount, mist.height, mist.sway)
+      gl.uniform1f(fogLift, mist.lift)
       gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       canvas.dataset.motionPhase = motion
