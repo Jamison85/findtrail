@@ -27,11 +27,11 @@ vec3 photograph(vec2 uv) {
 
 // Sample the same air on both sides of the water plane. Samples below it
 // are seen in reflection, with a weaker contribution than the air itself.
-vec2 fogVolume(vec3 ray, float progress, float height) {
+vec2 fogVolume(vec3 ray, float progress, float height, float amount) {
   float drift = smoothstep(0.0, 1.0, progress);
   float center = mix(31.0, 4.5, drift);
-  float span = mix(9.5, 3.5, drift);
-  float ceiling = height * mix(2.72, 3.80, drift);
+  float span = mix(10.4, 3.85, drift);
+  float ceiling = height * mix(3.10, 4.48, drift);
   vec2 extinction = vec2(0.0);
   for (int i = 0; i < 24; i++) {
     float offset = (float(i) + .5) / 24.0 * 2.0 - 1.0;
@@ -39,21 +39,21 @@ vec2 fogVolume(vec3 ray, float progress, float height) {
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
     float altitude = abs(p.y);
     if (altitude < ceiling) {
-      vec2 flow = vec2(p.x * .024 + altitude * .036 - .021 * drift, offset * .102 + altitude * .083);
+      vec2 flow = vec2(p.x * .027 + altitude * .039 - .025 * drift, offset * .105 + altitude * .078);
       float billows = texture2D(uNoise, flow + vec2(.62, .26)).r;
       float threads = texture2D(uNoise, flow * vec2(2.9, 1.7) + vec2(altitude * .10, .33)).r;
       float curl = texture2D(uNoise, flow * vec2(1.21, 2.4) + vec2(.19, .78)).r;
-      float roof = ceiling * mix(.50, 1.0, billows);
-      float core = 1.0 - smoothstep(roof * .16, roof * .64, altitude);
-      float rising = smoothstep(roof * .23, roof * .48, altitude) * (1.0 - smoothstep(roof * .66, roof, altitude));
-      float density = .73 * core * smoothstep(.22, .70, .72 * billows + .28 * threads);
-      density += rising * .82 * smoothstep(.29, .83, .67 * curl + .33 * threads);
-      float across = 1.0 - smoothstep(1.75, mix(7.2, 5.4, drift), abs(p.x - .54 + .019 * z));
+      float roof = ceiling * mix(.39, 1.0, .73 * billows + .27 * curl);
+      float core = 1.0 - smoothstep(roof * .13, roof * .66, altitude);
+      float rising = smoothstep(roof * .23, roof * .51, altitude) * (1.0 - smoothstep(roof * .63, roof, altitude));
+      float density = .8 * core * smoothstep(.23, .71, .76 * billows + .24 * threads);
+      density += rising * 1.21 * smoothstep(.28, .80, .61 * curl + .39 * threads);
+      float across = 1.0 - smoothstep(1.8, mix(8.1, 6.2, drift), abs(p.x - .47 + .019 * z));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
       extinction += vec2(1.0 - reflection, reflection) * density * across * (1.0 - offset * offset) * .168;
     }
   }
-  return 1.0 - exp(-extinction * vec2(1.0, .19));
+  return 1.0 - exp(-extinction * vec2(1.0, .15) * amount);
 }
 
 void main() {
@@ -90,27 +90,27 @@ void main() {
       float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78;
       float wave = sin(crest + world.x * .09);
       float detail = sin(crest * 1.82 - world.x * .39);
-      vec2 slope = (wave * .0052 + detail * .0012) * direction * weight;
-      slope.x += detail * .0022 * weight;
+      vec2 slope = (wave * .00625 + detail * .00145) * direction * weight;
+      slope.x += detail * .0025 * weight;
       vec3 normal = normalize(vec3(-slope.x, 1.0, -slope.y));
       vec3 reflected = reflect(ray, normal);
       vec2 imageRay = reflected.xy / reflected.z;
       vec2 sampleAt = vec2(.5 + imageRay.x * focal / uAspect, uHorizon + imageRay.y * focal);
-      vec2 offset = clamp(sampleAt - uv, vec2(-.007, -.009), vec2(.007, .009));
+      vec2 offset = clamp(sampleAt - uv, vec2(-.008, -.010), vec2(.008, .010));
       color = photograph(uv + offset);
       float flatAngle = max(.0, -normalize(ray).y);
       float surfaceAngle = max(.0, dot(-normalize(ray), normal));
       float fresnel = pow(1.0 - surfaceAngle, 5.0) - pow(1.0 - flatAngle, 5.0);
-      color += vec3(.47, .43, .37) * fresnel + weight * wave * vec3(.023, .019, .015);
+      color += vec3(.47, .43, .37) * fresnel + weight * wave * vec3(.028, .023, .018);
       opacity = smoothstep(.001, .145, weight);
     }
   }
 
   if (uFog.y > .001) {
     float approach = uFog.x;
-    vec2 streams = fogVolume(ray, approach, uFog.z) * uFog.y;
+    vec2 streams = fogVolume(ray, approach, uFog.z, uFog.y);
     streams *= smoothstep(0.0, .14, canvas.y) * smoothstep(.0, .11, 1.0 - canvas.y);
-    float opening = smoothstep(.35 - approach * .15, .68 - approach * .18, uv.x);
+    float opening = smoothstep(.29 - approach * .14, .64 - approach * .18, uv.x);
     float aboveShore = 1.0 - smoothstep(-.014, .103, uv.y - uHorizon);
     streams.x *= mix(1.0, opening, aboveShore * .95);
     streams.y *= smoothstep(.003, .039, uv.y - uHorizon);
@@ -121,7 +121,7 @@ void main() {
     vec3 cool = mix(photograph(vec2(.82, uHorizon - .288)), vec3(.78, .81, .82), .71);
     float sunlight = smoothstep(.26, .84, uv.x) * (1.0 - approach * .26);
     vec3 local = photograph(uv);
-    vec3 direct = mix(mix(cool, warm, sunlight), local, .12);
+    vec3 direct = mix(mix(cool, warm, sunlight), local, .08);
     vec3 reflected = mix(direct * .87, local, .46);
     vec3 light = (direct * streams.x + reflected * streams.y * (1.0 - streams.x)) / max(.00001, fog);
     color = (color * opacity * (1.0 - fog) + light * fog) / max(.00001, opacity * (1.0 - fog) + fog);
