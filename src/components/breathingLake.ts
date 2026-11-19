@@ -7,15 +7,15 @@ export const COVE_SHORELINE = { distant: .4843, left: .4956, leftSlope: .0029, l
 const FOG_SETTLED_HEIGHT = .64
 const FOG_SWOLLEN_HEIGHT = 1.12
 const FOG_MAX_LIFT = .66
-const HELD_FOG = .18
-const FULL_FOG = 2.05
-const RELEASED_FOG = 1.42
-const READY_FOG = .82
+const HELD_FOG = 1.52
+const FULL_FOG = 1.95
+const RELEASED_FOG = 1.76
+const READY_FOG = .88
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
   if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: FOG_SETTLED_HEIGHT, lift: 0, sway: 0 }
   if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: FOG_SWOLLEN_HEIGHT, lift: FOG_MAX_LIFT, sway: 0 }
-  const gust = 4 * progress * (1 - progress)
+  const gust = (4 * progress * (1 - progress)) ** 2
   const swell = smooth(motion === 'inhale' ? progress : 1 - progress)
   const height = FOG_SETTLED_HEIGHT + (FOG_SWOLLEN_HEIGHT - FOG_SETTLED_HEIGHT) * swell
   const lift = FOG_MAX_LIFT * swell
@@ -23,13 +23,13 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
     const gathered = READY_FOG + (FULL_FOG - READY_FOG) * smooth(progress / .40)
     return {
       distance: progress,
-      amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .71) / .29)),
+      amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .66) / .34)),
       height,
       lift,
       sway: gust,
     }
   }
-  const released = HELD_FOG + (RELEASED_FOG - HELD_FOG) * smooth(progress / .23)
+  const released = HELD_FOG + (RELEASED_FOG - HELD_FOG) * smooth(progress / .46)
   return {
     distance: 1 - progress,
     amount: released + (READY_FOG - released) * smooth((progress - .52) / .48),
@@ -49,7 +49,7 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
   observer?.observe(canvas)
 
   return {
-    draw(motion: LakeMotion | null, progress = 0, waveTime = -1, entry = 1) {
+    draw(motion: LakeMotion | null, progress = 0, waveTime = -1, seconds = 0) {
       if (!motion) {
         canvas.removeAttribute('data-motion-phase')
         return
@@ -57,13 +57,12 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
       const samePhase = canvas.dataset.motionPhase === motion
       if (!samePhase) canvas.dataset.motionPhase = motion
       if (!context || !photo.naturalWidth) return
-      if (motion === 'hold' && samePhase && lake) return
       lake ??= sampleLake(photo, canvas, context)
       if (!lake) return
       lake.overlay.data.fill(0)
       if (waveTime >= 0) paintWaves(lake, waveTime)
-      const fog = lakeFog(motion, progress, entry)
-      if (fog.amount > .001) paintMist(lake, fog)
+      const fog = lakeFog(motion, progress, seconds / 1.2)
+      if (fog.amount > .001) paintMist(lake, fog, seconds)
       context.putImageData(lake.overlay, 0, 0)
     },
     dispose() {
@@ -142,31 +141,43 @@ for (const { width, height, weight, seed } of MIST_LAYERS) {
   }
 }
 
-function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnType<typeof lakeFog>) {
+function mistAt(x: number, y: number) {
+  const textureX = (x - Math.floor(x)) * MIST_SIZE
+  const textureY = (y - Math.floor(y)) * MIST_SIZE
+  const col = Math.floor(textureX)
+  const row = Math.floor(textureY)
+  const nextCol = (col + 1) % MIST_SIZE
+  const nextRow = (row + 1) % MIST_SIZE
+  const u = textureX - col
+  const v = textureY - row
+  const near = mistTexture[row * MIST_SIZE + col] * (1 - u) + mistTexture[row * MIST_SIZE + nextCol] * u
+  const far = mistTexture[nextRow * MIST_SIZE + col] * (1 - u) + mistTexture[nextRow * MIST_SIZE + nextCol] * u
+  return near * (1 - v) + far * v
+}
+
+function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnType<typeof lakeFog>, seconds: number) {
   const drift = smooth(fog.distance)
   const center = .27 + drift * .25 - fog.lift * .16
   const depth = (.12 + drift * .22) * fog.height
   const spread = .48 + drift * .36
-  for (let y = 0; y < height; y++) {
+  const driftX = fog.sway * .085
+  const bankLift = Float32Array.from({ length: width }, (_, x) =>
+    (mistAt(x / width * .57 + .26 - seconds * .009, .55 + seconds * .004) - .5) * .92)
+  const start = Math.max(0, Math.floor((center - depth * 1.46) * height))
+  const end = Math.min(height, Math.ceil((center + depth * 1.46) * height))
+  for (let y = start; y < end; y++) {
     const level = y / height
-    const distance = (level - center) / depth
-    if (Math.abs(distance) >= 1) continue
-    const body = (1 - distance * distance) ** 2 * fog.amount * smooth(level / .11) * smooth((1 - level) / .18)
-    const textureY = ((1.3 + distance * .23 + drift * .37) * MIST_SIZE) % MIST_SIZE
-    const row = Math.floor(textureY)
-    const nextRow = (row + 1) % MIST_SIZE
-    const blendY = textureY - row
-    const driftX = fog.sway * (.13 + .04 * Math.sin(distance * 3))
+    const edgeY = smooth(level / .11) * smooth((1 - level) / .18)
     for (let x = 0; x < width; x++) {
       const across = x / width
-      const textureX = ((1 + (across - driftX) / spread + .035 * drift) * MIST_SIZE) % MIST_SIZE
-      const column = Math.floor(textureX)
-      const nextColumn = (column + 1) % MIST_SIZE
-      const blendX = textureX - column
-      const near = mistTexture[row * MIST_SIZE + column] * (1 - blendX) + mistTexture[row * MIST_SIZE + nextColumn] * blendX
-      const far = mistTexture[nextRow * MIST_SIZE + column] * (1 - blendX) + mistTexture[nextRow * MIST_SIZE + nextColumn] * blendX
-      const texture = near * (1 - blendY) + far * blendY
-      const cloud = Math.max(0, (texture - .19) / .81) ** 1.7
+      const distance = (level - center) / depth + bankLift[x]
+      if (Math.abs(distance) >= 1) continue
+      const flowX = (across - driftX) / spread + .035 * drift
+      const flowY = distance * .22 + drift * .17
+      const bank = mistAt(flowX - seconds * .013, flowY + seconds * .009)
+      const wisp = mistAt(flowX * 1.72 + seconds * .018 + bank * .15, flowY * 1.60 - seconds * .013 + .35)
+      const cloud = smooth((bank * .63 + wisp * .37 - .28) / .46)
+      const body = (1 - distance * distance) ** 2 * fog.amount * edgeY
       const shifted = across - driftX * .7
       const edges = smooth(Math.min(shifted, 1 - shifted) / .23) * (1 - .72 * (1 - smooth(across / .54)) * (1 - smooth((level - .20) / .17)))
       const pixel = (y * width + x) * 4
