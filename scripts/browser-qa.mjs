@@ -154,7 +154,7 @@ try {
   await page.clock.fastForward(1500)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
   const returnMist = await fogSample()
-  assert.ok(returnMist.aboveWater > .25 && returnMist.aboveWater < mistNear.aboveWater, 'a lighter mist accompanies the outward ripples')
+  assert.ok(returnMist.aboveWater > held.aboveWater + 1, 'the released fog rolls back out above the water with the ripples')
   const first = await waveSample()
   assert.ok(first.source.coverage > 40, 'new crests start in the foreground')
   await capture(page, 'reset-exhale-390')

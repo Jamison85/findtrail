@@ -3,8 +3,9 @@ import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_T
 export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
 const HELD_FOG = .18
-const FULL_FOG = 1.14
-const READY_FOG = .59
+const FULL_FOG = 2.05
+const RELEASED_FOG = 1.42
+const READY_FOG = .82
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
   if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: 1 }
@@ -17,10 +18,11 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
       height: 1,
     }
   }
+  const released = HELD_FOG + (RELEASED_FOG - HELD_FOG) * smooth(progress / .23)
   return {
-    distance: 1 - smooth(progress),
-    amount: HELD_FOG + .22 * smooth(progress / .32) + (READY_FOG - HELD_FOG - .22) * smooth((progress - .48) / .52),
-    height: 1 - .34 * Math.sin(Math.PI * progress),
+    distance: 1 - progress,
+    amount: released + (READY_FOG - released) * smooth((progress - .52) / .48),
+    height: 1 + .19 * Math.sin(Math.PI * progress),
   }
 }
 
@@ -149,7 +151,7 @@ function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnT
       const cloud = Math.max(0, (texture - .19) / .81) ** 1.7
       const edges = smooth(Math.min(across, 1 - across) / .23) * (1 - .72 * (1 - smooth(across / .54)) * (1 - smooth((level - .20) / .17)))
       const pixel = (y * width + x) * 4
-      const mist = 220 * body * cloud * edges
+      const mist = 255 * (1 - Math.exp(-1.15 * body * cloud * edges))
       const water = overlay.data[pixel + 3] * (1 - mist / 255)
       const total = mist + water
       if (total === 0) continue
@@ -179,7 +181,7 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: nu
       if (envelope < .008) continue
       const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6)
       const texture = Math.sin(emitted * RIPPLE_RATE * 1.82 - across * 6.0) * .24
-      const push = (slope + texture) * taper * envelope
+      const push = (slope + texture) * taper * envelope * 1.17
       const reflectedY = Math.min(height - 1, Math.max(0, y + push * (8 - 3 * depth)))
       const near = Math.floor(reflectedY)
       const mix = reflectedY - near

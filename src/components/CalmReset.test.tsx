@@ -15,7 +15,7 @@ describe('CalmReset', () => {
   it('gathers the released fog into the next inhale without a jump', () => {
     expect(lakeFog('exhale', 0)).toEqual(lakeFog('hold', 0))
     expect(lakeFog('exhale', 1)).toEqual(lakeFog('inhale', 0))
-    expect(lakeFog('exhale', 1).amount).toBeGreaterThan(lakeFog('exhale', .25).amount)
+    expect(lakeFog('exhale', .25).amount).toBeGreaterThan(lakeFog('exhale', 1).amount)
   })
 
   it('keeps both exits available while leaving the trail saved', () => {
