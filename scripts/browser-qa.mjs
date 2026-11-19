@@ -102,15 +102,18 @@ try {
     let opacity = 0
     let depth = 0
     let aboveWater = 0
+    let nearWater = 0
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const alpha = data[(y * width + x) * 4 + 3]
         opacity += alpha
         depth += alpha * (height - 1 - y)
         if ((height - 1 - y) / height < .34) aboveWater += alpha
+        if ((height - 1 - y) / height > .54) nearWater += alpha
       }
     }
-    return { depth: opacity ? depth / opacity / height : 0, amount: opacity / (width * height), aboveWater: aboveWater / (width * height) }
+    const area = width * height
+    return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area }
   })
   const waveSample = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
@@ -142,7 +145,7 @@ try {
   const mistFar = await fogSample()
   await page.clock.fastForward(2300)
   const mistNear = await fogSample()
-  assert.ok(mistNear.depth > mistFar.depth + .04, `inhale brings mist into the foreground (${mistFar.depth} to ${mistNear.depth})`)
+  assert.ok(mistNear.nearWater > mistFar.nearWater + 2, 'the base of the fog moves toward the viewer as the top rises')
   assert.ok(mistNear.aboveWater > mistFar.aboveWater + 2, 'inhale builds visible fog above the water')
   await capture(page, 'reset-inhale-390')
   await page.clock.fastForward(2200)
@@ -167,6 +170,41 @@ try {
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
+  const shoreline = await surface.evaluate((canvas) => {
+    const gl = canvas.getContext('webgl')
+    const program = gl.getParameter(gl.CURRENT_PROGRAM)
+    const wave = gl.getUniformLocation(program, 'uWaveTime')
+    const time = gl.getUniform(program, wave)
+    const { width, height } = canvas
+    const readFrame = () => {
+      const pixels = new Uint8Array(width * height * 4)
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+      return pixels
+    }
+    const active = readFrame()
+    let still
+    try {
+      gl.uniform1f(wave, -1)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      still = readFrame()
+    } finally {
+      gl.uniform1f(wave, time)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    const change = (left, right, top, bottom) => {
+      let peak = 0
+      for (let y = Math.round(height * top); y < height * bottom; y++) {
+        for (let x = Math.round(width * left); x < width * right; x++) {
+          const i = ((height - 1 - y) * width + x) * 4
+          peak = Math.max(peak, Math.abs(active[i] - still[i]), Math.abs(active[i + 3] - still[i + 3]))
+        }
+      }
+      return peak
+    }
+    return { farWater: change(.57, .88, .332, .343), dryBank: change(.12, .38, .333, .342) }
+  })
+  assert.ok(shoreline.farWater > 10, 'crests visibly reach the far waterline')
+  assert.equal(shoreline.dryBank, 0, 'the shoreline confines wave motion to the lake')
   const regathered = await fogSample()
   assert.ok(regathered.aboveWater > .08, 'released fog gathers above the distant water')
   await capture(page, 'reset-outward-waves-390')
