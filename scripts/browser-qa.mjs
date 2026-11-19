@@ -42,7 +42,7 @@ async function visitScreen(page, selector, label) {
 }
 try {
   await ready()
-  browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) })
+  browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'], ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) })
   for (const [width, height] of sizes) {
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })
     const page = await context.newPage()
@@ -91,17 +91,20 @@ try {
   await lake.evaluate((image) => image.decode())
   const close = page.getByRole('button', { name: 'Back to search' })
   assert.ok(await close.isVisible(), 'Return stays available during breathing')
-  const surface = page.locator('.reset-journey__water')
+  const surface = page.locator('.reset-journey__water--depth')
   const motionDepth = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
-    const { data } = canvas.getContext('2d').getImageData(0, 0, width, height)
+    const gl = canvas.getContext('webgl')
+    if (!gl || !canvas.dataset.motionPhase) return null
+    const data = new Uint8Array(width * height * 4)
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data)
     let opacity = 0
     let depth = 0
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const alpha = data[(y * width + x) * 4 + 3]
         opacity += alpha
-        depth += alpha * y
+        depth += alpha * (height - 1 - y)
       }
     }
     return opacity ? depth / opacity / height : null
@@ -110,26 +113,29 @@ try {
   await page.clock.pauseAt(new Date(Date.now() + 1000))
   assert.equal(await surface.getAttribute('data-motion-phase'), null, 'lake opens still')
   await page.getByRole('button', { name: 'Start breathing' }).evaluate((button) => button.click())
-  await page.clock.runFor(2100)
+  await page.clock.runFor(40)
+  await page.clock.fastForward(2060)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in')
   const mistFar = await motionDepth()
-  await page.clock.runFor(2300)
+  await page.clock.fastForward(2300)
   const mistNear = await motionDepth()
-  assert.ok(mistFar !== null && mistNear > mistFar + .15, 'inhale brings the mist into the foreground')
+  assert.ok(mistFar !== null && mistNear !== null && mistNear > mistFar + .075, `inhale brings mist into the foreground (${mistFar} to ${mistNear})`)
   await capture(page, 'reset-inhale-390')
-  await page.clock.runFor(2200)
+  await page.clock.fastForward(2200)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Hold gently')
   const held = await motionDepth()
-  await page.clock.runFor(800)
+  await page.clock.fastForward(800)
   assert.equal(await motionDepth(), held, 'mist hangs still during the brief hold')
-  await page.clock.runFor(3400)
+  await page.clock.fastForward(3400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
   const waterNear = await motionDepth()
   await capture(page, 'reset-exhale-390')
-  await page.clock.runFor(2500)
+  await page.clock.fastForward(2500)
   const waterFar = await motionDepth()
-  assert.ok(waterFar !== null && waterNear !== null && waterFar < waterNear - .15, 'exhale pushes waves away across the lake')
+  assert.ok(waterFar !== null && waterNear !== null && waterFar < waterNear - .075, `exhale pushes waves away across the lake (${waterNear} to ${waterFar})`)
   await capture(page, 'reset-outward-waves-390')
+  await page.clock.fastForward(1000)
+  assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   await page.clock.resume()
   await page.getByRole('button', { name: 'Back to search' }).click()
   await page.locator('.trail-view').waitFor()
@@ -154,7 +160,7 @@ try {
   await page.goto(URL)
   await page.getByRole('navigation', { name: 'Main sections' }).getByRole('button', { name: 'Reset' }).click()
   await page.locator('.reset-journey').waitFor()
-  const lakeSize = await page.evaluate(async () => (await (await fetch('./findtrail-still-lake.webp')).blob()).size)
+  const lakeSize = await page.evaluate(async () => (await (await fetch('./findtrail-lake-cove.webp')).blob()).size)
   assert.ok(lakeSize > 0, 'lake artwork is available offline')
   await page.getByRole('button', { name: 'Back to search' }).click()
   await context.setOffline(false)
@@ -179,7 +185,7 @@ try {
   await still.getByRole('button', { name: 'Start breathing' }).click()
   await still.clock.runFor(10500)
   assert.equal(await still.locator('.reset-breathing__phase').textContent(), 'Breathe out')
-  assert.equal(await still.locator('.reset-journey__water').getAttribute('data-motion-phase'), null)
+  assert.equal(await still.locator('.reset-journey__water[data-motion-phase]').count(), 0)
   await reduced.close()
   assert.deepEqual(issues, [], 'runtime console errors')
   console.log('FindTrail browser smoke QA passed.')

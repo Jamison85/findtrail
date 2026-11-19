@@ -1,4 +1,4 @@
-type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'settle'
+export type LakeMotion = 'inhale' | 'hold' | 'exhale'
 
 export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasElement) {
   const context = typeof CanvasRenderingContext2D === 'undefined'
@@ -25,8 +25,8 @@ export function createBreathingLake(photo: HTMLImageElement, canvas: HTMLCanvasE
       if (motion === 'inhale' || motion === 'hold') {
         paintMist(lake, motion === 'hold' ? 1 : progress)
       } else {
-        paintWaves(lake, progress, motion === 'settle')
-        if (motion === 'exhale' && progress < .25) paintMist(lake, 1, 1 - smooth(progress / .25))
+        paintWaves(lake, progress)
+        if (progress < .25) paintMist(lake, 1, 1 - smooth(progress / .25))
       }
       context.putImageData(lake.overlay, 0, 0)
     },
@@ -141,10 +141,9 @@ function paintMist({ width, height, overlay }: LakeSurface, progress: number, fa
   }
 }
 
-function paintWaves({ width, height, source, overlay }: LakeSurface, progress: number, settling: boolean) {
-  const travel = settling ? 1.02 + .27 * smooth(progress) : .04 + .98 * (1 - (1 - progress) ** 1.26)
-  const strength = settling ? .42 * (1 - smooth(progress)) ** 2 : smooth(progress / .19) * (1 - .58 * smooth((progress - .72) / .28))
-  const time = settling ? 1 + progress * .56 : progress
+function paintWaves({ width, height, source, overlay }: LakeSurface, progress: number) {
+  const travel = .04 + .98 * (1 - (1 - progress) ** 1.26)
+  const strength = smooth(progress / .19) * (1 - smooth((progress - .72) / .28))
 
   for (let y = 0; y < height; y++) {
     const depth = 1 - y / height
@@ -155,8 +154,8 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, progress: n
       const distance = depth + across ** 2 * .46 / (depth + .40) + across * .045 - travel
       const envelope = Math.max(0, 1 - Math.abs(distance) / .33) ** 1.4
       if (envelope < .008) continue
-      const slope = Math.sin(distance * (68 + depth * 22) - 7 * time + across * 2)
-      const texture = Math.sin(distance * 117 - time * 13 + across * 18) * .24
+      const slope = Math.sin(distance * (68 + depth * 22) - 7 * progress + across * 2)
+      const texture = Math.sin(distance * 117 - progress * 13 + across * 18) * .24
       const push = (slope + texture) * taper * envelope
       const reflectedY = Math.min(height - 1, Math.max(0, y + push * (8 - 3 * depth)))
       const near = Math.floor(reflectedY)

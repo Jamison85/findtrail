@@ -4,6 +4,7 @@ import { Icon } from './Icon'
 import { clearNextStep } from './clearNextStep'
 import { RESET_CYCLES } from './resetTiming'
 import { createBreathingLake } from './breathingLake'
+import { createLakeDepth } from './lakeDepth'
 
 interface CalmResetProps {
   search: ActiveSearch | null
@@ -17,7 +18,6 @@ const phaseLabels = {
   inhale: 'Breathe in',
   hold: 'Hold gently',
   exhale: 'Breathe out',
-  settle: 'Breathe naturally',
   complete: 'Reset complete',
 }
 
@@ -25,17 +25,15 @@ const BREATHE_IN_SECONDS = 6
 const HOLD_SECONDS = 2
 const BREATHE_OUT_SECONDS = 8
 const EXHALE_START = BREATHE_IN_SECONDS + HOLD_SECONDS
-const BREATH_SECONDS = EXHALE_START + BREATHE_OUT_SECONDS
-const SETTLE_SECONDS = 5
-const CYCLE_SECONDS = BREATH_SECONDS + SETTLE_SECONDS
+const CYCLE_SECONDS = EXHALE_START + BREATHE_OUT_SECONDS
 const TOTAL_SECONDS = CYCLE_SECONDS * RESET_CYCLES
-const LAKE_IMAGE = `${import.meta.env.BASE_URL}findtrail-still-lake.webp`
+const LAKE_IMAGE = `${import.meta.env.BASE_URL}findtrail-lake-cove.webp`
+const LAKE_WATERLINE = .493
 const phaseDetails = {
   idle: 'Watch the mist and the reflection.',
   inhale: 'Mist drifts toward you.',
   hold: '',
   exhale: 'Ripples move away from you.',
-  settle: 'Watch the water settle.',
   complete: '',
 }
 
@@ -44,19 +42,42 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const [running, setRunning] = useState(false)
   const lake = useRef<HTMLImageElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
+  const depth = useRef<HTMLCanvasElement>(null)
   const scene = useRef<ReturnType<typeof createBreathingLake>>(null)
   const elapsed = useRef(0)
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
-    if (!lake.current || !water.current) return
-    const effect = createBreathingLake(lake.current, water.current)
+    if (reducedMotion || !lake.current || !water.current || !depth.current) return
+    const photo = lake.current
+    const fallbackLayer = water.current
+    const depthLayer = depth.current
+    let renderer: ReturnType<typeof createLakeDepth> = null
+    let fallback: ReturnType<typeof createBreathingLake> | undefined
+    let initialized = false
+    const effect: ReturnType<typeof createBreathingLake> = {
+      draw(motion, progress) {
+        if (motion && !initialized) {
+          renderer = createLakeDepth(photo, depthLayer, LAKE_WATERLINE)
+          initialized = true
+        }
+        if (renderer?.available()) renderer.draw(motion, progress)
+        else if (motion) {
+          fallback ??= createBreathingLake(photo, fallbackLayer)
+          fallback.draw(motion, progress)
+        } else fallback?.draw(null)
+      },
+      dispose() {
+        renderer?.dispose()
+        fallback?.dispose()
+      },
+    }
     scene.current = effect
     return () => {
       effect.dispose()
       scene.current = null
     }
-  }, [])
+  }, [reducedMotion])
 
   useEffect(() => {
     if (!running) return
@@ -69,7 +90,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       elapsed.current = seconds
       const cycle = seconds % CYCLE_SECONDS
       const finished = seconds >= TOTAL_SECONDS
-      const nextPhase = finished ? 'complete' : cycle < BREATHE_IN_SECONDS ? 'inhale' : cycle < EXHALE_START ? 'hold' : cycle < BREATH_SECONDS ? 'exhale' : 'settle'
+      const nextPhase = finished ? 'complete' : cycle < BREATHE_IN_SECONDS ? 'inhale' : cycle < EXHALE_START ? 'hold' : 'exhale'
       if (nextPhase !== lastPhase) {
         lastPhase = nextPhase
         setPhase(nextPhase)
@@ -78,8 +99,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       if (reducedMotion || finished) scene.current?.draw(null)
       else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS)
       else if (nextPhase === 'hold') scene.current?.draw('hold')
-      else if (nextPhase === 'exhale') scene.current?.draw('exhale', (cycle - EXHALE_START) / BREATHE_OUT_SECONDS)
-      else scene.current?.draw('settle', (cycle - BREATH_SECONDS) / SETTLE_SECONDS)
+      else scene.current?.draw('exhale', (cycle - EXHALE_START) / BREATHE_OUT_SECONDS)
       if (finished) setRunning(false)
       else frame = requestAnimationFrame(draw)
     }
@@ -115,7 +135,8 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     <section className="view reset-journey" aria-labelledby="view-heading">
       <div className="reset-journey__scene" aria-hidden="true">
         <img ref={lake} className="reset-journey__lake" src={LAKE_IMAGE} alt="" />
-        <canvas ref={water} className="reset-journey__water" />
+        <canvas ref={depth} className="reset-journey__water reset-journey__water--depth" />
+        <canvas ref={water} className="reset-journey__water reset-journey__water--fallback" />
       </div>
       <div className="reset-journey__layout">
         <header className="reset-journey__top">

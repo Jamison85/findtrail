@@ -33,11 +33,11 @@ describe('CalmReset', () => {
     expect(resume).toHaveBeenCalledOnce()
   })
 
-  it('paces the mist, hold, outward waves, and stillness across three breaths', () => {
+  it('holds after each inhale and goes straight from the exhale into the next breath', () => {
     vi.useFakeTimers()
     try {
       const view = render(<CalmReset search={search} returnScreen="trail" onResume={vi.fn()} />)
-      const lake = view.container.querySelector('canvas')
+      const lake = view.container.querySelector('.reset-journey__water--fallback')
       const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms))
       fireEvent.click(screen.getByRole('button', { name: 'Start breathing' }))
       advance(1000)
@@ -54,13 +54,11 @@ describe('CalmReset', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Breathe out')
       expect(lake).toHaveAttribute('data-motion-phase', 'exhale')
       advance(8000)
-      expect(screen.getByRole('status')).toHaveTextContent('Breathe naturally')
-      expect(lake).toHaveAttribute('data-motion-phase', 'settle')
-      advance(5000)
       expect(screen.getByRole('status')).toHaveTextContent('Breathe in')
-      advance(37000)
-      expect(lake).toHaveAttribute('data-motion-phase', 'settle')
-      advance(5000)
+      expect(lake).toHaveAttribute('data-motion-phase', 'inhale')
+      advance(24000)
+      expect(lake).toHaveAttribute('data-motion-phase', 'exhale')
+      advance(8000)
       expect(screen.getByRole('status')).toHaveTextContent('Reset complete')
       expect(lake).not.toHaveAttribute('data-motion-phase')
       expect(screen.getByRole('button', { name: 'Breathe again' })).toBeEnabled()
