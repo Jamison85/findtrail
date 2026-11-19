@@ -93,6 +93,18 @@ try {
   const leaveForHome = page.getByRole('button', { name: 'Back to home' })
   assert.ok(await continueTrail.isVisible() && await leaveForHome.isVisible(), 'both exits stay available during breathing')
   const surface = page.locator('.reset-journey__water--depth')
+  const sky = page.locator('.reset-journey__clouds')
+  const cloudFrame = () => sky.evaluate((canvas) => {
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+    const shades = []
+    for (let y = Math.round(canvas.height * .33); y < canvas.height * .74; y += 5) {
+      for (let x = Math.round(canvas.width * .59); x < canvas.width * .94; x += 8) {
+        shades.push(pixels[(y * canvas.width + x) * 4])
+      }
+    }
+    return shades
+  })
+  const cloudChange = (before, after) => before.reduce((total, shade, index) => total + Math.abs(shade - after[index]), 0) / before.length
   const wind = page.locator('.reset-journey__wind--scene')
   const nearLeaves = page.locator('.reset-journey__wind--near')
   const breezeIn = (bounds, layer = wind) => layer.evaluate((canvas, [left, top, right, bottom]) => {
@@ -149,6 +161,7 @@ try {
   await page.clock.install()
   await page.clock.pauseAt(new Date(Date.now() + 1000))
   assert.equal(await surface.getAttribute('data-motion-phase'), null, 'lake opens still')
+  assert.equal(await sky.getAttribute('data-active'), null, 'sky opens still')
   await page.getByRole('button', { name: 'Start breathing' }).evaluate((button) => button.click())
   await page.clock.runFor(40)
   await page.clock.fastForward(2060)
@@ -156,19 +169,24 @@ try {
   assert.equal(await wind.getAttribute('data-active'), null, 'the breeze waits for the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 1 of 3')
   const mistFar = await fogSample()
+  const earlyClouds = await cloudFrame()
   await page.clock.fastForward(2300)
   const mistNear = await fogSample()
+  assert.ok(cloudChange(earlyClouds, await cloudFrame()) > 2, 'the cloud bands visibly advance on inhale')
   assert.ok(mistNear.nearWater > mistFar.nearWater + 2, 'the base of the fog moves toward the viewer as the top rises')
   assert.ok(mistNear.aboveWater > mistFar.aboveWater + 2, 'inhale builds visible fog above the water')
   await capture(page, 'reset-inhale-390')
   await page.clock.fastForward(2200)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Hold gently')
   const held = await fogSample()
+  const heldClouds = await cloudFrame()
   assert.ok(held.amount < mistNear.amount * .60, 'the fog thins as it reaches the foreground')
   await page.clock.fastForward(800)
   assert.deepEqual(await fogSample(), held, 'mist hangs still during the brief hold')
+  assert.deepEqual(await cloudFrame(), heldClouds, 'the clouds hold their new position')
   await page.clock.fastForward(1500)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
+  assert.deepEqual(await cloudFrame(), heldClouds, 'exhale leaves the clouds in place')
   const returnMist = await fogSample()
   assert.ok(returnMist.aboveWater > held.aboveWater + 1, 'the released fog rolls back out above the water with the ripples')
   const first = await waveSample()
@@ -193,6 +211,7 @@ try {
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
+  assert.deepEqual(await cloudFrame(), heldClouds, 'clouds remain in place through the end of exhale')
   const shoreline = await surface.evaluate((canvas) => {
     const gl = canvas.getContext('webgl')
     const program = gl.getParameter(gl.CURRENT_PROGRAM)
@@ -237,7 +256,11 @@ try {
   assert.equal(await wind.getAttribute('data-active'), null, 'the branches settle with the next inhale')
   assert.equal(await nearLeaves.getAttribute('data-active'), null, 'loose leaves clear by the next inhale')
   assert.ok(Math.abs((await fogSample()).aboveWater - regathered.aboveWater) < 1.5, 'gathered fog carries smoothly into the next inhale')
-  await page.clock.fastForward(16000)
+  const nextClouds = await cloudFrame()
+  assert.ok(cloudChange(heldClouds, nextClouds) < 1, 'the next inhale starts where the clouds left off')
+  await page.clock.fastForward(4200)
+  assert.ok(cloudChange(nextClouds, await cloudFrame()) > 2, 'the second inhale brings the clouds farther in')
+  await page.clock.fastForward(11800)
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 3 of 3')
   await page.clock.fastForward(16000)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Reset complete')
@@ -298,6 +321,7 @@ try {
   await still.clock.runFor(10500)
   assert.equal(await still.locator('.reset-breathing__phase').textContent(), 'Breathe out')
   assert.equal(await still.locator('.reset-journey__water[data-motion-phase]').count(), 0)
+  assert.equal(await still.locator('.reset-journey__clouds[data-active]').count(), 0)
   await reduced.close()
 
   const compatible = await browser.newContext({ viewport: { width: 390, height: 844 } })
