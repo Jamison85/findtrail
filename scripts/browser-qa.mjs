@@ -104,7 +104,7 @@ try {
     }
     return shades
   })
-  const cloudChange = (before, after) => before.reduce((total, shade, index) => total + Math.abs(shade - after[index]), 0) / before.length
+  const frameChange = (before, after) => before.reduce((total, shade, index) => total + Math.abs(shade - after[index]), 0) / before.length
   const wind = page.locator('.reset-journey__wind--scene')
   const nearLeaves = page.locator('.reset-journey__wind--near')
   const breezeIn = (bounds, layer = wind) => layer.evaluate((canvas, [left, top, right, bottom]) => {
@@ -156,7 +156,7 @@ try {
     const area = width * height
     return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area, tiles: tiles.map((tile) => tile * tiles.length / area) }
   })
-  const fogChange = (before, after) => cloudChange(before.tiles, after.tiles)
+  const fogChange = (before, after) => frameChange(before.tiles, after.tiles)
   const waveSample = () => surface.evaluate((canvas) => {
     const { width, height } = canvas
     const gl = canvas.getContext('webgl')
@@ -190,7 +190,7 @@ try {
   const earlyClouds = await cloudFrame()
   await page.clock.fastForward(2300)
   const mistNear = await fogSample()
-  assert.ok(cloudChange(earlyClouds, await cloudFrame()) > 2, 'the cloud bands visibly advance on inhale')
+  assert.ok(frameChange(earlyClouds, await cloudFrame()) > 2, 'the cloud bands visibly advance on inhale')
   assert.ok(mistNear.nearWater > mistFar.nearWater + 2, 'the base of the fog moves toward the viewer as the top rises')
   assert.ok(mistNear.aboveWater > mistFar.aboveWater + 2, 'inhale builds visible fog above the water')
   await capture(page, 'reset-inhale-390')
@@ -204,7 +204,9 @@ try {
   assert.ok(fogChange(endInhale, held) < 1.4, 'the fog flows continuously into the hold')
   await page.clock.fastForward(1450)
   const heldLater = await fogSample()
-  assert.ok(fogChange(held, heldLater) > .18, 'individual wisps keep moving during the hold')
+  assert.ok(fogChange(held, heldLater) > 1, 'individual wisps keep moving during the hold')
+  assert.ok(heldLater.tiles.some((value, index) => value > held.tiles[index] + 2)
+    && heldLater.tiles.some((value, index) => value < held.tiles[index] - 2), 'the fog shifts between parts of the image')
   assert.ok(heldLater.amount > held.amount * .73, 'the bank remains visible as the wisps move')
   assert.deepEqual(await cloudFrame(), heldClouds, 'the clouds hold their new position')
   await page.clock.fastForward(450)
@@ -273,18 +275,18 @@ try {
   assert.ok(shoreline.farWater > 10, 'crests visibly reach the far waterline')
   assert.equal(shoreline.dryBank, 0, 'the shoreline confines wave motion to the lake')
   const regathered = await fogSample()
-  assert.ok(regathered.aboveWater > .08, 'released fog gathers above the distant water')
+  assert.ok(regathered.amount > 2 && regathered.nearWater < 1, 'released fog gathers by the distant water')
   await capture(page, 'reset-outward-waves-390')
   await page.clock.fastForward(400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 2 of 3')
   assert.equal(await wind.getAttribute('data-active'), null, 'the branches settle with the next inhale')
   assert.equal(await nearLeaves.getAttribute('data-active'), null, 'loose leaves clear by the next inhale')
-  assert.ok(Math.abs((await fogSample()).aboveWater - regathered.aboveWater) < 1.5, 'gathered fog carries smoothly into the next inhale')
+  assert.ok(fogChange(regathered, await fogSample()) < 1.4, 'gathered fog carries smoothly into the next inhale')
   const nextClouds = await cloudFrame()
-  assert.ok(cloudChange(heldClouds, nextClouds) < 1, 'the next inhale starts where the clouds left off')
+  assert.ok(frameChange(heldClouds, nextClouds) < 1, 'the next inhale starts where the clouds left off')
   await page.clock.fastForward(4200)
-  assert.ok(cloudChange(nextClouds, await cloudFrame()) > 2, 'the second inhale brings the clouds farther in')
+  assert.ok(frameChange(nextClouds, await cloudFrame()) > 2, 'the second inhale brings the clouds farther in')
   await page.clock.fastForward(11800)
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 3 of 3')
   await page.clock.fastForward(16000)
@@ -354,8 +356,25 @@ try {
   const fallback = await compatible.newPage()
   await fallback.goto(URL)
   await fallback.getByRole('navigation', { name: 'Main sections' }).getByRole('button', { name: 'Reset' }).click()
-  await fallback.getByRole('button', { name: 'Start breathing' }).click()
-  await fallback.locator('.reset-journey__water--fallback[data-motion-phase="inhale"]').waitFor()
+  await fallback.locator('.reset-journey__lake').evaluate((image) => image.decode())
+  await fallback.clock.install()
+  await fallback.clock.pauseAt(new Date(Date.now() + 1000))
+  await fallback.getByRole('button', { name: 'Start breathing' }).evaluate((button) => button.click())
+  await fallback.clock.fastForward(6200)
+  const fallbackSurface = fallback.locator('.reset-journey__water--fallback')
+  assert.equal(await fallbackSurface.getAttribute('data-motion-phase'), 'hold')
+  const fallbackFog = () => fallbackSurface.evaluate((canvas) => {
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+    const samples = []
+    for (let i = 3; i < data.length; i += 137 * 4) samples.push(data[i])
+    return samples
+  })
+  const fallbackHeld = await fallbackFog()
+  await fallback.clock.fastForward(1200)
+  const fallbackLater = await fallbackFog()
+  assert.ok(fallbackHeld.some((alpha) => alpha > 16) && fallbackLater.some((alpha) => alpha > 16), 'the fallback fog stays visible during the hold')
+  assert.ok(frameChange(fallbackHeld, fallbackLater) > .6, 'the fallback wisps keep moving')
+  await fallback.clock.resume()
   await fallback.getByRole('button', { name: 'Back to home' }).click()
   await fallback.locator('.home-view').waitFor()
   await compatible.close()

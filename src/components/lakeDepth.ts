@@ -67,12 +67,13 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
       float floorMist = .28 * (1.0 - smoothstep(.035, max(.16, roof * .38), altitude));
       float density = (.74 * core + floorMist) * smoothstep(.30, .74, .72 * bank + .28 * threads);
       density += rising * 1.08 * smoothstep(.34, .78, .59 * curl + .41 * threads);
+      density *= mix(.60, 1.12, smoothstep(.28, .70, .70 * curl + .30 * bank));
       float across = 1.0 - smoothstep(1.35, mix(8.5, 6.25, drift), abs(plumeX - .44 + .025 * z + .96 * eddy.x));
       float depth = offset + eddy.x * .46;
       float lengthwise = smoothstep(-1.0, -.38, depth) * (1.0 - smoothstep(.24, 1.0, depth));
       lengthwise *= 1.0 - smoothstep(.76, 1.0, abs(offset));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
-      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * .182;
+      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * .160;
     }
   }
   return 1.0 - exp(-extinction * vec2(1.0, .15) * amount);
