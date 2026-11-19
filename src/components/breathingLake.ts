@@ -3,13 +3,12 @@ import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, R
 export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
 // Photo coordinates for this cove, before the image is cropped to the screen.
-export const COVE_SHORELINE = { distant: .4843, left: .4956, leftSlope: .0029, leftStart: .541, leftEnd: .563, vanishing: .441 }
+export const COVE_SHORELINE = { distant: .4843, left: .4956, leftSlope: .0029, leftStart: .541, leftEnd: .563, vanishing: .441, outlet: .605 }
 const FOG_SETTLED_HEIGHT = .64
 const FOG_SWOLLEN_HEIGHT = 1.12
 const FOG_MAX_LIFT = .66
-const HELD_FOG = 1.52
-const FULL_FOG = 1.95
-const RELEASED_FOG = 1.76
+const HELD_FOG = 1.70
+const FULL_FOG = 1.88
 const READY_FOG = .88
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
@@ -29,10 +28,9 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
       sway: gust,
     }
   }
-  const released = HELD_FOG + (RELEASED_FOG - HELD_FOG) * smooth(progress / .46)
   return {
     distance: 1 - progress,
-    amount: released + (READY_FOG - released) * smooth((progress - .52) / .48),
+    amount: HELD_FOG + (READY_FOG - HELD_FOG) * smooth(progress),
     height,
     lift,
     sway: gust > 0 ? -gust : 0,
@@ -155,33 +153,40 @@ function mistAt(x: number, y: number) {
   return near * (1 - v) + far * v
 }
 
-function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnType<typeof lakeFog>, seconds: number) {
+function paintMist({ width, height, cropLeft, cropTop, cropWidth, cropHeight, source, overlay }: LakeSurface, fog: ReturnType<typeof lakeFog>, seconds: number) {
   const drift = smooth(fog.distance)
-  const center = .27 + drift * .25 - fog.lift * .16
-  const depth = (.12 + drift * .22) * fog.height
-  const spread = .48 + drift * .36
-  const driftX = fog.sway * .085
+  const distant = (COVE_SHORELINE.distant - cropTop) / cropHeight
+  const outlet = (COVE_SHORELINE.outlet - cropLeft) / cropWidth
+  const center = distant + .10 + drift * .12 - fog.lift * .08
+  const depth = .25 * fog.height
+  const spread = .61 + drift * .21
+  const driftX = fog.sway * .035
   const bankLift = Float32Array.from({ length: width }, (_, x) =>
-    (mistAt(x / width * .57 + .26 - seconds * .009, .55 + seconds * .004) - .5) * .92)
-  const start = Math.max(0, Math.floor((center - depth * 1.46) * height))
-  const end = Math.min(height, Math.ceil((center + depth * 1.46) * height))
+    (mistAt(x / width * .57 + .26 - seconds * .004, .55 + seconds * .002) - .5) * 1.12)
+  const start = Math.max(0, Math.floor(Math.min(distant - .13, center - depth * 1.55) * height))
+  const end = Math.min(height, Math.ceil(Math.max(distant + .13, center + depth * 1.55) * height))
   for (let y = start; y < end; y++) {
     const level = y / height
     const edgeY = smooth(level / .11) * smooth((1 - level) / .18)
+    const farBody = (1 - smooth(Math.abs(level - distant) / .13)) * (.72 - drift * .37)
     for (let x = 0; x < width; x++) {
       const across = x / width
       const distance = (level - center) / depth + bankLift[x]
-      if (Math.abs(distance) >= 1) continue
-      const flowX = (across - driftX) / spread + .035 * drift
+      const nearBody = Math.max(0, 1 - distance * distance) ** 2
+      if (nearBody === 0 && farBody === 0) continue
+      const flowX = (across - outlet - driftX) / spread
       const flowY = distance * .22 + drift * .17
-      const bank = mistAt(flowX - seconds * .013, flowY + seconds * .009)
-      const wisp = mistAt(flowX * 1.72 + seconds * .018 + bank * .15, flowY * 1.60 - seconds * .013 + .35)
-      const cloud = smooth((bank * .63 + wisp * .37 - .28) / .46)
-      const body = (1 - distance * distance) ** 2 * fog.amount * edgeY
+      const bank = mistAt(flowX - seconds * .007, flowY + seconds * .004)
+      const turn = 5 * flowX + 4 * flowY + seconds * .38
+      const wisp = mistAt(flowX * 1.72 + Math.sin(turn) * .071 + bank * .14, flowY * 1.60 + Math.cos(turn) * .065 + .35)
+      const cloud = smooth((bank * .52 + wisp * .48 - .32) / .46)
+      const gathering = smooth((drift - .18 + (bank - .5) * .29) / .80)
+      const distantMist = farBody * mistAt(across * 1.14 - seconds * .004, level * 1.81 + .36)
+      const body = (nearBody * cloud * gathering + distantMist) * fog.amount * edgeY
       const shifted = across - driftX * .7
       const edges = smooth(Math.min(shifted, 1 - shifted) / .23) * (1 - .72 * (1 - smooth(across / .54)) * (1 - smooth((level - .20) / .17)))
       const pixel = (y * width + x) * 4
-      const mist = 255 * (1 - Math.exp(-1.15 * body * cloud * edges))
+      const mist = 255 * (1 - Math.exp(-1.15 * body * edges))
       const water = overlay.data[pixel + 3] * (1 - mist / 255)
       const total = mist + water
       if (total === 0) continue

@@ -38,45 +38,50 @@ float shoreAt(float x) {
 // are seen in reflection, with a weaker contribution than the air itself.
 vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway) {
   float drift = smoothstep(0.0, 1.0, progress);
-  float center = mix(31.0, 5.25, drift);
-  float span = mix(13.4, 4.85, drift);
-  float ceiling = height * mix(3.10, 4.48, drift);
-  vec2 lowFlow = vec2(-.009, .0055) * uFogTime;
-  vec2 highFlow = vec2(.004, -.011) * uFogTime;
-  vec2 wispFlow = vec2(.016, .011) * uFogTime;
+  float outlet = (${COVE_SHORELINE.outlet} - uCrop.z) / uCrop.x;
+  float channel = (outlet - .5) * uAspect / focal;
+  vec2 lowFlow = vec2(-.004, .0025) * uFogTime;
+  vec2 highFlow = vec2(.003, -.005) * uFogTime;
   vec2 extinction = vec2(0.0);
   for (int i = 0; i < 24; i++) {
-    float offset = (float(i) + .5) / 24.0 * 2.0 - 1.0;
+    // Near pockets disperse in place while a low bank lingers farther back.
+    bool farBank = i >= 12;
+    float offset = (mod(float(i), 12.0) + .5) / 12.0 * 2.0 - 1.0;
+    float center = farBank ? 28.0 : mix(10.2, 5.0, drift);
+    float span = farBank ? 13.2 : mix(6.6, 4.4, drift);
+    float ceiling = farBank ? 2.75 : height * 4.0;
+    float lift = farBank ? .09 : uFogLift;
     float z = center + offset * span;
     vec3 p = vec3(0.0, cameraHeight, 0.0) + ray * (z / ray.z);
     float altitude = abs(p.y);
-    if (altitude < ceiling + uFogLift) {
-      float crosswind = sway * (.70 + .28 * sin(2.1 * offset - .85 * altitude) + .12 * altitude);
-      float plumeX = p.x - crosswind;
-      // The low bank and lifted strands move at different speeds. Each also
-      // bends the smaller wisps so their edges roll and break apart over time.
-      vec2 flow = vec2(plumeX * .033 + altitude * .026, offset * .154 + altitude * .069);
+    if (altitude < ceiling + lift) {
+      float crosswind = farBank ? 0.0 : sway * (.24 + .24 * sin(2.1 * offset - .85 * altitude));
+      float plumeX = p.x - channel * z - crosswind;
+      vec2 flow = vec2(plumeX * .041 + altitude * .027, z * .032 + altitude * .068);
       float bank = texture2D(uNoise, flow + vec2(.62, .26) + lowFlow).r;
       float curl = texture2D(uNoise, flow * vec2(1.35, 1.72) + vec2(.19, .78) + highFlow).r;
       vec2 eddy = vec2(curl - .5, bank - .5);
-      float threads = texture2D(uNoise, flow * vec2(2.6, 2.15) + eddy * .12 + vec2(altitude * .057, .33) + wispFlow).r;
-      float roof = ceiling * mix(.32, 1.0, .62 * bank + .38 * curl);
-      float lifted = altitude - uFogLift * mix(.55, 1.16, bank) + .45 * eddy.x;
+      float roll = plumeX * .55 - z * .68 + altitude * 1.24 + uFogTime * .42;
+      vec2 orbit = vec2(sin(roll), cos(roll)) * mix(.021, .074, bank);
+      float threads = texture2D(uNoise, flow * vec2(2.4, 2.0) + orbit + eddy * .12 + vec2(altitude * .057, .33)).r;
+      float roof = ceiling * mix(.24, 1.0, .62 * bank + .38 * curl);
+      float lifted = altitude - lift * mix(.55, 1.16, bank) + .39 * eddy.x;
       float core = smoothstep(-.39, .13, lifted) * (1.0 - smoothstep(roof * .12, roof * .65, lifted));
       float rising = smoothstep(roof * .22, roof * .49, lifted) * (1.0 - smoothstep(roof * .62, roof, lifted));
       float floorMist = .28 * (1.0 - smoothstep(.035, max(.16, roof * .38), altitude));
-      float density = (.74 * core + floorMist) * smoothstep(.30, .74, .72 * bank + .28 * threads);
-      density += rising * 1.08 * smoothstep(.34, .78, .59 * curl + .41 * threads);
-      density *= mix(.60, 1.12, smoothstep(.28, .70, .70 * curl + .30 * bank));
-      float across = 1.0 - smoothstep(1.35, mix(8.5, 6.25, drift), abs(plumeX - .44 + .025 * z + .96 * eddy.x));
-      float depth = offset + eddy.x * .46;
+      float density = (.74 * core + floorMist) * smoothstep(.33, .76, .70 * bank + .30 * threads);
+      density += rising * 1.08 * smoothstep(.36, .79, .54 * curl + .46 * threads);
+      float gathering = farBank ? (1.0 - drift * .56) : smoothstep(.04, .91, drift + eddy.y * .45);
+      density *= gathering * mix(.48, 1.28, smoothstep(.27, .69, .69 * curl + .31 * bank));
+      float across = 1.0 - smoothstep(1.0, farBank ? 7.0 : 4.25, abs(plumeX + 1.1 * eddy.x));
+      float depth = offset + eddy.x * .54;
       float lengthwise = smoothstep(-1.0, -.38, depth) * (1.0 - smoothstep(.24, 1.0, depth));
       lengthwise *= 1.0 - smoothstep(.76, 1.0, abs(offset));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
-      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * .160;
+      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * (farBank ? .23 : .40);
     }
   }
-  return 1.0 - exp(-extinction * vec2(1.0, .15) * amount);
+  return 1.0 - exp(-extinction * vec2(1.0, .12) * amount);
 }
 
 void main() {
