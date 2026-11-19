@@ -165,7 +165,12 @@ describe('FindTrail app', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I need a reset' }))
     expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start breathing' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue trail' }))
+    expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'I need a reset' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start breathing' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
   })
 
@@ -193,8 +198,7 @@ describe('FindTrail app', () => {
     expect(screen.queryByText('FindTrail update ready')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start breathing' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
     expect(screen.getByText('FindTrail update ready')).toBeInTheDocument()
   })
 
@@ -578,7 +582,7 @@ describe('FindTrail app', () => {
     }))
     window.history.replaceState({}, '', '/?screen=calm')
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue trail' }))
     expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Return home' }))
     fireEvent.click(screen.getByRole('button', { name: 'Resume trail' }))

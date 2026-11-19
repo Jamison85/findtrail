@@ -254,6 +254,7 @@ input::placeholder { color: var(--ink-soft); }
 .reset-next strong { font-size: clamp(1.13rem, 4vw, 1.45rem); overflow-wrap: anywhere; }
 .reset-next p { color: var(--ink); }
 .reset-journey__action { width: 100%; }
+.reset-journey__home { min-height: 44px; justify-self: center; color: #f6edde; }
 
 @media (max-width: 360px) {
   .item-button { gap: 7px; padding-inline: 9px; }
