@@ -91,23 +91,45 @@ try {
   await lake.evaluate((image) => image.decode())
   const close = page.getByRole('button', { name: 'Back to search' })
   assert.ok(await close.isVisible(), 'Return stays available during breathing')
-  const ripple = page.locator('.reset-water__ripple')
-  const drop = page.locator('.reset-water__drop')
+  const surface = page.locator('.reset-journey__water')
+  const motionDepth = () => surface.evaluate((canvas) => {
+    const { width, height } = canvas
+    const { data } = canvas.getContext('2d').getImageData(0, 0, width, height)
+    let opacity = 0
+    let depth = 0
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = data[(y * width + x) * 4 + 3]
+        opacity += alpha
+        depth += alpha * y
+      }
+    }
+    return opacity ? depth / opacity / height : null
+  })
   await page.clock.install()
   await page.clock.pauseAt(new Date(Date.now() + 1000))
+  assert.equal(await surface.getAttribute('data-motion-phase'), null, 'lake opens still')
   await page.getByRole('button', { name: 'Start breathing' }).evaluate((button) => button.click())
-  await page.clock.runFor(11880)
+  await page.clock.runFor(2100)
+  assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in')
+  const mistFar = await motionDepth()
+  await page.clock.runFor(2300)
+  const mistNear = await motionDepth()
+  assert.ok(mistFar !== null && mistNear > mistFar + .15, 'inhale brings the mist into the foreground')
+  await capture(page, 'reset-inhale-390')
+  await page.clock.runFor(2200)
+  assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Hold gently')
+  const held = await motionDepth()
+  await page.clock.runFor(800)
+  assert.equal(await motionDepth(), held, 'mist hangs still during the brief hold')
+  await page.clock.runFor(3400)
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe out')
-  assert.equal(await ripple.getAttribute('data-rippling'), null, 'lake is still before contact')
-  assert.equal(await drop.evaluate((element) => getComputedStyle(element).opacity), '1')
+  const waterNear = await motionDepth()
   await capture(page, 'reset-exhale-390')
-  await page.clock.runFor(520)
-  assert.equal(await drop.evaluate((element) => getComputedStyle(element).opacity), '0')
-  assert.ok(await ripple.evaluate((canvas) => {
-    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height)
-    return data.some((alpha, index) => index % 4 === 3 && alpha > 0)
-  }), 'contact draws a visible ripple on the lake')
-  await capture(page, 'reset-ripple-390')
+  await page.clock.runFor(2500)
+  const waterFar = await motionDepth()
+  assert.ok(waterFar !== null && waterNear !== null && waterFar < waterNear - .15, 'exhale pushes waves away across the lake')
+  await capture(page, 'reset-outward-waves-390')
   await page.clock.resume()
   await page.getByRole('button', { name: 'Back to search' }).click()
   await page.locator('.trail-view').waitFor()
@@ -155,9 +177,9 @@ try {
   await capture(still, 'reset-reduced-motion-390')
   await still.clock.install()
   await still.getByRole('button', { name: 'Start breathing' }).click()
-  await still.clock.runFor(11800)
-  assert.equal(await still.locator('.reset-water__drop').evaluate((element) => getComputedStyle(element).opacity), '0')
-  assert.equal(await still.locator('.reset-breathing__trace').evaluate((element) => getComputedStyle(element).transform), 'none')
+  await still.clock.runFor(10500)
+  assert.equal(await still.locator('.reset-breathing__phase').textContent(), 'Breathe out')
+  assert.equal(await still.locator('.reset-journey__water').getAttribute('data-motion-phase'), null)
   await reduced.close()
   assert.deepEqual(issues, [], 'runtime console errors')
   console.log('FindTrail browser smoke QA passed.')
