@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { ActiveSearch, Screen } from '../types'
 import { Icon } from './Icon'
 import { clearNextStep } from './clearNextStep'
-import { CYCLE_SECONDS, EXHALE_SECONDS, HOLD_SECONDS, INHALE_SECONDS, RESET_CYCLES, TOTAL_SECONDS } from './resetTiming'
-import { createWaterRipple, RIPPLE_SECONDS } from './waterRipple'
+import { RESET_CYCLES } from './resetTiming'
+import { createBreathingLake } from './breathingLake'
 
 interface CalmResetProps {
   search: ActiveSearch | null
@@ -13,60 +13,74 @@ interface CalmResetProps {
 }
 
 const phaseLabels = {
-  idle: 'Follow one breath at a time.',
+  idle: 'Follow the water',
   inhale: 'Breathe in',
-  hold: 'Pause if comfortable',
+  hold: 'Hold gently',
   exhale: 'Breathe out',
-  complete: 'Three breaths complete.',
+  settle: 'Breathe naturally',
+  complete: 'Reset complete',
 }
 
-const DROP_SECONDS = .62
-const HOLD_END = INHALE_SECONDS + HOLD_SECONDS
+const BREATHE_IN_SECONDS = 6
+const HOLD_SECONDS = 2
+const BREATHE_OUT_SECONDS = 8
+const EXHALE_START = BREATHE_IN_SECONDS + HOLD_SECONDS
+const BREATH_SECONDS = EXHALE_START + BREATHE_OUT_SECONDS
+const SETTLE_SECONDS = 5
+const CYCLE_SECONDS = BREATH_SECONDS + SETTLE_SECONDS
+const TOTAL_SECONDS = CYCLE_SECONDS * RESET_CYCLES
 const LAKE_IMAGE = `${import.meta.env.BASE_URL}findtrail-still-lake.webp`
+const phaseDetails = {
+  idle: 'Watch the mist and the reflection.',
+  inhale: 'Mist drifts toward you.',
+  hold: '',
+  exhale: 'Ripples move away from you.',
+  settle: 'Watch the water settle.',
+  complete: '',
+}
 
 export function CalmReset({ search, returnScreen, reducedMotion = false, onResume }: CalmResetProps) {
   const [phase, setPhase] = useState<keyof typeof phaseLabels>('idle')
   const [running, setRunning] = useState(false)
-  const layout = useRef<HTMLDivElement>(null)
   const lake = useRef<HTMLImageElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
-  const drop = useRef<HTMLDivElement>(null)
+  const scene = useRef<ReturnType<typeof createBreathingLake>>(null)
   const elapsed = useRef(0)
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
-    if (!running || !layout.current || !lake.current || !water.current || !drop.current) return
-    const view = layout.current
-    const droplet = drop.current
-    const ripple = createWaterRipple(lake.current, water.current)
+    if (!lake.current || !water.current) return
+    const effect = createBreathingLake(lake.current, water.current)
+    scene.current = effect
+    return () => {
+      effect.dispose()
+      scene.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!running) return
     const startedAt = performance.now() - elapsed.current * 1000
     let frame = 0
     let lastPhase: keyof typeof phaseLabels | undefined
 
     function draw(now: number) {
-      const seconds = Math.max(0, (now - startedAt) / 1000)
+      const seconds = Math.max(0, Math.min(TOTAL_SECONDS, (now - startedAt) / 1000))
       elapsed.current = seconds
       const cycle = seconds % CYCLE_SECONDS
       const finished = seconds >= TOTAL_SECONDS
-      const nextPhase = finished ? 'complete' : cycle < INHALE_SECONDS ? 'inhale' : cycle < HOLD_END ? 'hold' : 'exhale'
+      const nextPhase = finished ? 'complete' : cycle < BREATHE_IN_SECONDS ? 'inhale' : cycle < EXHALE_START ? 'hold' : cycle < BREATH_SECONDS ? 'exhale' : 'settle'
       if (nextPhase !== lastPhase) {
         lastPhase = nextPhase
         setPhase(nextPhase)
       }
 
-      const breath = finished ? 0 : cycle < INHALE_SECONDS ? cycle / INHALE_SECONDS : Math.min(1, (CYCLE_SECONDS - cycle) / EXHALE_SECONDS)
-      const width = reducedMotion ? 1 : .23 + .77 * (.5 - .5 * Math.cos(Math.PI * breath))
-      view.style.setProperty('--breath-width', String(width))
-
-      const fall = (cycle - (CYCLE_SECONDS - DROP_SECONDS)) / DROP_SECONDS
-      const falling = !reducedMotion && !finished && fall >= 0
-      droplet.style.opacity = falling ? String(Math.min(1, fall * 8)) : '0'
-      if (falling) droplet.style.setProperty('--drop-y', `${-68 * (1 - fall ** 2)}px`)
-
-      const impacts = Math.min(RESET_CYCLES, Math.floor(seconds / CYCLE_SECONDS))
-      const age = seconds - impacts * CYCLE_SECONDS
-      ripple.draw(impacts > 0 ? age : Infinity, reducedMotion)
-      if (finished && age >= RIPPLE_SECONDS) setRunning(false)
+      if (reducedMotion || finished) scene.current?.draw(null)
+      else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS)
+      else if (nextPhase === 'hold') scene.current?.draw('hold')
+      else if (nextPhase === 'exhale') scene.current?.draw('exhale', (cycle - EXHALE_START) / BREATHE_OUT_SECONDS)
+      else scene.current?.draw('settle', (cycle - BREATH_SECONDS) / SETTLE_SECONDS)
+      if (finished) setRunning(false)
       else frame = requestAnimationFrame(draw)
     }
 
@@ -78,14 +92,12 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     document.addEventListener('visibilitychange', pauseWhenHidden)
     return () => {
       cancelAnimationFrame(frame)
-      ripple.dispose()
-      droplet.style.opacity = '0'
       document.removeEventListener('visibilitychange', pauseWhenHidden)
     }
   }, [reducedMotion, running])
 
   function toggleBreathing() {
-    if (running && phase !== 'complete') {
+    if (running) {
       setRunning(false)
       return
     }
@@ -96,16 +108,16 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
     setRunning(true)
   }
 
+  const paused = !running && phase !== 'idle' && phase !== 'complete'
+  const cue = reducedMotion && phase === 'idle' ? 'Follow your breath' : phaseLabels[phase]
+
   return (
     <section className="view reset-journey" aria-labelledby="view-heading">
       <div className="reset-journey__scene" aria-hidden="true">
         <img ref={lake} className="reset-journey__lake" src={LAKE_IMAGE} alt="" />
-        <div className="reset-water">
-          <canvas ref={water} className="reset-water__ripple" />
-          <div ref={drop} className="reset-water__drop" />
-        </div>
+        <canvas ref={water} className="reset-journey__water" />
       </div>
-      <div ref={layout} className="reset-journey__layout" data-reduced-motion={reducedMotion}>
+      <div className="reset-journey__layout">
         <header className="reset-journey__top">
           <strong>Reset</strong>
           <button className="icon-button reset-journey__exit" onClick={onResume} aria-label="Close reset"><Icon name="close" size={21} /></button>
@@ -115,13 +127,9 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
           {search && <p>Your search is saved.</p>}
         </div>
         <div className="reset-breathing">
-          <p className="reset-breathing__phase" role="status">{!running && phase !== 'idle' && phase !== 'complete' ? 'Breathing paused' : phaseLabels[phase]}</p>
-          <div className="reset-breathing__trace" aria-hidden="true" />
-          <button
-            className="reset-breathing__control"
-            disabled={phase === 'complete' && running}
-            onClick={toggleBreathing}
-          >
+          <p className="reset-breathing__phase" role="status">{paused ? 'Breathing paused' : cue}</p>
+          <p className="reset-breathing__hint">{!paused && !reducedMotion && phaseDetails[phase]}</p>
+          <button className="reset-breathing__control" onClick={toggleBreathing}>
             {phase === 'idle' ? 'Start breathing' : phase === 'complete' ? 'Breathe again' : running ? 'Pause breathing' : 'Resume breathing'}
           </button>
         </div>
