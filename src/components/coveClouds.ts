@@ -3,12 +3,12 @@ function smooth(value: number) {
   return t * t * (3 - 2 * t)
 }
 
-function prepareSky(photo: HTMLImageElement, layer: HTMLCanvasElement) {
+function prepareSky(photo: HTMLImageElement, layer: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   const { width, height } = layer.getBoundingClientRect()
   const sceneHeight = layer.parentElement?.getBoundingClientRect().height
   if (!width || !height || !sceneHeight) return null
 
-  const scale = Math.min(window.devicePixelRatio || 1, 1.5, 900 / width)
+  const scale = Math.min(window.devicePixelRatio || 1, 1.25, 720 / width)
   layer.width = Math.round(width * scale)
   layer.height = Math.round(height * scale)
   const cover = Math.max(layer.width / photo.naturalWidth, sceneHeight * scale / photo.naturalHeight)
@@ -16,26 +16,56 @@ function prepareSky(photo: HTMLImageElement, layer: HTMLCanvasElement) {
   const photoHeight = photo.naturalHeight * cover
   const left = (layer.width - photoWidth) / 2
   const top = (sceneHeight * scale - photoHeight) / 2
-  const mask = document.createElement('canvas')
-  mask.width = layer.width
-  mask.height = layer.height
-  const context = mask.getContext('2d')
-  if (!context) return null
+  context.drawImage(photo, left, top, photoWidth, photoHeight)
+  const source = context.getImageData(0, 0, layer.width, layer.height).data
+  const frame = context.createImageData(layer.width, layer.height)
+  const drift = new Float32Array(layer.width * layer.height)
 
-  // Feather the photo's open sky along the left canopy and the distant ridge.
-  const alpha = context.createImageData(mask.width, mask.height)
-  for (let y = 0; y < mask.height; y++) {
+  // Bring the drift gradually to zero around the canopy and the distant ridge.
+  for (let y = 0; y < layer.height; y++) {
     const photoY = (y - top) / photoHeight
     const canopy = .35 + .52 * photoY
-    for (let x = 0; x < mask.width; x++) {
+    for (let x = 0; x < layer.width; x++) {
       const photoX = (x - left) / photoWidth
       const ridge = .390 - .034 * smooth((photoX - .57) / .43)
-      const openSky = smooth((photoX - canopy) / .065) * smooth((ridge - photoY) / .050)
-      alpha.data[(y * mask.width + x) * 4 + 3] = 255 * openSky
+      const i = y * layer.width + x
+      drift[i] = smooth((photoX - canopy) / .18) * smooth((ridge - photoY) / .105)
+      frame.data[i * 4 + 3] = 255 * smooth(drift[i] / .025)
     }
   }
-  context.putImageData(alpha, 0, 0)
-  return { mask, left, top, photoWidth, photoHeight }
+  return { source, frame, drift }
+}
+
+function drawSky(context: CanvasRenderingContext2D, sky: NonNullable<ReturnType<typeof prepareSky>>, position: number) {
+  const { source, frame, drift } = sky
+  const { width, height, data } = frame
+  const advance = 1 - 1 / (1 + .12 * position)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x
+      if (!data[i * 4 + 3]) continue
+      // Remap the wisps continuously instead of blending two cloud positions.
+      const shift = advance * drift[i]
+      const sx = x + (width - 1 - x) * shift
+      const sy = y * (1 - .68 * shift)
+      const x0 = Math.floor(sx)
+      const y0 = Math.floor(sy)
+      const x1 = Math.min(x0 + 1, width - 1)
+      const y1 = Math.min(y0 + 1, height - 1)
+      const a = (y0 * width + x0) * 4
+      const b = (y0 * width + x1) * 4
+      const c = (y1 * width + x0) * 4
+      const d = (y1 * width + x1) * 4
+      const u = sx - x0
+      const v = sy - y0
+      for (let channel = 0; channel < 3; channel++) {
+        const upper = source[a + channel] + u * (source[b + channel] - source[a + channel])
+        const lower = source[c + channel] + u * (source[d + channel] - source[c + channel])
+        data[i * 4 + channel] = upper + v * (lower - upper)
+      }
+    }
+  }
+  context.putImageData(frame, 0, 0)
 }
 
 export function createCoveClouds(photo: HTMLImageElement, layer: HTMLCanvasElement) {
@@ -52,17 +82,9 @@ export function createCoveClouds(photo: HTMLImageElement, layer: HTMLCanvasEleme
       return
     }
     if (sky && painted === breath) return
-    sky ??= prepareSky(photo, layer)
+    sky ??= prepareSky(photo, layer, context)
     if (!sky) return
-
-    const { mask, left, top, photoWidth, photoHeight } = sky
-    // Move the existing cloud bands in from the upper-right as they approach.
-    const advance = .12 * breath
-    context.clearRect(0, 0, layer.width, layer.height)
-    context.drawImage(photo, left - photoWidth * advance, top, photoWidth * (1 + advance), photoHeight * (1 + advance))
-    context.globalCompositeOperation = 'destination-in'
-    context.drawImage(mask, 0, 0)
-    context.globalCompositeOperation = 'source-over'
+    drawSky(context, sky, breath)
     if (!layer.hasAttribute('data-active')) layer.dataset.active = 'true'
     painted = breath
   }
