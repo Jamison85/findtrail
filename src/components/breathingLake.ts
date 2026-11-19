@@ -148,23 +148,23 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, progress: n
 
   for (let y = 0; y < height; y++) {
     const depth = 1 - y / height
-    const taper = strength * smooth(depth / .18) * smooth((1 - depth) / .22)
+    const taper = strength * smooth(depth / .18) * smooth((1 - depth) / .30)
     for (let x = 0; x < width; x++) {
       const across = x / width - .5
       // Broader fronts reach farther across the cove as they travel away.
-      const distance = depth + across ** 2 * .72 / (depth + .36) - travel
+      const distance = depth + across ** 2 * .46 / (depth + .40) + across * .045 - travel
       const envelope = Math.max(0, 1 - Math.abs(distance) / .33) ** 1.4
       if (envelope < .008) continue
-      const slope = Math.sin(distance * (53 + depth * 13) - 8 * time + across * 2)
-      const texture = Math.sin(distance * 91 - time * 14 + across * 18) * .22
+      const slope = Math.sin(distance * (68 + depth * 22) - 7 * time + across * 2)
+      const texture = Math.sin(distance * 117 - time * 13 + across * 18) * .24
       const push = (slope + texture) * taper * envelope
-      const reflectedY = Math.min(height - 1, Math.max(0, y + push * 17))
+      const reflectedY = Math.min(height - 1, Math.max(0, y + push * (8 - 3 * depth)))
       const near = Math.floor(reflectedY)
       const mix = reflectedY - near
       const a = (near * width + x) * 4
       const b = (Math.min(height - 1, near + 1) * width + x) * 4
       const edgeFade = smooth(Math.min(x, width - x) / 16)
-      const light = push * (17 + source[a] * .075)
+      const light = push * (14 + source[a] * .052)
       const pixel = (y * width + x) * 4
       overlay.data[pixel] = source[a] * (1 - mix) + source[b] * mix + light
       overlay.data[pixel + 1] = source[a + 1] * (1 - mix) + source[b + 1] * mix + light * .83
