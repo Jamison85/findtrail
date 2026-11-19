@@ -16,6 +16,8 @@ describe('CalmReset', () => {
     expect(lakeFog('exhale', 0)).toEqual(lakeFog('hold', 0))
     expect(lakeFog('exhale', 1)).toEqual(lakeFog('inhale', 0))
     expect(lakeFog('exhale', .25).amount).toBeGreaterThan(lakeFog('exhale', 1).amount)
+    expect(lakeFog('inhale', .5).sway).toBeGreaterThan(0)
+    expect(lakeFog('exhale', .5).sway).toBeLessThan(0)
   })
 
   it('keeps both exits available while leaving the trail saved', () => {

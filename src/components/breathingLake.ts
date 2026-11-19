@@ -1,4 +1,4 @@
-import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
+import { GUIDED_EXHALE_SECONDS, RIPPLE_DRAG, RIPPLE_DRAG_FALLOFF, RIPPLE_RATE, RIPPLE_SPEED, RIPPLE_TAIL_SECONDS } from './resetTiming'
 
 export type LakeMotion = 'inhale' | 'hold' | 'exhale' | 'tail'
 
@@ -8,14 +8,16 @@ const RELEASED_FOG = 1.42
 const READY_FOG = .82
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
-  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: 1 }
-  if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: 1 }
+  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: 1, sway: 0 }
+  if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: 1, sway: 0 }
+  const gust = 4 * progress * (1 - progress)
   if (motion === 'inhale') {
     const gathered = READY_FOG + (FULL_FOG - READY_FOG) * smooth(progress / .40)
     return {
       distance: progress,
       amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .71) / .29)),
       height: 1,
+      sway: gust,
     }
   }
   const released = HELD_FOG + (RELEASED_FOG - HELD_FOG) * smooth(progress / .23)
@@ -23,6 +25,7 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
     distance: 1 - progress,
     amount: released + (READY_FOG - released) * smooth((progress - .52) / .48),
     height: 1 + .19 * Math.sin(Math.PI * progress),
+    sway: gust > 0 ? -gust : 0,
   }
 }
 
@@ -139,9 +142,10 @@ function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnT
     const row = Math.floor(textureY)
     const nextRow = (row + 1) % MIST_SIZE
     const blendY = textureY - row
+    const driftX = fog.sway * (.13 + .04 * Math.sin(distance * 3))
     for (let x = 0; x < width; x++) {
       const across = x / width
-      const textureX = ((1 + across / spread + .035 * drift) * MIST_SIZE) % MIST_SIZE
+      const textureX = ((1 + (across - driftX) / spread + .035 * drift) * MIST_SIZE) % MIST_SIZE
       const column = Math.floor(textureX)
       const nextColumn = (column + 1) % MIST_SIZE
       const blendX = textureX - column
@@ -149,7 +153,8 @@ function paintMist({ width, height, source, overlay }: LakeSurface, fog: ReturnT
       const far = mistTexture[nextRow * MIST_SIZE + column] * (1 - blendX) + mistTexture[nextRow * MIST_SIZE + nextColumn] * blendX
       const texture = near * (1 - blendY) + far * blendY
       const cloud = Math.max(0, (texture - .19) / .81) ** 1.7
-      const edges = smooth(Math.min(across, 1 - across) / .23) * (1 - .72 * (1 - smooth(across / .54)) * (1 - smooth((level - .20) / .17)))
+      const shifted = across - driftX * .7
+      const edges = smooth(Math.min(shifted, 1 - shifted) / .23) * (1 - .72 * (1 - smooth(across / .54)) * (1 - smooth((level - .20) / .17)))
       const pixel = (y * width + x) * 4
       const mist = 255 * (1 - Math.exp(-1.15 * body * cloud * edges))
       const water = overlay.data[pixel + 3] * (1 - mist / 255)
@@ -173,11 +178,12 @@ function paintWaves({ width, height, source, overlay }: LakeSurface, seconds: nu
     for (let x = 0; x < width; x++) {
       const across = x / width - .5
       const distance = Math.hypot((depth - .22) / Math.max(.12, 1 - depth) * 3.8, across * 3.0)
-      const emitted = seconds - distance / RIPPLE_SPEED - RIPPLE_DRAG * distance ** 2
+      const travel = distance / RIPPLE_SPEED + RIPPLE_DRAG * distance ** 2 / (1 + RIPPLE_DRAG_FALLOFF * distance)
+      const emitted = seconds - travel
       const angle = (depth - .22) / Math.max(.12, 1 - depth) * 3.8 / Math.max(.001, distance)
-      const spread = .70 - .85 * smooth((distance - .20) / 8.2)
+      const spread = .70 - .96 * smooth((distance - .20) / 6.7)
       const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18))
-        * (1 - .77 * smooth((distance - 1.15) / 15.25)) * smooth((angle - spread) / .29)
+        * (1 - .77 * smooth((distance - 1.15) / 23.85)) * smooth((angle - spread) / .29)
       if (envelope < .008) continue
       const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6)
       const texture = Math.sin(emitted * RIPPLE_RATE * 1.82 - across * 6.0) * .24
