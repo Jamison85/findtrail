@@ -41,7 +41,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const lake = useRef<HTMLImageElement>(null)
   const sky = useRef<HTMLCanvasElement>(null)
   const breeze = useRef<HTMLCanvasElement>(null)
-  const nearLeaves = useRef<HTMLCanvasElement>(null)
+  const leafLayer = useRef<HTMLCanvasElement>(null)
   const water = useRef<HTMLCanvasElement>(null)
   const depth = useRef<HTMLCanvasElement>(null)
   const scene = useRef<ResetScene>(null)
@@ -49,12 +49,12 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
-    if (reducedMotion || !lake.current || !sky.current || !breeze.current || !nearLeaves.current || !water.current || !depth.current) return
+    if (reducedMotion || !lake.current || !sky.current || !breeze.current || !leafLayer.current || !water.current || !depth.current) return
     const photo = lake.current
     const fallbackLayer = water.current
     const depthLayer = depth.current
     const clouds = createCoveClouds(photo, sky.current)
-    const wind = createCoveWind(photo, breeze.current, nearLeaves.current)
+    const wind = createCoveWind(photo, breeze.current, leafLayer.current)
     let renderer: ReturnType<typeof createLakeDepth> = null
     let fallback: ReturnType<typeof createBreathingLake> | undefined
     let initialized = false
@@ -159,7 +159,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
         <canvas ref={breeze} className="reset-journey__wind reset-journey__wind--scene" />
         <canvas ref={depth} className="reset-journey__water reset-journey__water--depth" />
         <canvas ref={water} className="reset-journey__water reset-journey__water--fallback" />
-        <canvas ref={nearLeaves} className="reset-journey__wind reset-journey__wind--near" />
+        <canvas ref={leafLayer} className="reset-journey__wind reset-journey__wind--leaves" />
       </div>
       <div className="reset-journey__layout">
         <header className="reset-journey__top">
