@@ -150,14 +150,14 @@ function drawBranches(context: CanvasRenderingContext2D, plate: WindPlate, time:
   }
 }
 
-function drawLeaves(scene: CanvasRenderingContext2D, foreground: CanvasRenderingContext2D, plate: WindPlate, time: number) {
+function drawLeaves(context: CanvasRenderingContext2D, plate: WindPlate, time: number) {
   const { left, top, photoWidth, photoHeight } = plate
   const { outlet, vanishing } = COVE_SHORELINE
   for (const leaf of leaves) {
     const age = time - leaf.start
     const progress = age / leaf.duration
     if (progress <= 0 || progress >= 1) continue
-    const context = leaf.size >= .016 ? foreground : scene
+    const distant = leaf.size < .016
     const flutter = Math.sin(leaf.turn + age * 5.0)
     const carry = 1 - (1 - progress) ** 1.65
     const perspective = 1 / (1 + carry * leaf.reach)
@@ -165,19 +165,19 @@ function drawLeaves(scene: CanvasRenderingContext2D, foreground: CanvasRendering
     const x = left + photoWidth * (outlet + (leaf.x - outlet) * perspective + flutter * wake * .020)
     const y = top + photoHeight * (vanishing + (leaf.y - vanishing + leaf.drop * progress ** 1.6) * perspective
       - wake * (.024 - .011 * flutter))
-    const size = leaf.size * photoWidth * perspective
+    const size = leaf.size * photoWidth * perspective * (distant ? 1.15 : 1.06)
     context.save()
     context.translate(x, y)
     context.rotate(leaf.turn + age * 2.5 + .65 * flutter)
     context.scale(size, size * (.29 + .50 * Math.abs(Math.cos(leaf.turn + age * 4.0))))
-    context.globalAlpha = .82 * ease(progress / .10) * (1 - ease((progress - .69) / .31)) * (.64 + .36 * perspective)
+    context.globalAlpha = (distant ? .72 : .91) * ease(progress / .10) * (1 - ease((progress - .69) / .31)) * (.74 + .26 * perspective)
     context.fillStyle = leaf.color
     context.beginPath()
     context.moveTo(-.63, .12)
     context.bezierCurveTo(-.28, -.60, .18, -.49, .65, -.20)
     context.bezierCurveTo(.47, .33, -.04, .51, -.63, .12)
     context.fill()
-    context.strokeStyle = '#f3bd72'
+    context.strokeStyle = distant ? '#d8a16a' : '#f3bd72'
     context.lineWidth = .11
     context.beginPath()
     context.moveTo(-.48, .10)
@@ -187,42 +187,42 @@ function drawLeaves(scene: CanvasRenderingContext2D, foreground: CanvasRendering
   }
 }
 
-export function createCoveWind(photo: HTMLImageElement, canvas: HTMLCanvasElement, nearLeaves: HTMLCanvasElement) {
+export function createCoveWind(photo: HTMLImageElement, canvas: HTMLCanvasElement, leafLayer: HTMLCanvasElement) {
   const context = typeof CanvasRenderingContext2D === 'undefined' ? null : canvas.getContext('2d')
-  const foreground = context ? nearLeaves.getContext('2d') : null
+  const leafContext = context ? leafLayer.getContext('2d') : null
   let plate: WindPlate | null = null
   const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => { plate = null })
   resize?.observe(canvas)
   return {
     draw(time = -1) {
-      if (!context || !foreground) return
+      if (!context || !leafContext) return
       if (time < 0 || time >= GUIDED_EXHALE_SECONDS) {
         if (canvas.dataset.active) {
           context.clearRect(0, 0, canvas.width, canvas.height)
-          foreground.clearRect(0, 0, nearLeaves.width, nearLeaves.height)
+          leafContext.clearRect(0, 0, leafLayer.width, leafLayer.height)
         }
         canvas.removeAttribute('data-active')
-        nearLeaves.removeAttribute('data-active')
+        leafLayer.removeAttribute('data-active')
         return
       }
       if (!photo.naturalWidth) return
       plate ??= preparePlate(photo, canvas, context)
       if (!plate) return
       canvas.dataset.active = 'true'
-      nearLeaves.dataset.active = 'true'
-      if (nearLeaves.width !== plate.width || nearLeaves.height !== plate.height) {
-        nearLeaves.width = plate.width
-        nearLeaves.height = plate.height
+      leafLayer.dataset.active = 'true'
+      if (leafLayer.width !== plate.width || leafLayer.height !== plate.height) {
+        leafLayer.width = plate.width
+        leafLayer.height = plate.height
       }
       context.clearRect(0, 0, canvas.width, canvas.height)
-      foreground.clearRect(0, 0, nearLeaves.width, nearLeaves.height)
+      leafContext.clearRect(0, 0, leafLayer.width, leafLayer.height)
       drawBranches(context, plate, time)
-      drawLeaves(context, foreground, plate, time)
+      drawLeaves(leafContext, plate, time)
     },
     dispose() {
       resize?.disconnect()
       canvas.removeAttribute('data-active')
-      nearLeaves.removeAttribute('data-active')
+      leafLayer.removeAttribute('data-active')
     },
   }
 }

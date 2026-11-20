@@ -106,7 +106,9 @@ try {
   })
   const frameChange = (before, after) => before.reduce((total, shade, index) => total + Math.abs(shade - after[index]), 0) / before.length
   const wind = page.locator('.reset-journey__wind--scene')
-  const nearLeaves = page.locator('.reset-journey__wind--near')
+  const leafLayer = page.locator('.reset-journey__wind--leaves')
+  assert.ok(await leafLayer.evaluate((canvas) => canvas.previousElementSibling?.classList.contains('reset-journey__water--fallback')),
+    'leaves render above both fog layers')
   const breezeIn = (bounds, layer = wind) => layer.evaluate((canvas, [left, top, right, bottom]) => {
     const x = Math.round(canvas.width * left)
     const y = Math.round(canvas.height * top)
@@ -157,16 +159,17 @@ try {
     return { depth: opacity ? depth / opacity / height : 0, amount: opacity / area, aboveWater: aboveWater / area, nearWater: nearWater / area, tiles: tiles.map((tile) => tile * tiles.length / area) }
   })
   const fogChange = (before, after) => frameChange(before.tiles, after.tiles)
-  const firstLeafCenter = () => nearLeaves.evaluate((canvas) => {
-    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+  const firstLeafCenter = () => leafLayer.evaluate((canvas) => {
+    const sampleWidth = Math.round(canvas.width * .42)
+    const pixels = canvas.getContext('2d').getImageData(0, 0, sampleWidth, canvas.height).data
     let x = 0
     let y = 0
     let weight = 0
     for (let i = 3; i < pixels.length; i += 4) {
       const index = (i - 3) / 4
       const alpha = pixels[i]
-      x += index % canvas.width * alpha
-      y += Math.floor(index / canvas.width) * alpha
+      x += index % sampleWidth * alpha
+      y += Math.floor(index / sampleWidth) * alpha
       weight += alpha
     }
     return [x / weight / canvas.width, y / weight / canvas.height]
@@ -249,12 +252,12 @@ try {
     const motion = current.source.color.reduce((sum, shade, index) => sum + Math.abs(shade - previous.source.color[index]), 0) / current.source.color.length
     assert.ok(current.source.coverage > 40 && motion > .45, `fresh ripples remain visible in the source area at second ${second} (change ${motion})`)
     if (second === 3) {
-      assert.ok(await breezeIn([.509, .312, .564, .418]) > 2, 'a loose leaf travels into the open cove')
-      assert.ok(await breezeIn([.46, .275, .535, .38], nearLeaves) > 6, 'close leaves recede toward the opening')
+      assert.ok(await breezeIn([.509, .375, .575, .418], leafLayer) > 2, 'distant leaves stay visible over the fog')
+      assert.ok(await breezeIn([.46, .275, .535, .38], leafLayer) > 6, 'close leaves recede toward the opening')
       assert.ok(await breezeIn([.85, .405, .99, .448]) > 15, 'the breeze travels to the opposite bank')
       await capture(page, 'reset-leaves-390')
     }
-    if (second === 4) assert.ok(await breezeIn([.36, .481, .46, .534], nearLeaves) > 5, 'a foreground leaf passes out over the water')
+    if (second === 4) assert.ok(await breezeIn([.36, .481, .46, .534], leafLayer) > 5, 'a foreground leaf passes out over the water')
     previous = current
   }
   assert.ok(previous.distance.coverage > first.distance.coverage + 30, 'earlier ripples reach farther into the lake')
@@ -302,7 +305,7 @@ try {
   assert.equal(await page.locator('.reset-breathing__phase').textContent(), 'Breathe in', 'the next inhale begins after the exhale')
   assert.equal(await page.locator('.reset-breathing__hint').textContent(), 'Breath 2 of 3')
   assert.equal(await wind.getAttribute('data-active'), null, 'the branches settle with the next inhale')
-  assert.equal(await nearLeaves.getAttribute('data-active'), null, 'loose leaves clear by the next inhale')
+  assert.equal(await leafLayer.getAttribute('data-active'), null, 'loose leaves clear by the next inhale')
   assert.ok(fogChange(regathered, await fogSample()) < 1.4, 'gathered fog carries smoothly into the next inhale')
   const nextClouds = await cloudFrame()
   assert.ok(frameChange(heldClouds, nextClouds) < 1, 'the next inhale starts where the clouds left off')
