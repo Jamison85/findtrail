@@ -12,6 +12,7 @@ interface CalmResetProps {
   search: ActiveSearch | null
   returnScreen: Screen
   reducedMotion?: boolean
+  onClose?: () => void
   onResume: () => void
   onHome: () => void
 }
@@ -34,7 +35,7 @@ const LAKE_WATERLINE = .493
 type BreathStep = { phase: keyof typeof phaseLabels; breath: number }
 type ResetScene = ReturnType<typeof createBreathingLake> & { drawClouds: (position: number) => void }
 
-export function CalmReset({ search, returnScreen, reducedMotion = false, onResume, onHome }: CalmResetProps) {
+export function CalmReset({ search, returnScreen, reducedMotion = false, onResume, onClose = onResume, onHome }: CalmResetProps) {
   const [{ phase, breath }, setBreathStep] = useState<BreathStep>({ phase: 'idle', breath: 1 })
   const [running, setRunning] = useState(false)
   const [replay, setReplay] = useState(0)
@@ -46,6 +47,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
   const depth = useRef<HTMLCanvasElement>(null)
   const scene = useRef<ResetScene>(null)
   const elapsed = useRef(0)
+  const completedBreaths = useRef(0)
   const next = clearNextStep(search, returnScreen)
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       const previousWave = seconds >= CYCLE_SECONDS && cycle < RIPPLE_TAIL_SECONDS ? GUIDED_EXHALE_SECONDS + cycle : undefined
       const inhaled = Math.min(1, cycle / BREATHE_IN_SECONDS)
       const cloudPosition = finished ? RESET_CYCLES : nextBreath - 1 + inhaled * inhaled * (3 - 2 * inhaled)
-      scene.current?.drawClouds(cloudPosition)
+      scene.current?.drawClouds(completedBreaths.current + cloudPosition)
       if (reducedMotion || seconds >= end) scene.current?.draw(null)
       else if (finished) scene.current?.draw('tail', (seconds - TOTAL_SECONDS) / RIPPLE_TAIL_SECONDS, GUIDED_EXHALE_SECONDS + seconds - TOTAL_SECONDS, seconds)
       else if (nextPhase === 'inhale') scene.current?.draw('inhale', cycle / BREATHE_IN_SECONDS, previousWave, seconds)
@@ -138,6 +140,7 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       return
     }
     if (phase === 'idle' || phase === 'complete') {
+      if (phase === 'complete') completedBreaths.current += RESET_CYCLES
       elapsed.current = 0
       setBreathStep({ phase: 'inhale', breath: 1 })
       if (running) setReplay((value) => value + 1)
@@ -164,13 +167,13 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
       <div className="reset-journey__layout">
         <header className="reset-journey__top">
           <strong>Reset</strong>
-          <button className="icon-button reset-journey__exit" onClick={onResume} aria-label="Close reset"><Icon name="close" size={21} /></button>
+          <button className="icon-button reset-journey__exit" onClick={onClose} aria-label="Close reset"><Icon name="close" size={21} /></button>
         </header>
         <div className="reset-journey__message">
           <h1 id="view-heading" tabIndex={-1}>Take a moment.</h1>
           {search && <p>Your search is saved.</p>}
         </div>
-        <div className="reset-breathing">
+        <div className="reset-breathing" data-phase={phase}>
           <div role="status">
             <p className="reset-breathing__phase">{paused ? 'Breathing paused' : cue}</p>
             <p className="reset-breathing__hint">{hint}</p>
@@ -185,8 +188,8 @@ export function CalmReset({ search, returnScreen, reducedMotion = false, onResum
             <strong>{next.spot}</strong>
             {next.kind === 'safety' && <p>{next.instruction}</p>}
           </div>}
-          {search && <button className="button button--primary reset-journey__action" onClick={onResume}>{returnScreen === 'trail' ? 'Continue trail' : 'Continue search'}</button>}
-          <button className={search ? 'text-button reset-journey__home' : 'button button--primary reset-journey__action'} onClick={onHome}>Back to home</button>
+          {search && <button className={`button ${phase === 'complete' ? 'button--primary' : 'button--secondary'} reset-journey__action`} onClick={onResume}>{returnScreen === 'trail' ? 'Continue trail' : 'Continue search'}</button>}
+          <button className={search ? 'text-button reset-journey__home' : `button ${phase === 'complete' ? 'button--primary' : 'button--secondary'} reset-journey__action`} onClick={onHome}>Back to home</button>
         </div>
       </div>
     </section>

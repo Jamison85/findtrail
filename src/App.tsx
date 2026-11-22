@@ -43,10 +43,10 @@ function navigationUrl(screen: Screen): URL {
   return url
 }
 
-function navigationState(screen: Screen): Record<string, unknown> {
+function navigationState(screen: Screen, clueIndex: number): Record<string, unknown> {
   const current = window.history.state
   const state = current && typeof current === 'object' ? current as Record<string, unknown> : {}
-  return { ...state, [NAVIGATION_STATE_KEY]: screen }
+  return { ...state, [NAVIGATION_STATE_KEY]: screen, clueIndex: screen === 'clues' ? clueIndex : undefined }
 }
 
 function stamp(search: ActiveSearch): ActiveSearch {
@@ -120,7 +120,7 @@ export default function App() {
   const optionalPlaces = active ? buildTrail(active.itemId, active.itemLabel, active.answers, data.history, data.savedItems, [], true)
     .filter((stop) => stop.kind !== 'safety' && stop.kind !== 'final') : []
   const navigationReady = useRef(false)
-  const screenFromHistory = useRef(false)
+  const replaceEntry = useRef(false)
   const screenRef = useRef(screen)
   const activeRef = useRef(active)
   const foundSummaryRef = useRef(foundSummary)
@@ -141,12 +141,17 @@ export default function App() {
             : true
       const next = available ? requested : 'home'
 
-      if (next === screenRef.current) {
-        window.history.replaceState(navigationState(next), '', navigationUrl(next))
-        return
+      const step = event.state?.clueIndex
+      if (next === 'clues' && currentActive && Number.isInteger(step)) {
+        setClueIndex(Math.max(0, Math.min(step, ITEM_BY_ID[currentActive.itemId].questions.length - 1)))
       }
+      if (screenRef.current === 'found' && next === currentActive?.foundDraft?.returnScreen) {
+        updateActive((current) => ({ ...current, foundDraft: undefined }))
+      }
+      // popstate already moved the browser. Correct an unavailable destination
+      // here even when React is already displaying the replacement screen.
+      if (next !== requested) window.history.replaceState(navigationState(next, 0), '', navigationUrl(next))
 
-      screenFromHistory.current = true
       setScreen(next)
     }
 
@@ -155,22 +160,30 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const fromHistory = screenFromHistory.current
-    screenFromHistory.current = false
-    const state = navigationState(screen)
-    const url = navigationUrl(screen)
+    const current = window.history.state
+    const currentScreen = navigationScreen(current)
+    const state = navigationState(screen, clueIndex)
+    const replace = !navigationReady.current || replaceEntry.current
+    navigationReady.current = true
+    replaceEntry.current = false
+    if (replace) {
+      window.history.replaceState(state, '', navigationUrl(screen))
+    } else if (currentScreen !== screen || (screen === 'clues' && current?.clueIndex !== clueIndex)) {
+      window.history.pushState({ ...state, fromScreen: currentScreen, fromClue: current?.clueIndex }, '', navigationUrl(screen))
+    }
+  }, [screen, clueIndex])
 
-    if (!navigationReady.current || fromHistory) {
-      window.history.replaceState(state, '', url)
-      navigationReady.current = true
+  function returnTo(destination: Screen, step = clueIndex) {
+    const entry = window.history.state
+    if (entry?.fromScreen === destination && (destination !== 'clues' || entry.fromClue === step)) {
+      window.history.back()
       return
     }
-
-    // React Strict Mode replays effects in development. Do not create a
-    // duplicate entry when the current entry already represents this screen.
-    if (navigationScreen(window.history.state) === screen) return
-    window.history.pushState(state, '', url)
-  }, [screen])
+    // A shortcut or restored search can have no matching entry behind it.
+    replaceEntry.current = true
+    if (destination === 'clues') setClueIndex(step)
+    setScreen(destination)
+  }
 
   useEffect(() => {
     if (recoveryNeeded || storageConflict) return
@@ -759,16 +772,18 @@ export default function App() {
       {storageError && !recoveryNeeded && !storageConflict && <div className="storage-banner" role="alert">This browser could not save your trail. Keep this tab open.<button onClick={retryStorage}>Retry saving</button></div>}
       <main id="app-content" className={rootScreen ? 'app-content app-content--with-nav' : 'app-content'}>
         {screen === 'home' && <HomeView data={data} customOpen={customOpen} customName={customName} setCustomOpen={setCustomOpen} setCustomName={setCustomName} onStart={startSearch} onResume={resumeSearch} onDiscard={discardActive} onOpenHistory={openHistoryEntry} onIntro={() => setOnboardingOpen(true)} onSettings={() => navigate('settings')} />}
-        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onQuickStart={startWithCurrentClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? setScreen('home') : setClueIndex((value) => value - 1)} />}
+        {screen === 'clues' && active && activeItem && <ClueView search={active} settings={data.settings} question={activeItem.questions[clueIndex]} index={clueIndex} total={activeItem.questions.length} onAnswer={answerClue} onSave={saveClueAnswer} onComplete={completeClues} onQuickStart={startWithCurrentClues} optionalPlaces={optionalPlaces} onToggleExclude={toggleExcludedPlace} onBack={() => clueIndex === 0 ? returnTo('home') : returnTo('clues', clueIndex - 1)} />}
         {screen === 'trail' && active && firstSpot && <SavedSpotView itemLabel={active.itemLabel} spot={firstSpot.spots[0]} onBack={() => setScreen('home')} onReset={() => openReset('trail')} onFound={openFound} onContinue={searchBeyondSavedSpot} />}
         {screen === 'trail' && active && !firstSpot && active.stops[active.currentIndex] && <TrailView search={active} settings={data.settings} offerReset={pauseOffer} onDismissReset={() => setPauseOffer(false)} onBack={() => active.reviewingSkippedFrom ? returnFromSkippedPlace() : setScreen('home')} onToggleSpot={toggleSpot} onNext={nextStop} onFound={openFound} onCalm={() => openReset('trail')} onEditClues={editClues} onExcludePlace={excludeCurrentPlace} onAlreadyChecked={markCurrentAreaChecked} />}
         {screen === 'widen' && active && <WidenSearchView search={active} onWiden={widenSearch} onReviewSkipped={(id) => reviewSkippedPlace(id, 'widen')} onFound={openFound} onReset={() => openReset('widen')} onHome={() => setScreen('home')} />}
-        {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); setScreen(foundReturnScreen) }} />}
+        {screen === 'found' && active && <FoundView search={active} currentStepTitle={foundReturnScreen === 'trail' && active.stops[active.currentIndex]?.kind !== 'safety' ? active.stops[active.currentIndex]?.title : undefined} value={foundLocation} foundInCurrentArea={foundInCurrentArea} saveAsHome={saveAsHome} pinCustomItem={pinCustomItem} onChange={setFoundLocation} onFoundInCurrentArea={setFoundInCurrentArea} onSaveAsHome={setSaveAsHome} onPinCustomItem={setPinCustomItem} onSave={saveFound} onDone={() => { setData((current) => ({ ...current, activeSearch: null })); setScreen('home') }} onBack={() => { updateActive((current) => ({ ...current, foundDraft: undefined })); returnTo(foundReturnScreen) }} />}
         {screen === 'complete' && foundSummary && <CompleteView summary={foundSummary} durationLabel={formatDuration(foundSummary.seconds)} onHome={() => setScreen('home')} onAnother={findAnotherItem} />}
         {screen === 'history' && <HistoryView history={data.history} initialEntryId={historyEntryId} onStart={startSearch} onHome={() => navigate('home')} onUpdateEntry={updateHistoryEntry} onRemoveEntry={removeHistoryEntry} />}
-        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} reducedMotion={shouldReduceMotion(data.settings)} onHome={() => navigate('home')} onResume={() => {
-          if (active && (returnScreen === 'clues' || returnScreen === 'found')) resumeSearch()
-          else setScreen(active ? returnScreen : 'home')
+        {screen === 'calm' && <CalmReset search={active} returnScreen={returnScreen} reducedMotion={shouldReduceMotion(data.settings)} onHome={() => returnTo('home')} onClose={() => returnTo(window.history.state?.fromScreen ?? (active ? returnScreen : 'home'))} onResume={() => {
+          if (active && returnScreen === 'clues') {
+            const firstMissing = ITEM_BY_ID[active.itemId].questions.findIndex((question) => !active.answers[question.id])
+            returnTo('clues', firstMissing < 0 ? ITEM_BY_ID[active.itemId].questions.length - 1 : firstMissing)
+          } else returnTo(active ? returnScreen : 'home')
         }} />}
         {screen === 'settings' && <SettingsView data={data} offlineReady={offlineReady} offlineError={offlineError} canInstall={Boolean(installPrompt)} iosInstallHelpAvailable={iosInstallHelpAvailable} backupStatus={backupStatus} onUpdate={updateSettings} onUpdateSavedItem={updateSavedItem} onRemoveSavedItem={removeSavedItem} onInstall={installApp} onShowIOSInstallHelp={() => setIosInstallHelpRequest((value) => value + 1)} onExport={exportBackup} onRestore={restoreBackup} onClear={clearHistory} />}
         {screen === 'end' && active && <StillMissingView search={active} freshPlaceCount={newPlaces.length} onFreshPlaces={tryFreshPlaces} onEditClues={editClues} onReviewSkipped={(id) => reviewSkippedPlace(id, 'end')} onFound={openFound} onReset={() => openReset('end')} onRestart={repeatCurrentRoute} onHome={() => setScreen('home')} />}
@@ -975,6 +990,7 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
     const savedAnswer = search.answers[question.id] ?? null
     setSelectedValue(savedAnswer)
     setMoreOpen(Boolean(savedAnswer && extraOptions.some((option) => option.value === savedAnswer)))
+    window.scrollTo({ top: 0, behavior: 'instant' })
     headingRef.current?.focus({ preventScroll: true })
     return () => {
       if (selectionTimer.current !== null) window.clearTimeout(selectionTimer.current)
@@ -1008,7 +1024,7 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
     return (
       <button key={option.value} type="button" className={selected ? 'choice-button is-selected' : 'choice-button'} aria-pressed={selected} onClick={() => chooseAnswer(option.value)}>
         <span><strong>{option.label}</strong>{option.detail && <small>{option.detail}</small>}</span>
-        <span className="choice-button__marker" aria-hidden="true">{selected ? <Icon name="check" size={17} /> : <span />}</span>
+        <span className="choice-button__marker" aria-hidden="true">{selected && <Icon name="check" size={17} />}</span>
       </button>
     )
   }
@@ -1039,7 +1055,6 @@ function ClueView({ search, settings, question, index, total, onAnswer, onSave, 
             selectionTimer.current = null
             onQuickStart(selectedValue)
           }}>Start with likely places<Icon name="forward" size={18} /></button>
-          <p>Use what we know so far. You can add clues during the search.</p>
         </div>}
         <div className="choice-group" role="group" aria-labelledby="view-heading">
           <div className="choice-list">{primaryOptions.map(renderOption)}</div>

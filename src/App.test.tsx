@@ -166,7 +166,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('heading', { name: 'Take a moment.' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start breathing' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Continue trail' }))
-    expect(screen.getByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'The landing zone' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'I need a reset' }))
     fireEvent.click(screen.getByRole('button', { name: 'Start breathing' }))
     fireEvent.click(screen.getByRole('button', { name: 'Back to home' }))
@@ -277,7 +277,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('progressbar', { name: 'Focused pass progress' })).toHaveAttribute('aria-valuenow', '2')
   })
 
-  it('resumes at the focused checkpoint and reveals only the next three places', () => {
+  it('resumes at the focused checkpoint and reveals only the next three places', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 3,
       settings: { ...DEFAULT_SETTINGS, motion: 'reduced' },
@@ -319,7 +319,7 @@ describe('FindTrail app', () => {
     expect(screen.getByRole('textbox', { name: 'Exact place' })).toHaveValue('')
     fireEvent.click(screen.getByRole('button', { name: 'Back to search' }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Search these 3 places' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Search these 3 places' }))
     expect(screen.getByRole('heading', { name: 'The car drop zones' })).toBeInTheDocument()
     expect(screen.getByText('Place 1 of 3')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Wider pass progress' })).toHaveAttribute('aria-valuenow', '1')

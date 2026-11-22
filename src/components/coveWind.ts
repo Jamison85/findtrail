@@ -165,12 +165,13 @@ function drawLeaves(context: CanvasRenderingContext2D, plate: WindPlate, time: n
     const x = left + photoWidth * (outlet + (leaf.x - outlet) * perspective + flutter * wake * .020)
     const y = top + photoHeight * (vanishing + (leaf.y - vanishing + leaf.drop * progress ** 1.6) * perspective
       - wake * (.024 - .011 * flutter))
-    const size = leaf.size * photoWidth * perspective * (distant ? 1.15 : 1.06)
+    // Keep a readable silhouette over the sunlit opening as the leaf turns.
+    const size = Math.max(2.6 * plate.width / 390, leaf.size * photoWidth * perspective) * (distant ? 1.27 : 1.12)
     context.save()
     context.translate(x, y)
     context.rotate(leaf.turn + age * 2.5 + .65 * flutter)
-    context.scale(size, size * (.29 + .50 * Math.abs(Math.cos(leaf.turn + age * 4.0))))
-    context.globalAlpha = (distant ? .72 : .91) * ease(progress / .10) * (1 - ease((progress - .69) / .31)) * (.74 + .26 * perspective)
+    context.scale(size, size * (.41 + .43 * Math.abs(Math.cos(leaf.turn + age * 4.0))))
+    context.globalAlpha = (distant ? .87 : .96) * ease(progress / .10) * (1 - ease((progress - .83) / .17)) * (.88 + .12 * perspective)
     context.fillStyle = leaf.color
     context.beginPath()
     context.moveTo(-.63, .12)

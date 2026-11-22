@@ -12,8 +12,8 @@ const FULL_FOG = 1.88
 const READY_FOG = .88
 
 export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
-  if (motion === 'tail') return { distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: FOG_SETTLED_HEIGHT, lift: 0, sway: 0 }
-  if (motion === 'hold') return { distance: 1, amount: HELD_FOG, height: FOG_SWOLLEN_HEIGHT, lift: FOG_MAX_LIFT, sway: 0 }
+  if (motion === 'tail') return { nearPosition: 0, distance: 0, amount: READY_FOG * (1 - smooth(progress)), height: FOG_SETTLED_HEIGHT, lift: 0, sway: 0 }
+  if (motion === 'hold') return { nearPosition: 1, distance: 1, amount: HELD_FOG, height: FOG_SWOLLEN_HEIGHT, lift: FOG_MAX_LIFT, sway: 0 }
   const gust = (4 * progress * (1 - progress)) ** 2
   const swell = smooth(motion === 'inhale' ? progress : 1 - progress)
   const height = FOG_SETTLED_HEIGHT + (FOG_SWOLLEN_HEIGHT - FOG_SETTLED_HEIGHT) * swell
@@ -21,6 +21,7 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
   if (motion === 'inhale') {
     const gathered = READY_FOG + (FULL_FOG - READY_FOG) * smooth(progress / .40)
     return {
+      nearPosition: swell,
       distance: progress,
       amount: smooth(entry) * (gathered - (gathered - HELD_FOG) * smooth((progress - .66) / .34)),
       height,
@@ -29,6 +30,9 @@ export function lakeFog(motion: LakeMotion, progress: number, entry = 1) {
     }
   }
   return {
+    // Disperse near pockets in place. Once they have faded, reset their
+    // sampling position under the distant bank before the next inhale.
+    nearPosition: smooth((1 - progress) / .18),
     distance: 1 - progress,
     amount: HELD_FOG + (READY_FOG - HELD_FOG) * smooth(progress),
     height,
@@ -157,7 +161,7 @@ function paintMist({ width, height, cropLeft, cropTop, cropWidth, cropHeight, so
   const drift = smooth(fog.distance)
   const distant = (COVE_SHORELINE.distant - cropTop) / cropHeight
   const outlet = (COVE_SHORELINE.outlet - cropLeft) / cropWidth
-  const center = distant + .10 + drift * .12 - fog.lift * .08
+  const center = distant + .10 + fog.nearPosition * .12 - fog.lift * .08
   const depth = .25 * fog.height
   const spread = .61 + drift * .21
   const driftX = fog.sway * .035
@@ -180,7 +184,7 @@ function paintMist({ width, height, cropLeft, cropTop, cropWidth, cropHeight, so
       const turn = 5 * flowX + 4 * flowY + seconds * .38
       const wisp = mistAt(flowX * 1.72 + Math.sin(turn) * .071 + bank * .14, flowY * 1.60 + Math.cos(turn) * .065 + .35)
       const cloud = smooth((bank * .52 + wisp * .48 - .32) / .46)
-      const gathering = smooth((drift - .18 + (bank - .5) * .29) / .80)
+      const gathering = smooth(drift / .18) * smooth((drift - .18 + (bank - .5) * .66) / .80)
       const distantMist = farBody * mistAt(across * 1.14 - seconds * .004, level * 1.81 + .36)
       const body = (nearBody * cloud * gathering + distantMist) * fog.amount * edgeY
       const shifted = across - driftX * .7
@@ -223,11 +227,11 @@ function paintWaves({ width, height, source, overlay, cropLeft, cropTop, cropWid
       const envelope = smooth(emitted / .40) * (1 - smooth((emitted - GUIDED_EXHALE_SECONDS) / .18))
         * (1 - .77 * smooth((distance - 1.15) / 23.85)) * smooth((angle - spread) / .29)
       if (envelope < .008) continue
-      const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6)
+      const slope = Math.sin(emitted * RIPPLE_RATE + across * 1.6 + 1.45 * mistAt(photoX * .84, photoY * 1.64))
       const texture = Math.sin(emitted * RIPPLE_RATE * 1.82 - across * 6.0) * .24
       const shallows = .27 + .73 * smooth((photoY - waterline - .0018) / .0552)
       const push = (slope + texture) * taper * envelope * 1.17 * shallows
-      const reflectedY = Math.min(height - 1, Math.max(0, (waterline - cropTop) / cropHeight * height, y + push * 6))
+      const reflectedY = Math.min(height - 1, Math.max(0, (waterline - cropTop) / cropHeight * height, y + push * 4.6))
       const near = Math.floor(reflectedY)
       const mix = reflectedY - near
       const a = (near * width + x) * 4

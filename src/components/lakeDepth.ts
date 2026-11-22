@@ -17,6 +17,7 @@ uniform float uAspect;
 uniform float uHorizon;
 uniform vec4 uFog;
 uniform float uFogLift;
+uniform float uNearPosition;
 uniform float uFogTime;
 uniform float uWaveTime;
 
@@ -47,8 +48,8 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
     // Near pockets disperse in place while a low bank lingers farther back.
     bool farBank = i >= 12;
     float offset = (mod(float(i), 12.0) + .5) / 12.0 * 2.0 - 1.0;
-    float center = farBank ? 28.0 : mix(10.2, 5.0, drift);
-    float span = farBank ? 13.2 : mix(6.6, 4.4, drift);
+    float center = farBank ? 28.0 : mix(10.2, 5.0, uNearPosition);
+    float span = farBank ? 13.2 : mix(6.6, 4.4, uNearPosition);
     float ceiling = farBank ? 2.75 : height * 4.0;
     float lift = farBank ? .09 : uFogLift;
     float z = center + offset * span;
@@ -71,14 +72,14 @@ vec2 fogVolume(vec3 ray, float progress, float height, float amount, float sway)
       float floorMist = .28 * (1.0 - smoothstep(.035, max(.16, roof * .38), altitude));
       float density = (.74 * core + floorMist) * smoothstep(.33, .76, .70 * bank + .30 * threads);
       density += rising * 1.08 * smoothstep(.36, .79, .54 * curl + .46 * threads);
-      float gathering = farBank ? (1.0 - drift * .56) : smoothstep(.04, .91, drift + eddy.y * .45);
+      float gathering = farBank ? (1.0 - drift * .56) : smoothstep(0.0, .18, drift) * smoothstep(.03, .94, drift + (bank - .5) * .66);
       density *= gathering * mix(.48, 1.28, smoothstep(.27, .69, .69 * curl + .31 * bank));
       float across = 1.0 - smoothstep(1.0, farBank ? 7.0 : 4.25, abs(plumeX + 1.1 * eddy.x));
       float depth = offset + eddy.x * .54;
       float lengthwise = smoothstep(-1.0, -.38, depth) * (1.0 - smoothstep(.24, 1.0, depth));
       lengthwise *= 1.0 - smoothstep(.76, 1.0, abs(offset));
       float reflection = 1.0 - smoothstep(-.033, .033, p.y);
-      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * (farBank ? .23 : .40);
+      extinction += vec2(1.0 - reflection, reflection) * density * across * lengthwise * (farBank ? .23 : .33);
     }
   }
   return 1.0 - exp(-extinction * vec2(1.0, .12) * amount);
@@ -120,10 +121,13 @@ void main() {
       float shallows = mix(.27, 1.0, smoothstep(.0018, .057, (uv.y - shoreline) * uCrop.y));
       vec2 direction = normalize(vec2(fan.x * curve, fan.y - .09 * fan.x) + vec2(.001));
       float variance = texture2D(uNoise, clamp(world * .062, .015625, .984375)).r;
-      float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78;
+      // Break the crest along its width so the reflected trees ripple in
+      // short, uneven runs even where perspective flattens the wavefront.
+      float crosswind = texture2D(uNoise, vec2(world.x * .026, world.y * .019)).r;
+      float crest = emitted * ${RIPPLE_RATE.toFixed(1)} + variance * .78 + crosswind * 1.45;
       float wave = sin(crest + world.x * .09);
       float detail = sin(crest * 1.82 - world.x * .39);
-      vec2 slope = (wave * .00625 + detail * .00145) * direction * weight * shallows;
+      vec2 slope = (wave * .0046 + detail * .0011) * direction * weight * shallows;
       slope.x += detail * .0025 * weight * shallows;
       vec3 normal = normalize(vec3(-slope.x, 1.0, -slope.y));
       vec3 reflected = reflect(waterRay, normal);
@@ -239,6 +243,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
   const aspect = gl.getUniformLocation(program, 'uAspect')
   const fog = gl.getUniformLocation(program, 'uFog')
   const fogLift = gl.getUniformLocation(program, 'uFogLift')
+  const nearPosition = gl.getUniformLocation(program, 'uNearPosition')
   const fogTime = gl.getUniformLocation(program, 'uFogTime')
   const waveTime = gl.getUniformLocation(program, 'uWaveTime')
   let needsResize = true
@@ -292,6 +297,7 @@ export function createLakeDepth(photo: HTMLImageElement, canvas: HTMLCanvasEleme
       const mist = lakeFog(motion, fraction, seconds / 1.2)
       gl.uniform4f(fog, mist.distance, mist.amount, mist.height, mist.sway)
       gl.uniform1f(fogLift, mist.lift)
+      gl.uniform1f(nearPosition, mist.nearPosition)
       gl.uniform1f(fogTime, seconds)
       gl.uniform1f(waveTime, elapsedWave)
       gl.drawArrays(gl.TRIANGLES, 0, 3)

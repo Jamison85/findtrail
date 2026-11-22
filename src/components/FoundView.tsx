@@ -72,7 +72,10 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
         </h1>
       </div>
 
-      <section className="found-capture" aria-labelledby="found-location-heading">
+      <form className="found-capture" aria-labelledby="found-location-heading" onSubmit={(event) => {
+        event.preventDefault()
+        if (ready) onSave()
+      }}>
         <div className="found-capture__heading">
           <div>
             <h2 id="found-location-heading">Where did it turn up?</h2>
@@ -137,11 +140,11 @@ export function FoundView({ search, currentStepTitle, value, foundInCurrentArea,
           </details>
         )}
 
-        <button className="button button--primary button--wide found-save" onClick={onSave} disabled={!ready}>
+        <button className="button button--primary button--wide found-save" type="submit" disabled={!ready}>
           Save this spot
         </button>
-        {onDone && <button className="text-button found-done" onClick={onDone}>Done without saving</button>}
-      </section>
+        {onDone && <button type="button" className="text-button found-done" onClick={onDone}>Done without saving</button>}
+      </form>
     </section>
   )
 }
